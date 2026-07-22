@@ -101,33 +101,80 @@ function MetricCard({
   );
 }
 
-function AutonomicScoreDisplay({ score }: { score: { value: number; label: string } }) {
-  const pct = ((score.value + 100) / 200) * 100;
+function AutonomicScoreDisplay({
+  score,
+}: {
+  score: { value: number; label: string };
+}) {
+  const rawPosition = ((score.value + 100) / 200) * 100;
+  const markerPosition = Math.min(98, Math.max(2, rawPosition));
 
   return (
     <div className="rounded-lg border border-border bg-background p-5">
       <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         5HRV Autonomic Score
       </div>
+
       <div className="mt-4">
         <div className="flex justify-between text-[11px] text-muted-foreground">
           <span>Parasympathetic</span>
           <span>Sympathetic</span>
         </div>
-        <div className="relative mt-1 h-2 rounded-full bg-gradient-to-r from-emerald-400 via-stone-300 to-rose-400">
+
+        <div className="relative mt-2 h-9">
+          <div className="absolute inset-x-0 top-0 h-2 rounded-full bg-gradient-to-r from-emerald-400 via-stone-300 to-rose-400" />
+
           <div
-            className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground bg-card shadow-sm"
-            style={{ left: `${pct}%` }}
+            className="absolute top-1 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground bg-card shadow-sm"
+            style={{ left: `${markerPosition}%` }}
           />
-        </div>
-        <div className="mt-1 text-center text-xs font-semibold text-foreground tabular-nums">
-          {score.value > 0 ? "+" : ""}{score.value}
+
+          <div
+            className="absolute top-4 -translate-x-1/2 whitespace-nowrap text-xs font-semibold text-foreground tabular-nums"
+            style={{ left: `${markerPosition}%` }}
+          >
+            {score.value > 0 ? "+" : ""}
+            {score.value}
+          </div>
         </div>
       </div>
-      <p className="mt-2 text-sm font-medium text-foreground">{score.label}</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Directional pattern derived from RMSSD and LF/HF. SDNN is reported separately as total short-term variability.
+
+      <p className="mt-2 text-sm font-semibold text-foreground">
+        {score.label}
       </p>
+    </div>
+  );
+}
+
+function SecondaryMetricCard({
+  label,
+  value,
+  unit,
+  description,
+  wide = false,
+}: {
+  label: string;
+  value: number;
+  unit: string;
+  description: string;
+  wide?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border border-border bg-background p-5 ${
+        wide ? "sm:col-span-2" : ""
+      }`}
+    >
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 flex items-baseline gap-1">
+        <span className="text-2xl font-bold tabular-nums text-foreground">
+          {value}
+        </span>
+        {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+      </div>
+      <p className="mt-2 text-sm text-foreground/80">{description}</p>
     </div>
   );
 }
@@ -310,18 +357,6 @@ export function ResultsView({ interpretation, input }: Props) {
           </div>
         )}
 
-        {/* Conclusion */}
-        {interpretation.summary && (
-          <div className="border-b border-border px-6 py-5">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Conclusion
-            </h3>
-            <p className="mt-2 text-base leading-relaxed text-foreground">
-              {interpretation.summary}
-            </p>
-          </div>
-        )}
-
         {/* Primary metrics: RMSSD + SDNN */}
         {primaryMetrics.length > 0 && (
           <div className="border-b border-border px-6 py-5">
@@ -343,47 +378,38 @@ export function ResultsView({ interpretation, input }: Props) {
           </div>
         )}
 
-        {/* Secondary metrics table */}
+        {/* Other HRV parameters */}
         {secondaryMetrics.length > 0 && (
           <div className="border-b border-border px-6 py-5">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                  <th className="pb-2 font-medium">Metric</th>
-                  <th className="pb-2 text-right font-medium">Result</th>
-                  <th className="pb-2 pl-4 font-medium">Interpretation</th>
-                </tr>
-              </thead>
-              <tbody>
-                {secondaryMetrics.map((m) => (
-                  <tr key={m.key} className="border-b border-border/50 last:border-0">
-                    <td className="py-2.5 text-sm font-medium text-foreground">
-                      {m.key === "lfhf" ? "LF/HF" : m.name}
-                    </td>
-                    <td className="py-2.5 text-right tabular-nums text-foreground">
-                      {m.value}
-                      {m.unit && <span className="ml-0.5 text-xs text-muted-foreground">{m.unit}</span>}
-                      {m.key === "lfhf" && m.interpretation.includes("Calculated") && (
-                        <span className="ml-1.5 text-[11px] text-[#286d6d]">Calculated</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 pl-4 text-sm text-muted-foreground">
-                      {m.interpretation.replace(/\.$/, "")}
-                      {m.limitation && (
-                        <span className="block text-xs text-muted-foreground/70">
-                          {m.limitation}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {secondaryMetrics.map((m) => (
+                <SecondaryMetricCard
+                  key={m.key}
+                  label={m.key === "lfhf" ? "LF/HF" : m.name}
+                  value={m.value}
+                  unit={m.unit}
+                  description={m.interpretation}
+                  wide={m.key === "lfhf"}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Conclusion */}
+        {interpretation.summary && (
+          <div className="border-t border-border px-6 py-6">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Conclusion
+            </h3>
+            <p className="mt-2 text-lg font-medium leading-relaxed text-foreground">
+              {interpretation.summary}
+            </p>
           </div>
         )}
 
         {/* Clinical note */}
-        <div className="px-6 py-4">
+        <div className="border-t border-border px-6 py-4">
           <p className="text-sm text-muted-foreground">
             {interpretation.clinicalNote}
           </p>
