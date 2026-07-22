@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { MeasurementInput } from "@/lib/types";
+import type { ParsedReportValues } from "@/lib/parseHrvReport";
 import { hasLfhfDiscrepancy, normalizeNumber } from "@/lib/interpretHrv";
+import { ReportUpload } from "@/components/ReportUpload";
 
 type Props = {
   onInterpret: (input: MeasurementInput) => void;
@@ -12,9 +14,7 @@ type Props = {
 type FormState = {
   age: string;
   referenceSex: string;
-  measurementSource: string;
   recordingDuration: string;
-  recordingPosition: string;
   rhythm: string;
   recordingQuality: string;
   quietRest: string;
@@ -31,9 +31,7 @@ type FormState = {
 const initialState: FormState = {
   age: "",
   referenceSex: "unselected",
-  measurementSource: "",
   recordingDuration: "",
-  recordingPosition: "",
   rhythm: "",
   recordingQuality: "",
   quietRest: "",
@@ -276,20 +274,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
-    const sourceMap: Record<string, MeasurementInput["measurementSource"]> = {
-      ecg: "ecg",
-      ecg_chest_strap: "ecg_chest_strap",
-      ppg: "ppg",
-      smartwatch: "smartwatch",
-      unknown: "unknown",
-    };
-
-    const positionMap: Record<string, MeasurementInput["position"]> = {
-      supine: "supine",
-      seated: "seated",
-      other_or_unknown: "unknown",
-    };
-
     const rhythmMap: Record<string, MeasurementInput["rhythm"]> = {
       sinus: "sinus",
       af_flutter: "af_flutter",
@@ -304,9 +288,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       unknown: "unknown",
     };
 
-    const measurementSource = form.measurementSource === "" ? "unknown" : sourceMap[form.measurementSource] || "unknown";
     const durationMinutes = recordingDuration ?? 0;
-    const position = form.recordingPosition === "" ? "unknown" : positionMap[form.recordingPosition] || "unknown";
     const rhythm = form.rhythm === "" ? "unknown" : rhythmMap[form.rhythm] || "unknown";
     const artefactCorrection = form.recordingQuality === "" ? "unknown" : qualityMap[form.recordingQuality] || "unknown";
 
@@ -325,9 +307,9 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     return {
       age: age!,
       referenceSex: form.referenceSex as MeasurementInput["referenceSex"],
-      measurementSource,
+      measurementSource: "ecg",
       durationMinutes,
-      position,
+      position: "supine",
       rhythm,
       artefactCorrection,
       quietRest: form.quietRest === "" ? "unknown" : quietRestMap[form.quietRest] || "unknown",
@@ -349,6 +331,24 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     if (input) onInterpret(input);
   };
 
+  const handlePrefill = (values: ParsedReportValues) => {
+    const updates: Partial<FormState> = {};
+    if (values.durationMinutes !== undefined) updates.recordingDuration = String(values.durationMinutes);
+    if (values.meanHeartRate !== undefined) updates.meanHeartRate = String(values.meanHeartRate);
+    if (values.rmssd !== undefined) updates.rmssd = String(values.rmssd);
+    if (values.sdnn !== undefined) updates.sdnn = String(values.sdnn);
+    if (values.pnn50 !== undefined) updates.pnn50 = String(values.pnn50);
+    if (values.hfPower !== undefined) updates.hfPower = String(values.hfPower);
+    if (values.lfPower !== undefined) updates.lfPower = String(values.lfPower);
+    if (values.lfhfRatio !== undefined) updates.lfhfRatio = String(values.lfhfRatio);
+    if (values.samplingFrequency !== undefined) {
+      (document.getElementById("samplingFrequencyDisplay") as HTMLElement | null)?.remove();
+    }
+    setForm((prev) => ({ ...prev, ...updates }));
+    setErrors({});
+    setHrWarning(null);
+  };
+
   const handleClear = () => {
     setForm(initialState);
     setErrors({});
@@ -359,6 +359,17 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-8">
+      <ReportUpload onPrefill={handlePrefill} />
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-2 text-muted-foreground">or enter the values manually</span>
+        </div>
+      </div>
+
       <section aria-labelledby="section-person">
         <h2
           id="section-person"
@@ -408,19 +419,9 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           Select the actual recording conditions. Leave a field unselected if the detail is not known.
         </p>
         <div className="mt-4 space-y-5">
-          <RadioGroup
-            legend="Recording method"
-            name="measurementSource"
-            value={form.measurementSource}
-            onChange={(v) => set("measurementSource", v)}
-            options={[
-              { value: "ecg", label: "ECG" },
-              { value: "ecg_chest_strap", label: "ECG-based RR chest strap" },
-              { value: "ppg", label: "PPG" },
-              { value: "smartwatch", label: "Smartwatch or wearable" },
-              { value: "unknown", label: "Other or unknown" },
-            ]}
-          />
+          <div className="rounded-md bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            Method: ECG &middot; Position: Supine
+          </div>
           <div className="max-w-xs">
             <NumberField
               id="recordingDuration"
@@ -433,17 +434,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
               helper="Decimal points and decimal commas are accepted. The reference protocol uses approximately five minutes."
             />
           </div>
-          <RadioGroup
-            legend="Recording position"
-            name="recordingPosition"
-            value={form.recordingPosition}
-            onChange={(v) => set("recordingPosition", v)}
-            options={[
-              { value: "supine", label: "Supine" },
-              { value: "seated", label: "Seated" },
-              { value: "other_or_unknown", label: "Other or unknown" },
-            ]}
-          />
           <RadioGroup
             legend="Rhythm"
             name="rhythm"
@@ -514,7 +504,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
                 I confirm that the recording information entered above is accurate.
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                The status Protocol compatible is shown only when confirmed conditions match the reference protocol (supine, sinus rhythm, ECG, approx. five minutes, artefacts corrected, quiet rest completed, quiet spontaneous breathing). Otherwise the result shows Interpretation with methodological limitations.
+                The status Protocol compatible is shown only when confirmed conditions match the reference protocol (ECG, supine, approx. five minutes, sinus rhythm, artefacts corrected, quiet rest completed, quiet spontaneous breathing). Otherwise the result shows Interpretation with methodological limitations.
               </p>
             </div>
           </label>
@@ -625,12 +615,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       <div className="space-y-3">
         <Collapsible title="How to obtain a comparable five-minute HRV measurement">
           <p>
-            For the most reliable interpretation, use approximately five
-            minutes of analysable data obtained after quiet rest, preferably
-            in the supine position, with quiet spontaneous breathing and no
-            talking. Confirm sinus rhythm and correct artefacts and ectopic
-            beats where possible. ECG or an ECG-based RR recording is
-            preferred for clinical interpretation.
+            5HRV is designed for approximately five minutes of analysable ECG
+            data obtained after quiet rest in the supine position, with quiet
+            spontaneous breathing and no talking. Confirm sinus rhythm and
+            correct artefacts and ectopic beats where possible.
           </p>
         </Collapsible>
         <Collapsible title="Why five minutes?">

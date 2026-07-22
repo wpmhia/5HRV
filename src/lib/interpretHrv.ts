@@ -108,34 +108,10 @@ function assessConfidence(input: MeasurementInput): {
     );
   }
 
-  if (input.measurementSource === "ppg") {
-    reasons.push(
-      "PPG measurement has lower precision than ECG, particularly for frequency-domain metrics."
-    );
-  } else if (input.measurementSource === "smartwatch") {
-    reasons.push(
-      "Smartwatch or wearable measurements have lower precision than ECG, particularly for frequency-domain metrics."
-    );
-  } else if (input.measurementSource === "unknown") {
-    reasons.push("The measurement method is unknown.");
-  }
-
   if (input.durationMinutes < 4.5 || input.durationMinutes > 5.5) {
     reasons.push(
       "The recording duration differs from the approximately five-minute reference protocol."
     );
-  }
-
-  if (input.position === "standing") {
-    reasons.push(
-      "A standing measurement differs materially from the supine reference condition."
-    );
-  } else if (input.position === "seated") {
-    reasons.push(
-      "A seated measurement differs from the supine reference condition."
-    );
-  } else if (input.position === "unknown") {
-    reasons.push("The body position during recording is unknown.");
   }
 
   if (input.artefactCorrection === "not_completed") {
@@ -164,11 +140,8 @@ function assessConfidence(input: MeasurementInput): {
 
   const protocolCompatible =
     input.recordingConfirmed &&
-    (input.measurementSource === "ecg" ||
-      input.measurementSource === "ecg_chest_strap") &&
     input.durationMinutes >= 4.5 &&
     input.durationMinutes <= 5.5 &&
-    input.position === "supine" &&
     input.rhythm === "sinus" &&
     input.artefactCorrection === "completed" &&
     input.quietRest === "completed" &&

@@ -159,24 +159,12 @@ describe("recording confidence", () => {
     const result = interpretHrv({ ...baseInput, recordingConfirmed: false });
     expect(result.confidence).toBe("moderate");
   });
-  it("moderate when confirmed but seated", () => {
-    const result = interpretHrv({ ...baseInput, position: "seated" });
-    expect(result.confidence).toBe("moderate");
-  });
-  it("moderate when confirmed but unknown position", () => {
-    const result = interpretHrv({ ...baseInput, position: "unknown" });
-    expect(result.confidence).toBe("moderate");
-  });
   it("moderate when confirmed but unknown rhythm", () => {
     const result = interpretHrv({ ...baseInput, rhythm: "unknown" });
     expect(result.confidence).toBe("moderate");
   });
   it("moderate when confirmed but artefacts not completed", () => {
     const result = interpretHrv({ ...baseInput, artefactCorrection: "not_completed" });
-    expect(result.confidence).toBe("moderate");
-  });
-  it("moderate when confirmed but non-ECG recording", () => {
-    const result = interpretHrv({ ...baseInput, measurementSource: "ppg" });
     expect(result.confidence).toBe("moderate");
   });
   it("moderate when confirmed but duration outside 4.5-5.5", () => {
@@ -504,7 +492,6 @@ describe("prohibited terminology", () => {
     { ...baseInput, referenceSex: "none" },
     { ...baseInput, lfPower: 900, hfPower: 100, lfhfRatio: 9 },
     { ...baseInput, hfPower: 125.95, lfhfRatio: 3.28 },
-    { ...baseInput, measurementSource: "smartwatch", position: "standing" },
     {
       age: 20,
       referenceSex: "female",

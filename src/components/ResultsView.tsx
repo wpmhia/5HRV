@@ -30,11 +30,9 @@ function buildPlainText(
           : "Male"
     }`
   );
-  if (input.measurementSource !== "unknown")
-    lines.push(`Measurement method: ${input.measurementSource.replace(/_/g, " ")}`);
+  lines.push("Method: ECG");
+  lines.push("Position: Supine");
   lines.push(`Recording duration: ${input.durationMinutes} min`);
-  if (input.position !== "unknown")
-    lines.push(`Position: ${input.position}`);
   if (input.rhythm !== "unknown")
     lines.push(`Rhythm: ${input.rhythm.replace(/_/g, " ")}`);
   if (input.artefactCorrection !== "unknown")
