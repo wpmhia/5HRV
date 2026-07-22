@@ -164,6 +164,102 @@ function buildConclusion(
   return "";
 }
 
+export function buildClinicalParagraph(
+  metrics: MetricResult[],
+  autonomicScore?: AutonomicScore
+): string {
+  const byKey = new Map(metrics.map((m) => [m.key, m]));
+  const sdnn = byKey.get("sdnn");
+  const rmssd = byKey.get("rmssd");
+  const pnn50 = byKey.get("pnn50");
+  const hf = byKey.get("hf");
+  const lf = byKey.get("lf");
+  const vlf = byKey.get("vlf");
+  const lfhf = byKey.get("lfhf");
+
+  const tdValues: string[] = [];
+  if (sdnn) tdValues.push(`SDNN ${sdnn.value} ms`);
+  if (rmssd) tdValues.push(`RMSSD ${rmssd.value} ms`);
+  if (pnn50) tdValues.push(`pNN50 ${pnn50.value}%`);
+
+  const fdValues: string[] = [];
+  if (hf) fdValues.push(`HF ${hf.value} ms\u00B2`);
+  if (lf) fdValues.push(`LF ${lf.value} ms\u00B2`);
+  if (vlf) fdValues.push(`VLF ${vlf.value} ms\u00B2`);
+  if (lfhf) fdValues.push(`LF/HF ${lfhf.value}`);
+
+  let preface = "";
+  if (tdValues.length > 0) preface += `Time domain: ${tdValues.join(", ")}`;
+  if (fdValues.length > 0) {
+    if (preface) preface += "; ";
+    preface += `frequency domain: ${fdValues.join(", ")}`;
+  }
+  if (!preface) return "";
+
+  const sdnnCat = sdnn?.category;
+  const rmssdCat = rmssd?.category;
+
+  const overallVar =
+    !sdnn
+      ? undefined
+      : !sdnnCat
+        ? "total variability could not be classified"
+        : sdnnCat === "below_p5" || sdnnCat === "p5_to_p25"
+          ? "reduced total variability"
+          : "preserved total variability";
+
+  const parasymp =
+    !rmssd
+      ? undefined
+      : !rmssdCat
+        ? "parasympathetic activity could not be classified"
+        : rmssdCat === "below_p5" || rmssdCat === "p5_to_p25"
+          ? "reduced parasympathetic activity"
+          : "preserved parasympathetic activity";
+
+  let sympDir: string | undefined;
+  if (autonomicScore) {
+    if (autonomicScore.value <= -25) sympDir = "parasympathetic predominance";
+    else if (autonomicScore.value < 25) sympDir = "balanced autonomic activity";
+    else if (autonomicScore.value < 50) sympDir = "mild sympathetic shift";
+    else if (autonomicScore.value < 75) sympDir = "marked sympathetic predominance";
+    else sympDir = "pronounced sympathetic predominance";
+  } else if (lfhf) {
+    const ratio = lfhf.value;
+    if (ratio < 1) sympDir = "relative parasympathetic predominance";
+    else if (ratio <= 2) sympDir = "balanced autonomic activity";
+    else if (ratio <= 4) sympDir = "relative sympathetic predominance";
+    else sympDir = "marked sympathetic predominance";
+  }
+
+  const findings: string[] = [];
+  if (overallVar) findings.push(overallVar);
+  if (parasymp) findings.push(parasymp);
+  if (sympDir) findings.push(sympDir);
+
+  if (findings.length === 0) return preface + ".";
+
+  const patternText =
+    findings.length === 1
+      ? findings[0]
+      : findings.length === 2
+        ? `${findings[0]} and ${findings[1]}`
+        : `${findings[0]} with ${findings.slice(1, -1).join(", ")}${findings.length > 3 ? "," : ""} and ${findings[findings.length - 1]}`;
+
+  let text = `${preface}. The pattern shows ${patternText}.`;
+
+  const isAbnormal =
+    (sdnnCat === "below_p5" || sdnnCat === "p5_to_p25") ||
+    (rmssdCat === "below_p5" || rmssdCat === "p5_to_p25") ||
+    (sympDir !== undefined && (sympDir.includes("sympathetic") || sympDir.includes("parasympathetic predominance")));
+
+  if (isAbnormal) {
+    text += " This pattern may indicate chronic physiological stress or autonomic imbalance in the appropriate clinical context.";
+  }
+
+  return text;
+}
+
 export function interpretHrv(input: MeasurementInput): HrvInterpretation {
   const ageBand = getAgeBand(input.age);
   const referenceAvailable =
@@ -270,6 +366,19 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
         "LF power reflects mixed autonomic and baroreflex-related influences.",
       limitation:
         "LF power does not directly measure sympathetic activity and must not be interpreted as a pure sympathetic marker.",
+    });
+  }
+
+  if (input.vlfPower !== undefined) {
+    metrics.push({
+      key: "vlf",
+      name: "VLF power",
+      value: input.vlfPower,
+      unit: "ms\u00B2",
+      interpretation:
+        "Slow oscillations (0.003\u20130.04 Hz) linked to thermoregulation, the renin\u2013angiotensin system and sympathetic influence.",
+      limitation:
+        "No universal reference range is applied to VLF power; values depend strongly on recording duration and filtering.",
     });
   }
 

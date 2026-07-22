@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { AutonomicScore, HrvInterpretation, MeasurementInput, MetricResult } from "@/lib/types";
+import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
+import { buildClinicalParagraph } from "@/lib/interpretHrv";
 import { getAgeBand } from "@/data/hrvReferenceData";
 
 type Props = {
@@ -171,80 +172,6 @@ function SecondaryMetricCard({
       <p className="mt-2 text-sm text-foreground/80">{description}</p>
     </div>
   );
-}
-
-function buildClinicalParagraph(
-  metrics: MetricResult[],
-  autonomicScore?: AutonomicScore
-): string {
-  const byKey = new Map(metrics.map((m) => [m.key, m]));
-  const sdnn = byKey.get("sdnn");
-  const rmssd = byKey.get("rmssd");
-  const pnn50 = byKey.get("pnn50");
-  const hf = byKey.get("hf");
-  const lf = byKey.get("lf");
-  const lfhf = byKey.get("lfhf");
-
-  const tdValues: string[] = [];
-  if (sdnn) tdValues.push(`SDNN ${sdnn.value} ms`);
-  if (rmssd) tdValues.push(`RMSSD ${rmssd.value} ms`);
-  if (pnn50) tdValues.push(`pNN50 ${pnn50.value}%`);
-
-  const fdValues: string[] = [];
-  if (hf) fdValues.push(`HF ${hf.value} ms\u00B2`);
-  if (lf) fdValues.push(`LF ${lf.value} ms\u00B2`);
-  if (lfhf) fdValues.push(`LF/HF ${lfhf.value}`);
-
-  let preface = "";
-  if (tdValues.length > 0) preface += `Time domain: ${tdValues.join(", ")}`;
-  if (fdValues.length > 0) {
-    if (preface) preface += "; ";
-    preface += `frequency domain: ${fdValues.join(", ")}`;
-  }
-  if (!preface) return "";
-
-  const sdnnCat = sdnn?.category;
-  const rmssdCat = rmssd?.category;
-
-  const overallVar =
-    sdnnCat && (sdnnCat === "below_p5" || sdnnCat === "p5_to_p25")
-      ? "reduced total variability"
-      : "preserved total variability";
-
-  const parasymp =
-    rmssdCat && (rmssdCat === "below_p5" || rmssdCat === "p5_to_p25")
-      ? "reduced parasympathetic activity"
-      : "preserved parasympathetic activity";
-
-  let sympDir: string;
-  if (autonomicScore) {
-    if (autonomicScore.value <= -25) sympDir = "parasympathetic predominance";
-    else if (autonomicScore.value < 25) sympDir = "balanced autonomic activity";
-    else if (autonomicScore.value < 50) sympDir = "mild sympathetic shift";
-    else if (autonomicScore.value < 75) sympDir = "marked sympathetic predominance";
-    else sympDir = "pronounced sympathetic predominance";
-  } else if (lfhf) {
-    const ratio = lfhf.value;
-    if (ratio < 1) sympDir = "relative parasympathetic predominance";
-    else if (ratio <= 2) sympDir = "balanced autonomic activity";
-    else if (ratio <= 4) sympDir = "relative sympathetic predominance";
-    else sympDir = "marked sympathetic predominance";
-  } else {
-    sympDir = "balanced autonomic activity";
-  }
-
-  let text = `${preface}. The pattern shows ${overallVar} with ${parasymp} and ${sympDir}.`;
-
-  const isAbnormal =
-    sdnnCat === "below_p5" || sdnnCat === "p5_to_p25" ||
-    rmssdCat === "below_p5" || rmssdCat === "p5_to_p25" ||
-    sympDir.includes("sympathetic") || sympDir.includes("parasympathetic predominance");
-
-  if (isAbnormal) {
-    text += " This pattern may indicate chronic physiological stress or autonomic imbalance in the appropriate clinical context.";
-  }
-
-  return text;
 }
 
 function formatDate(): string {

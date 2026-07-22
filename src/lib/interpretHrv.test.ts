@@ -6,7 +6,9 @@ import {
   hasLfhfDiscrepancy,
   describeLfhf,
   findProhibitedPhrases,
+  buildClinicalParagraph,
 } from "@/lib/interpretHrv";
+import type { MetricResult, AutonomicScore } from "@/lib/types";
 import {
   getAgeBand,
   classifyPercentile,
