@@ -30,11 +30,15 @@ function buildPlainText(
           : "Male"
     }`
   );
-  lines.push(`Measurement method: ${input.measurementSource}`);
-  lines.push(`Duration: ${input.durationMinutes} min`);
-  lines.push(`Position: ${input.position}`);
-  lines.push(`Rhythm: ${input.rhythm}`);
-  lines.push(`Artefact correction: ${input.artefactCorrection}`);
+  if (input.measurementSource !== "unknown")
+    lines.push(`Measurement method: ${input.measurementSource.replace(/_/g, " ")}`);
+  lines.push(`Recording duration: ${input.durationMinutes} min`);
+  if (input.position !== "unknown")
+    lines.push(`Position: ${input.position}`);
+  if (input.rhythm !== "unknown")
+    lines.push(`Rhythm: ${input.rhythm.replace(/_/g, " ")}`);
+  if (input.artefactCorrection !== "unknown")
+    lines.push(`Artefact correction: ${input.artefactCorrection.replace(/_/g, " ")}`);
   if (input.meanHeartRate !== undefined)
     lines.push(`Mean heart rate: ${input.meanHeartRate} bpm`);
   if (input.rmssd !== undefined) lines.push(`RMSSD: ${input.rmssd} ms`);
