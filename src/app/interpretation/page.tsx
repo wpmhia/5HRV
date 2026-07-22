@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { hrvReferenceData, ageBands } from "@/data/hrvReferenceData";
 import {
   Card,
@@ -139,11 +140,37 @@ export default function InterpretationPage() {
               <ReferenceTable metric="sdnn" title="SDNN reference percentiles" />
             </div>
             <p className="text-xs italic text-muted-foreground">
-              These are population reference distributions, not disease
-              thresholds.
-            </p>
-          </CardContent>
-        </Card>
+                These are population reference distributions, not disease
+                thresholds.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Primary normative reference</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                The DanFunD study, based on 6,891 Danish adults aged 18–72
+                years, provides the age- and sex-specific RMSSD and SDNN
+                percentiles used by 5HRV. For HF, LF and LF/HF, cautious
+                descriptive interpretation is recommended because spectral
+                values are especially sensitive to breathing and analysis
+                methodology.
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">
+                See the{" "}
+                <Link
+                  href="/evidence"
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  Evidence page
+                </Link>{" "}
+                for the full citation and supporting references.
+              </p>
+            </CardContent>
+          </Card>
 
         <Card>
           <CardHeader>
