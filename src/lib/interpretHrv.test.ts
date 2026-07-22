@@ -121,11 +121,11 @@ describe("LF/HF calculation", () => {
   it("reported LF/HF includes source in metric and is used for Autonomic Score", () => {
     const result = interpretHrv({
       ...baseInput, rmssd: 14.53, sdnn: 34.19, pnn50: 0.21,
-      lfhfRatio: 9.49, lfhfSource: "reported",
+      lfhfRatio: 9.49, lfhfSource: "manual",
     });
     const lfhf = result.metrics.find((m) => m.key === "lfhf");
     expect(lfhf).toBeDefined();
-    expect(lfhf!.lfhfSource).toBe("reported");
+    expect(lfhf!.lfhfSource).toBe("manual");
     expect(lfhf!.interpretation).toContain("Reported ratio");
     expect(result.autonomicScore).toBeDefined();
     expect(result.autonomicScore!.value).toBeGreaterThan(0);
@@ -133,7 +133,7 @@ describe("LF/HF calculation", () => {
   it("reported-only LF/HF produces clinical paragraph with frequency domain LF/HF only", () => {
     const result = interpretHrv({
       ...baseInput, rmssd: 14.53, sdnn: 34.19, pnn50: 0.21,
-      lfhfRatio: 9.49, lfhfSource: "reported",
+      lfhfRatio: 9.49, lfhfSource: "manual",
     });
     const paragraph = buildClinicalParagraph(result.metrics, result.autonomicScore);
     expect(paragraph).toContain("LF/HF 9.49");

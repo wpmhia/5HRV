@@ -420,6 +420,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
               />
             </div>
           )}
+        </div>
       </section>
 
       <div className="flex flex-col gap-3 sm:flex-row">
