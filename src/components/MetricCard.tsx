@@ -1,6 +1,12 @@
 import type { MetricResult } from "@/lib/types";
 
-export function MetricCard({ metric }: { metric: MetricResult }) {
+type Props = { metric: MetricResult };
+
+export function MetricCard({ metric }: Props) {
+  const ageSexLabel = metric.referencePercentiles
+    ? formatPercentileLabel(metric)
+    : null;
+
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-baseline justify-between gap-2">
@@ -19,6 +25,9 @@ export function MetricCard({ metric }: { metric: MetricResult }) {
           {metric.categoryLabel}
         </span>
       )}
+      {ageSexLabel && (
+        <p className="mt-1 text-xs text-muted-foreground/80">{ageSexLabel}</p>
+      )}
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {metric.interpretation}
       </p>
@@ -29,4 +38,10 @@ export function MetricCard({ metric }: { metric: MetricResult }) {
       )}
     </div>
   );
+}
+
+function formatPercentileLabel(metric: MetricResult): string {
+  if (!metric.referencePercentiles) return "";
+  const [p5, p25, p50, p75, p95] = metric.referencePercentiles;
+  return `Reference: P5 ${p5} \u00B7 P25 ${p25} \u00B7 P50 ${p50} \u00B7 P75 ${p75} \u00B7 P95 ${p95} ${metric.unit}`;
 }

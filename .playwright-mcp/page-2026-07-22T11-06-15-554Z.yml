@@ -1,0 +1,190 @@
+- generic [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - banner [ref=f1e3]:
+      - generic [ref=f1e4]:
+        - generic [ref=f1e5]:
+          - heading "5HRV" [level=1] [ref=f1e6]
+          - button "About this calculator" [ref=f1e7]
+        - paragraph [ref=f1e8]: Interpretation of five-minute heart rate variability.
+        - paragraph [ref=f1e9]: Enter the measurements from a resting five-minute HRV recording.
+    - main [ref=f1e10]:
+      - generic [ref=f1e12]:
+        - region [ref=f1e13]:
+          - heading "1. Reference information" [level=2] [ref=f1e14]
+          - generic [ref=f1e15]:
+            - generic [ref=f1e17]:
+              - generic [ref=f1e18]:
+                - text: Age*
+                - generic [ref=f1e19]: (years)
+              - textbox "Age*(years)" [ref=f1e20]: "20"
+              - paragraph [ref=f1e21]: Age-specific reference percentiles cover 18–72 years.
+            - group "Reference sex *" [ref=f1e22]:
+              - paragraph [ref=f1e24]: This selection is used only to select the corresponding published reference distribution.
+              - generic [ref=f1e25]:
+                - generic [ref=f1e26] [cursor=pointer]:
+                  - radio "Female reference" [checked] [ref=f1e27]
+                  - text: Female reference
+                - generic [ref=f1e29] [cursor=pointer]:
+                  - radio "Male reference" [ref=f1e30]
+                  - text: Male reference
+                - generic [ref=f1e32] [cursor=pointer]:
+                  - radio "Do not use sex-specific reference values" [ref=f1e33]
+                  - text: Do not use sex-specific reference values
+        - region [ref=f1e35]:
+          - heading "2. Recording validity" [level=2] [ref=f1e36]
+          - paragraph [ref=f1e37]: These optional details help the calculator assess how closely the recording matches the reference protocol.
+          - generic [ref=f1e38]:
+            - group "Recording position" [ref=f1e39]:
+              - generic [ref=f1e41]:
+                - generic [ref=f1e42] [cursor=pointer]:
+                  - radio "Supine" [checked] [ref=f1e43]
+                  - text: Supine
+                - generic [ref=f1e45] [cursor=pointer]:
+                  - radio "Seated" [ref=f1e46]
+                  - text: Seated
+                - generic [ref=f1e48] [cursor=pointer]:
+                  - radio "Other or unknown" [ref=f1e49]
+                  - text: Other or unknown
+            - group "Rhythm" [ref=f1e51]:
+              - generic [ref=f1e53]:
+                - generic [ref=f1e54] [cursor=pointer]:
+                  - radio "Sinus rhythm without significant ectopy" [checked] [ref=f1e55]
+                  - text: Sinus rhythm without significant ectopy
+                - generic [ref=f1e57] [cursor=pointer]:
+                  - radio "AF, paced rhythm or frequent ectopy" [ref=f1e58]
+                  - text: AF, paced rhythm or frequent ectopy
+                - generic [ref=f1e60] [cursor=pointer]:
+                  - radio "Unknown" [ref=f1e61]
+                  - text: Unknown
+            - group "Recording quality" [ref=f1e63]:
+              - generic [ref=f1e65]:
+                - generic [ref=f1e66] [cursor=pointer]:
+                  - radio "Artefacts and ectopic beats corrected" [checked] [ref=f1e67]
+                  - text: Artefacts and ectopic beats corrected
+                - generic [ref=f1e69] [cursor=pointer]:
+                  - radio "Not corrected or unknown" [ref=f1e70]
+                  - text: Not corrected or unknown
+        - region [ref=f1e72]:
+          - heading "3. HRV values" [level=2] [ref=f1e73]
+          - paragraph [ref=f1e74]: Decimal points and decimal commas are both accepted. At least RMSSD or SDNN is required.
+          - generic [ref=f1e75]:
+            - generic [ref=f1e76]:
+              - generic [ref=f1e77]:
+                - text: Mean heart rate
+                - generic [ref=f1e78]: (bpm)
+              - textbox "Mean heart rate(bpm)" [ref=f1e79]
+            - generic [ref=f1e80]:
+              - generic [ref=f1e81]:
+                - text: RMSSD
+                - generic [ref=f1e82]: (ms)
+              - textbox "RMSSD(ms)" [ref=f1e83]: "18"
+              - paragraph [ref=f1e84]: Primary five-minute HRV metric.
+            - generic [ref=f1e85]:
+              - generic [ref=f1e86]:
+                - text: SDNN
+                - generic [ref=f1e87]: (ms)
+              - textbox "SDNN(ms)" [ref=f1e88]: "23"
+              - paragraph [ref=f1e89]: Overall variability during the five-minute recording.
+            - generic [ref=f1e90]:
+              - generic [ref=f1e91]:
+                - text: pNN50
+                - generic [ref=f1e92]: (%)
+              - textbox "pNN50(%)" [ref=f1e93]
+            - generic [ref=f1e94]:
+              - generic [ref=f1e95]:
+                - text: HF power
+                - generic [ref=f1e96]: (ms²)
+              - textbox "HF power(ms²)" [ref=f1e97]: "213"
+              - paragraph [ref=f1e98]: Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values.
+            - generic [ref=f1e99]:
+              - generic [ref=f1e100]:
+                - text: LF power
+                - generic [ref=f1e101]: (ms²)
+              - textbox "LF power(ms²)" [ref=f1e102]
+              - paragraph [ref=f1e103]: Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values.
+            - generic [ref=f1e104]:
+              - text: LF/HF ratio
+              - textbox "LF/HF ratio" [ref=f1e105]: "2.6"
+              - paragraph [ref=f1e106]: Calculated automatically when LF and HF are entered.
+        - generic [ref=f1e107]:
+          - button "Interpret HRV" [active] [ref=f1e108]
+          - button "Clear values" [ref=f1e109]
+        - generic [ref=f1e110]:
+          - group [ref=f1e111]:
+            - generic "How to obtain a comparable five-minute HRV measurement" [ref=f1e112] [cursor=pointer]
+          - group [ref=f1e113]:
+            - generic "Why five minutes?" [ref=f1e114] [cursor=pointer]
+      - generic [ref=f1e120]:
+        - heading "Interpretation result" [level=2] [ref=f1e121]
+        - region [ref=f1e122]:
+          - heading "Summary" [level=3] [ref=f1e123]
+          - paragraph [ref=f1e124]: RMSSD is below the fifth percentile and SDNN is in the lower part of the reference distribution for the selected age and reference-sex group. Short-term HRV is lower than expected for the selected reference group, with reduced beat-to-beat vagal-related variability and reduced overall five-minute variability. The finding is nonspecific and does not by itself diagnose autonomic dysfunction or another medical condition.
+          - paragraph [ref=f1e125]: HRV results should be interpreted together with symptoms, examination findings, rhythm assessment and other clinical information.
+        - region [ref=f1e126]:
+          - generic [ref=f1e127]:
+            - heading "Recording confidence" [level=2] [ref=f1e128]
+            - generic [ref=f1e129]: High confidence
+          - list [ref=f1e130]:
+            - listitem [ref=f1e131]:
+              - generic [ref=f1e132]: •
+              - generic [ref=f1e133]: Recording conditions match the five-minute supine ECG reference protocol.
+        - region [ref=f1e134]:
+          - heading "Individual metrics" [level=3] [ref=f1e135]
+          - generic [ref=f1e136]:
+            - generic [ref=f1e137]:
+              - generic [ref=f1e138]:
+                - heading "RMSSD" [level=3] [ref=f1e139]
+                - paragraph [ref=f1e140]: 18ms
+              - generic [ref=f1e141]: Unusually low within this reference distribution
+              - paragraph [ref=f1e142]: "Reference: P5 18.88 · P25 35.39 · P50 57.19 · P75 83.87 · P95 171.26 ms"
+              - paragraph [ref=f1e143]: RMSSD reflects short-term beat-to-beat variability and is strongly influenced by cardiac vagal modulation. The value is below the fifth percentile for the selected age and reference-sex group. This is a nonspecific finding and may reflect physiology, acute illness, medication, measurement conditions or recording quality.
+              - paragraph [ref=f1e144]: RMSSD does not directly measure vagal nerve activity; it is a statistical marker influenced by it.
+            - generic [ref=f1e145]:
+              - generic [ref=f1e146]:
+                - heading "SDNN" [level=3] [ref=f1e147]
+                - paragraph [ref=f1e148]: 23ms
+              - generic [ref=f1e149]: Lower part of the reference distribution
+              - paragraph [ref=f1e150]: "Reference: P5 22.5 · P25 36.76 · P50 52.54 · P75 74.06 · P95 123.49 ms"
+              - paragraph [ref=f1e151]: SDNN reflects overall variability during this five-minute recording. The value falls between the 5th and 25th percentiles of the selected age- and sex-specific reference distribution.
+              - paragraph [ref=f1e152]: Five-minute SDNN must not be compared with 24-hour Holter SDNN reference values.
+            - generic [ref=f1e153]:
+              - generic [ref=f1e154]:
+                - heading "HF power" [level=3] [ref=f1e155]
+                - paragraph [ref=f1e156]: 213ms²
+              - paragraph [ref=f1e157]: HF power reflects respiratory-frequency variability and is influenced by vagal modulation, breathing pattern and the spectral-analysis method.
+              - paragraph [ref=f1e158]: No universal reference range is applied to HF power; values depend strongly on breathing and analysis settings.
+            - generic [ref=f1e159]:
+              - generic [ref=f1e160]:
+                - heading "LF/HF ratio" [level=3] [ref=f1e161]
+                - paragraph [ref=f1e162]: "2.6"
+              - paragraph [ref=f1e163]: Relative LF predominance.
+              - paragraph [ref=f1e164]: LF/HF is not a direct measurement of sympathetic–parasympathetic balance.
+        - region [ref=f1e165]:
+          - heading "Important limitations" [level=3] [ref=f1e166]
+          - paragraph [ref=f1e167]: "HRV is influenced by many factors that were not part of this calculation, including:"
+          - list [ref=f1e168]:
+            - listitem [ref=f1e169]: Age
+            - listitem [ref=f1e170]: Heart rate
+            - listitem [ref=f1e171]: Breathing pattern
+            - listitem [ref=f1e172]: Body position
+            - listitem [ref=f1e173]: Time of day
+            - listitem [ref=f1e174]: Acute illness
+            - listitem [ref=f1e175]: Medication
+            - listitem [ref=f1e176]: Recent physical activity
+            - listitem [ref=f1e177]: Sleep
+            - listitem [ref=f1e178]: Alcohol
+            - listitem [ref=f1e179]: Caffeine
+            - listitem [ref=f1e180]: Nicotine
+            - listitem [ref=f1e181]: Recording artefacts
+            - listitem [ref=f1e182]: Ectopic beats
+            - listitem [ref=f1e183]: Recording device and analysis method
+        - region [ref=f1e184]:
+          - heading "Safety" [level=3] [ref=f1e185]
+          - paragraph [ref=f1e186]: Seek medical assessment for concerning symptoms such as syncope, chest pain, severe breathlessness, a sustained irregular heartbeat or new neurological symptoms. HRV interpretation must not delay urgent care.
+        - generic [ref=f1e187]:
+          - button "Copy interpretation" [ref=f1e188]
+          - button "Print result" [ref=f1e189]
+          - button "Clear calculator" [ref=f1e190]
+    - contentinfo [ref=f1e115]:
+      - paragraph [ref=f1e117]: 5HRV provides contextual interpretation of five-minute HRV measurements for educational and professional reference. It does not diagnose disease, replace ECG review or substitute for clinical assessment. Calculations run entirely in your browser; entered values are not transmitted or stored. Do not enter names, identification numbers, exact dates of birth or other directly identifiable patient information.
+  - alert [ref=f1e118]

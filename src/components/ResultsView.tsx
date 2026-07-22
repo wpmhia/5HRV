@@ -67,9 +67,6 @@ function buildPlainText(
     if (metric.limitation) lines.push(`  Note: ${metric.limitation}`);
   }
   lines.push("");
-  lines.push("OVERALL INTERPRETATION");
-  lines.push(interpretation.overall);
-  lines.push("");
   lines.push("LIMITATIONS");
   lines.push(
     `HRV is influenced by: ${interpretation.limitations.join(", ").toLowerCase()}.`
@@ -116,6 +113,9 @@ export function ResultsView({ interpretation, input, onClear }: Props) {
         <p className="mt-2 text-base leading-relaxed text-foreground">
           {interpretation.summary}
         </p>
+        <p className="mt-3 text-sm leading-relaxed text-foreground/90">
+          {interpretation.clinicalNote}
+        </p>
         {interpretation.referenceNote && (
           <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm text-foreground/90">
             {interpretation.referenceNote}
@@ -141,21 +141,6 @@ export function ResultsView({ interpretation, input, onClear }: Props) {
           </div>
         </section>
       )}
-
-      <section
-        aria-labelledby="overall-heading"
-        className="rounded-lg border border-border bg-card p-5"
-      >
-        <h3 id="overall-heading" className="text-base font-semibold text-foreground">
-          Overall interpretation
-        </h3>
-        <p className="mt-2 text-sm leading-relaxed text-foreground/90">
-          {interpretation.overall}
-        </p>
-        <p className="mt-3 text-sm leading-relaxed text-foreground/90">
-          {interpretation.clinicalNote}
-        </p>
-      </section>
 
       <section
         aria-labelledby="limitations-heading"

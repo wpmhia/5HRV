@@ -46,6 +46,7 @@ export type MetricResult = {
   unit: string;
   category?: PercentileCategory;
   categoryLabel?: string;
+  referencePercentiles?: number[];
   interpretation: string;
   limitation?: string;
 };

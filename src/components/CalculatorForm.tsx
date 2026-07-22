@@ -11,7 +11,10 @@ type Props = {
 
 type FormState = {
   age: string;
-  referenceSex: "female" | "male" | "none";
+  referenceSex: string;
+  recordingPosition: string;
+  rhythm: string;
+  recordingQuality: string;
   meanHeartRate: string;
   rmssd: string;
   sdnn: string;
@@ -23,7 +26,10 @@ type FormState = {
 
 const initialState: FormState = {
   age: "",
-  referenceSex: "female",
+  referenceSex: "unselected",
+  recordingPosition: "supine",
+  rhythm: "sinus",
+  recordingQuality: "corrected",
   meanHeartRate: "",
   rmssd: "",
   sdnn: "",
@@ -148,6 +154,19 @@ function NumberField({
   );
 }
 
+function Collapsible({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details className="rounded-lg border border-border bg-card">
+      <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+        {title}
+      </summary>
+      <div className="border-t border-border px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+        {children}
+      </div>
+    </details>
+  );
+}
+
 export function CalculatorForm({ onInterpret, onClear }: Props) {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -177,6 +196,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       nextErrors.age = "Age is required.";
     } else if (age < 18 || age > 120) {
       nextErrors.age = "Age must be between 18 and 120 years.";
+    }
+
+    if (form.referenceSex === "unselected") {
+      nextErrors.referenceSex = "Select a reference sex or choose not to use sex-specific values.";
     }
 
     const rmssd = normalizeNumber(form.rmssd);
@@ -218,27 +241,44 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     const hfPower = normalizeNumber(form.hfPower);
     if (form.hfPower.trim() !== "" && hfPower === null) {
       nextErrors.hfPower = "Enter a valid number.";
+    } else if (hfPower !== null && hfPower < 0) {
+      nextErrors.hfPower = "HF power cannot be negative.";
     }
     const lfPower = normalizeNumber(form.lfPower);
     if (form.lfPower.trim() !== "" && lfPower === null) {
       nextErrors.lfPower = "Enter a valid number.";
+    } else if (lfPower !== null && lfPower < 0) {
+      nextErrors.lfPower = "LF power cannot be negative.";
     }
     const lfhfRatio = normalizeNumber(form.lfhfRatio);
     if (form.lfhfRatio.trim() !== "" && lfhfRatio === null) {
       nextErrors.lfhfRatio = "Enter a valid number.";
+    } else if (lfhfRatio !== null && lfhfRatio < 0) {
+      nextErrors.lfhfRatio = "LF/HF cannot be negative.";
     }
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
+    const rhythmMap: Record<string, MeasurementInput["rhythm"]> = {
+      sinus: "sinus",
+      af_paced_ectopy: "af_flutter",
+      unknown: "unknown",
+    };
+
+    const qualityMap: Record<string, MeasurementInput["artefactCorrection"]> = {
+      corrected: "completed",
+      not_corrected: "unknown",
+    };
+
     return {
       age: age!,
-      referenceSex: form.referenceSex,
-      measurementSource: "unknown",
+      referenceSex: form.referenceSex as MeasurementInput["referenceSex"],
+      measurementSource: "ecg",
       durationMinutes: 5,
-      position: "unknown",
-      rhythm: "unknown",
-      artefactCorrection: "unknown",
+      position: form.recordingPosition as MeasurementInput["position"],
+      rhythm: rhythmMap[form.rhythm] || "unknown",
+      artefactCorrection: qualityMap[form.recordingQuality] || "unknown",
       meanHeartRate: meanHeartRate ?? undefined,
       rmssd: rmssd ?? undefined,
       sdnn: sdnn ?? undefined,
@@ -285,15 +325,65 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             />
           </div>
           <RadioGroup
-            legend="Reference sex"
+            legend="Reference sex *"
             name="referenceSex"
             value={form.referenceSex}
             onChange={(v) => set("referenceSex", v)}
             helper="This selection is used only to select the corresponding published reference distribution."
             options={[
-              { value: "female", label: "Female" },
-              { value: "male", label: "Male" },
+              { value: "female", label: "Female reference" },
+              { value: "male", label: "Male reference" },
               { value: "none", label: "Do not use sex-specific reference values" },
+            ]}
+          />
+          {errors.referenceSex && (
+            <p role="alert" className="text-xs text-destructive">{errors.referenceSex}</p>
+          )}
+        </div>
+      </section>
+
+      <section aria-labelledby="section-recording">
+        <h2
+          id="section-recording"
+          className="border-b border-border pb-2 text-base font-semibold text-foreground"
+        >
+          2. Recording validity
+        </h2>
+        <p className="mt-2 text-xs text-muted-foreground">
+          These optional details help the calculator assess how closely the
+          recording matches the reference protocol.
+        </p>
+        <div className="mt-4 space-y-5">
+          <RadioGroup
+            legend="Recording position"
+            name="recordingPosition"
+            value={form.recordingPosition}
+            onChange={(v) => set("recordingPosition", v)}
+            options={[
+              { value: "supine", label: "Supine" },
+              { value: "seated", label: "Seated" },
+              { value: "other_or_unknown", label: "Other or unknown" },
+            ]}
+          />
+          <RadioGroup
+            legend="Rhythm"
+            name="rhythm"
+            value={form.rhythm}
+            onChange={(v) => set("rhythm", v)}
+            options={[
+              { value: "sinus", label: "Sinus rhythm without significant ectopy" },
+              { value: "af_paced_ectopy", label: "AF, paced rhythm or frequent ectopy" },
+              { value: "unknown", label: "Unknown" },
+            ]}
+          />
+          <RadioGroup
+            legend="Recording quality"
+            name="recordingQuality"
+            value={form.recordingQuality}
+            onChange={(v) => set("recordingQuality", v)}
+            options={[
+              { value: "corrected", label: "Artefacts and ectopic beats corrected" },
+              { value: "not_corrected", label: "Not corrected or unknown" },
             ]}
           />
         </div>
@@ -304,7 +394,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           id="section-values"
           className="border-b border-border pb-2 text-base font-semibold text-foreground"
         >
-          2. HRV values
+          3. HRV values
         </h2>
         <p className="mt-2 text-xs text-muted-foreground">
           Decimal points and decimal commas are both accepted. At least RMSSD
@@ -352,6 +442,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             value={form.hfPower}
             onChange={(v) => set("hfPower", v)}
             error={errors.hfPower}
+            helper="Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values."
           />
           <NumberField
             id="lfPower"
@@ -360,6 +451,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             value={form.lfPower}
             onChange={(v) => set("lfPower", v)}
             error={errors.lfPower}
+            helper="Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values."
           />
           <NumberField
             id="lfhfRatio"
@@ -396,6 +488,28 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
         >
           Clear values
         </button>
+      </div>
+
+      <div className="space-y-3">
+        <Collapsible title="How to obtain a comparable five-minute HRV measurement">
+          <p>
+            For the most reliable interpretation, use approximately five
+            minutes of analysable data obtained after quiet rest, preferably
+            in the supine position, with quiet spontaneous breathing and no
+            talking. Confirm sinus rhythm and correct artefacts and ectopic
+            beats where possible. ECG or an ECG-based RR recording is
+            preferred for clinical interpretation.
+          </p>
+        </Collapsible>
+        <Collapsible title="Why five minutes?">
+          <p>
+            Five-minute recordings provide practical short-term RMSSD, SDNN
+            and frequency-domain measurements. However, five-minute HRV must
+            not be compared directly with 24-hour Holter HRV reference
+            values, which reflect circadian and behavioural influences that a
+            short recording cannot capture.
+          </p>
+        </Collapsible>
       </div>
     </form>
   );

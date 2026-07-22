@@ -306,6 +306,9 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
       categoryLabel: rmssdCategory
         ? percentileLabels[rmssdCategory]
         : undefined,
+      referencePercentiles: rmssdPercentiles
+        ? [...rmssdPercentiles]
+        : undefined,
       interpretation:
         "RMSSD reflects short-term beat-to-beat variability and is strongly influenced by cardiac vagal modulation." +
         (rmssdCategory ? " " + percentileExplanations[rmssdCategory] : ""),
@@ -322,6 +325,9 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
       unit: "ms",
       category: sdnnCategory,
       categoryLabel: sdnnCategory ? percentileLabels[sdnnCategory] : undefined,
+      referencePercentiles: sdnnPercentiles
+        ? [...sdnnPercentiles]
+        : undefined,
       interpretation:
         "SDNN reflects overall variability during this five-minute recording." +
         (sdnnCategory ? " " + percentileExplanations[sdnnCategory] : ""),
@@ -409,7 +415,7 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     ? "A combined RMSSD\u2013SDNN interpretation is not provided for recordings with atrial fibrillation or flutter, paced rhythm, or frequent ectopic beats. Review the underlying ECG or device rhythm strip instead."
     : referenceAvailable
       ? combinedPattern(rmssdCategory, sdnnCategory)
-      : "Without a matching reference distribution, only descriptive statements can be made. Compare this recording with previous measurements obtained under identical conditions rather than with population percentiles.";
+      : "Without a matching reference distribution, only descriptive statements can be made. Interpret the values descriptively and together with the recording conditions and clinical context.";
 
   return {
     confidence,
