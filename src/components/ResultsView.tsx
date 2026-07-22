@@ -24,11 +24,25 @@ function PrimaryMetric({
 }: {
   metric: MetricResult;
 }) {
+  const pct = metric.referencePercentiles
+    ? approxPercentile(metric.value, metric.referencePercentiles)
+    : null;
+  const refLine = metric.referencePercentiles
+    ? `P5 ${metric.referencePercentiles[0]} · P25 ${metric.referencePercentiles[1]} · P50 ${metric.referencePercentiles[2]} · P75 ${metric.referencePercentiles[3]} · P95 ${metric.referencePercentiles[4]} ${metric.unit}`
+    : null;
+
   return (
     <div>
-      <span className="text-sm font-semibold text-foreground">{metric.name}</span>
-      <span className="ml-2 text-lg font-semibold text-foreground tabular-nums">{metric.value}</span>
-      {metric.unit && <span className="ml-0.5 text-xs text-muted-foreground">{metric.unit}</span>}
+      <div>
+        <span className="text-sm font-semibold text-foreground">{metric.name}</span>
+        <span className="ml-2 text-lg font-semibold text-foreground tabular-nums">{metric.value}</span>
+        {metric.unit && <span className="ml-0.5 text-xs text-muted-foreground">{metric.unit}</span>}
+        {pct !== null && <span className="ml-2 text-xs font-medium text-foreground">P{pct}</span>}
+        {metric.categoryLabel && <span className="ml-2 text-xs text-muted-foreground">— {metric.categoryLabel}</span>}
+      </div>
+      {refLine && (
+        <p className="mt-0.5 text-xs text-muted-foreground">{refLine}</p>
+      )}
     </div>
   );
 }
@@ -123,7 +137,7 @@ export function ResultsView({ interpretation, input }: Props) {
               onClick={handleCopy}
               className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
             >
-              {copied ? "Copied" : "Copy report"}
+              {copied ? "Copied" : "Copy all"}
             </button>
             <button
               type="button"

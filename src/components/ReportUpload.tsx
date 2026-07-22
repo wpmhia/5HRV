@@ -3,11 +3,10 @@
 import { useRef, useState } from "react";
 import { parseHrvReport, buildExtractedFields, hasHrvContent, type ParsedReportValues, type ExtractedField } from "@/lib/parseHrvReport";
 
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 type Props = {
   onPrefill: (values: ParsedReportValues) => void;
-  onClose: () => void;
 };
 
 async function loadPdfJs() {
@@ -79,19 +78,12 @@ async function extractTextFromImage(file: File): Promise<string> {
 
 async function extractTextFromFile(file: File): Promise<string> {
   const ext = file.name.split(".").pop()?.toLowerCase();
-
-  if (ext === "pdf") {
-    return await extractTextFromPdf(file);
-  }
-
-  if (ext === "jpg" || ext === "jpeg" || ext === "png") {
-    return await extractTextFromImage(file);
-  }
-
-  throw new Error("Unsupported file type. Please upload a PDF, JPG, JPEG or PNG file.");
+  if (ext === "pdf") return await extractTextFromPdf(file);
+  if (ext === "jpg" || ext === "jpeg" || ext === "png") return await extractTextFromImage(file);
+  throw new Error("Unsupported file type.");
 }
 
-export function ReportUpload({ onPrefill, onClose }: Props) {
+export function ReportUpload({ onPrefill }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [fields, setFields] = useState<ExtractedField[] | null>(null);
@@ -99,51 +91,51 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const reset = () => {
+    setFields(null);
+    setEditedValues({});
+    setReviewed(false);
+    setError(null);
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (!ext || !["pdf", "jpg", "jpeg", "png"].includes(ext)) {
-      setError("Unsupported file type. Please upload a PDF, JPG, JPEG or PNG file.");
+      setError("Unsupported file type.");
       return;
     }
-
     if (file.size > MAX_FILE_SIZE) {
-      setError("File is too large. Maximum size is 20 MB.");
+      setError("File too large (max 20 MB).");
       return;
     }
 
     setUploading(true);
     setError(null);
-    setFields(null);
-    setReviewed(false);
+    reset();
 
     try {
       const text = await extractTextFromFile(file);
       if (!text.trim()) {
-        setError("We could not extract values from this report. Please try again or enter the values manually.");
+        setError("Could not extract values. Try again or enter manually.");
         return;
       }
-
       const values = parseHrvReport(text);
       const extracted = buildExtractedFields(values);
-      const foundCount = extracted.filter((f) => f.status === "found").length;
-
-      if (foundCount === 0) {
-        setError("We could not extract values from this report. Please try again or enter the values manually.");
+      if (extracted.filter((f) => f.status === "found").length === 0) {
+        setError("Could not extract values. Try again or enter manually.");
         return;
       }
-
       setFields(extracted);
       const edits: Record<string, string> = {};
       for (const f of extracted) {
         edits[f.key] = f.value !== undefined ? String(f.value) : "";
       }
       setEditedValues(edits);
-    } catch (err) {
-      console.error("HRV report extraction failed:", err);
-      setError("We could not extract values from this report. Please try again or enter the values manually.");
+    } catch {
+      setError("Could not extract values. Try again or enter manually.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -168,13 +160,11 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
       }
     }
     onPrefill(values);
-    onClose();
+    reset();
   };
 
-  const inputClass = "w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
-
   return (
-    <div className="mt-3 rounded-lg border border-border bg-card p-4">
+    <>
       <input
         ref={fileInputRef}
         type="file"
@@ -183,42 +173,30 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
         className="hidden"
         aria-label="Upload HRV report"
       />
-
-      {!fields && !uploading && !error && (
-        <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Upload a PDF or image of an HRV report. Accepted formats: PDF, JPG, JPEG, PNG.
-            Reports are processed locally and are not retained.
-          </p>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            Select file
-          </button>
-        </div>
-      )}
-
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+      >
+        Upload report
+      </button>
       {uploading && (
-        <p className="text-xs text-muted-foreground">Extracting values…</p>
+        <p className="mt-2 text-xs text-muted-foreground">Extracting values…</p>
       )}
-
       {error && (
-        <div className="space-y-2">
+        <div className="mt-2 space-y-2">
           <p role="alert" className="text-xs text-destructive">{error}</p>
           <button
             type="button"
             onClick={() => { setError(null); fileInputRef.current?.click(); }}
             className="text-xs text-primary underline-offset-4 hover:underline"
           >
-            Try another file
+            Try again
           </button>
         </div>
       )}
-
       {fields && (
-        <div>
+        <div className="mt-3 rounded-lg border border-border bg-card p-4">
           <h4 className="text-xs font-semibold text-foreground">Values found in the report</h4>
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {fields.filter(f => f.status === "found" || f.value !== undefined).map((f) => (
@@ -235,7 +213,6 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
               </div>
             ))}
           </div>
-
           <label className="mt-3 flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -247,7 +224,6 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
               I have reviewed the extracted values against the original report.
             </span>
           </label>
-
           <div className="mt-3 flex gap-2">
             <button
               type="button"
@@ -259,7 +235,7 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={reset}
               className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
             >
               Cancel
@@ -267,6 +243,6 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

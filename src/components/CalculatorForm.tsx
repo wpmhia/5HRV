@@ -8,6 +8,7 @@ import { ReportUpload } from "@/components/ReportUpload";
 
 type Props = {
   onInterpret: (input: MeasurementInput) => void;
+  onClear: () => void;
 };
 
 type FormState = {
@@ -92,10 +93,9 @@ function NumberField({
   );
 }
 
-export function CalculatorForm({ onInterpret }: Props) {
+export function CalculatorForm({ onInterpret, onClear }: Props) {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [uploadPanelOpen, setUploadPanelOpen] = useState(true);
   const [importedFromReport, setImportedFromReport] = useState(false);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
@@ -191,6 +191,13 @@ export function CalculatorForm({ onInterpret }: Props) {
     if (input) onInterpret(input);
   };
 
+  const handleClear = () => {
+    setForm(initialState);
+    setErrors({});
+    setImportedFromReport(false);
+    onClear();
+  };
+
   const handlePrefill = (values: ParsedReportValues) => {
     const updates: Partial<FormState> = {};
     if (values.rmssd !== undefined) updates.rmssd = String(values.rmssd);
@@ -242,30 +249,19 @@ export function CalculatorForm({ onInterpret }: Props) {
       </section>
 
       <section aria-labelledby="section-values">
-        <h2
-          id="section-values"
-          className="border-b border-border pb-2 text-base font-semibold text-foreground"
-        >
-          HRV values
-        </h2>
-
-        {uploadPanelOpen && (
-          <ReportUpload
-            onPrefill={handlePrefill}
-            onClose={() => setUploadPanelOpen(false)}
-          />
-        )}
+        <div className="flex items-center justify-between pb-2">
+          <h2
+            id="section-values"
+            className="text-base font-semibold text-foreground"
+          >
+            HRV values
+          </h2>
+          <ReportUpload onPrefill={handlePrefill} />
+        </div>
 
         {importedFromReport && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Values imported from HRV report — review before calculating.
-            <button
-              type="button"
-              onClick={() => { setUploadPanelOpen(true); }}
-              className="ml-2 text-primary underline-offset-4 hover:underline"
-            >
-              Change file
-            </button>
+            Values imported from HRV report.
           </p>
         )}
 
@@ -339,7 +335,14 @@ export function CalculatorForm({ onInterpret }: Props) {
           type="submit"
           className="w-full rounded-md bg-primary px-6 py-3 text-base font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:w-auto"
         >
-          Calculate
+          Interpret
+        </button>
+        <button
+          type="button"
+          onClick={handleClear}
+          className="w-full rounded-md border border-border bg-card px-6 py-3 text-base font-medium text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:w-auto"
+        >
+          Clear all
         </button>
       </div>
     </form>
