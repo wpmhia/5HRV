@@ -41,14 +41,6 @@ export default function CalculatorPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5 sm:p-8">
-        <div className="mb-6 rounded-lg border border-[#286d6d]/30 bg-[#e8f4f4] p-4 text-sm leading-relaxed text-foreground">
-          <p className="font-semibold text-[#286d6d]">5HRV method requirements</p>
-          <p className="mt-1">
-            5HRV is designed for approximately five-minute ECG recordings obtained in
-            the supine position. Do not use this calculator for seated, standing, PPG,
-            smartwatch or wearable-derived measurements.
-          </p>
-        </div>
         <CalculatorForm onInterpret={handleInterpret} onClear={handleClear} />
       </div>
 
