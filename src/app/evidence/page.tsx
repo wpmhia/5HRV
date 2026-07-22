@@ -99,11 +99,11 @@ export default function EvidencePage() {
             HRV in ME/CFS
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Nelson MJ, Bahl JS, Buckley JD, et al. Evidence of altered cardiac
-            autonomic regulation in myalgic encephalomyelitis/chronic fatigue
-            syndrome: a systematic review and meta-analysis. <em>Journal of
-            Translational Medicine</em>. 2024;22:413. DOI:
-            10.1186/s12967-024-05208-3.
+            Nelson MJ, Bahl JS, Buckley JD, Thomson RL, Davison K. Evidence of
+            altered cardiac autonomic regulation in myalgic
+            encephalomyelitis/chronic fatigue syndrome: a systematic review and
+            meta-analysis. <em>Medicine (Baltimore)</em>. 2019;98(43):e17600.
+            DOI: 10.1097/MD.0000000000017600.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             Systematic review documenting reduced HRV in ME/CFS populations and
@@ -114,6 +114,25 @@ export default function EvidencePage() {
         <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="text-lg font-semibold text-foreground">
             HRV in postural orthostatic tachycardia syndrome (POTS)
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Swai J, Hu Z, Zhao X, Rugambwa T, Ming G. Heart rate and heart rate
+            variability comparison between postural orthostatic tachycardia
+            syndrome versus healthy participants: a systematic review and
+            meta-analysis. <em>BMC Cardiovascular Disorders</em>.
+            2019;19:320. DOI: 10.1186/s12872-019-01298-y.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Systematic review and meta-analysis documenting heart rate and HRV
+            differences between POTS patients and healthy controls, supporting
+            the use of short-term HRV as an objective autonomic measure in POTS
+            research.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground">
+            Pathophysiology of POTS
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Benarroch EE. Postural tachycardia syndrome: a heterogeneous and
@@ -136,9 +155,10 @@ export default function EvidencePage() {
             2021;11:14042. DOI: 10.1038/s41598-021-93546-5.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Documents autonomic dysfunction including reduced HRV in post-COVID
-            patients, supporting the use of short-term HRV as an objective
-            autonomic measure.
+            Assessed autonomic function in post-COVID patients using the
+            multiparameter NOL index rather than conventional direct RMSSD, SDNN,
+            HF and LF analysis. The authors explicitly called for future studies
+            using direct HRV measurement.
           </p>
         </div>
 
@@ -147,14 +167,17 @@ export default function EvidencePage() {
             ECG versus PPG validity for HRV
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Plews DJ, Scott B, Altini M, et al. Comparison of HRV metrics
-            obtained from ECG and photoplethysmography. <em>European Journal of
-            Applied Physiology</em>. 2023. DOI: 10.1007/s00421-023-05253-4.
+            Plews DJ, Scott B, Altini M, Wood M, Kilding AE, Laursen PB.
+            Comparison of Heart-Rate-Variability Recording With Smartphone
+            Photoplethysmography, Polar H7 Chest Strap, and
+            Electrocardiography. <em>International Journal of Sports Physiology
+            and Performance</em>. 2017;12(10):1324&ndash;1328. DOI:
+            10.1123/ijspp.2016-0668.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Compares HRV metrics derived from ECG and PPG, highlighting the
-            methodological considerations required when using non-ECG recording
-            devices.
+            Compares HRV metrics derived from ECG, chest strap and PPG,
+            highlighting the methodological considerations required when using
+            non-ECG recording devices.
           </p>
         </div>
       </section>

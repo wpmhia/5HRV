@@ -1,0 +1,183 @@
+- generic [active] [ref=f7e1]:
+  - banner [ref=f7e2]:
+    - generic [ref=f7e3]:
+      - link "5HRV" [ref=f7e4] [cursor=pointer]:
+        - /url: /
+      - navigation "Main" [ref=f7e5]:
+        - link "Overview" [ref=f7e6] [cursor=pointer]:
+          - /url: /
+        - link "The 5-Min. Method" [ref=f7e7] [cursor=pointer]:
+          - /url: /method
+        - link "HRV Parameters" [ref=f7e8] [cursor=pointer]:
+          - /url: /parameters
+        - link "Interpretation" [ref=f7e9] [cursor=pointer]:
+          - /url: /interpretation
+        - link "Applications" [ref=f7e10] [cursor=pointer]:
+          - /url: /applications
+        - link "Calculator" [ref=f7e11] [cursor=pointer]:
+          - /url: /calculator
+        - link "Evidence" [ref=f7e12] [cursor=pointer]:
+          - /url: /evidence
+        - link "About" [ref=f7e13] [cursor=pointer]:
+          - /url: /about
+  - main [ref=f7e14]:
+    - generic [ref=f7e15]:
+      - generic [ref=f7e18]:
+        - heading "5HRV" [level=1] [ref=f7e19]
+        - paragraph [ref=f7e20]: Five-minute heart rate variability as a measure of autonomic nervous system function.
+        - paragraph [ref=f7e21]: 5HRV provides clinicians and researchers with a standardized method for recording, interpreting and applying short-term heart rate variability in clinical practice and research.
+        - generic [ref=f7e22]:
+          - link "Open the calculator" [ref=f7e23] [cursor=pointer]:
+            - /url: /calculator
+          - link "Learn the method" [ref=f7e24] [cursor=pointer]:
+            - /url: /method
+      - generic [ref=f7e26]:
+        - heading "What 5HRV measures" [level=2] [ref=f7e27]
+        - generic [ref=f7e28]:
+          - paragraph [ref=f7e29]: Heart rate variability is the variation in time between successive normal heartbeats. A healthy cardiovascular system does not behave like a rigid metronome. Beat-to-beat variation reflects the capacity of the autonomic nervous system to adapt continuously to internal and external demands.
+          - paragraph [ref=f7e30]:
+            - text: HRV does
+            - emphasis [ref=f7e31]: not
+            - text: measure heart rate itself. Two individuals with the same average heart rate may have profoundly different HRV profiles, and HRV can change independently of heart rate.
+      - generic [ref=f7e33]:
+        - heading "The autonomic nervous system" [level=2] [ref=f7e34]
+        - generic [ref=f7e35]:
+          - generic [ref=f7e36]:
+            - heading "Sympathetic activity" [level=3] [ref=f7e37]
+            - paragraph [ref=f7e38]: Supports cardiovascular activation through effects including increased sinus-node rate and myocardial contractility.
+          - generic [ref=f7e39]:
+            - heading "Parasympathetic activity" [level=3] [ref=f7e40]
+            - paragraph [ref=f7e41]: Cardiac vagal activity slows the sinus node and contributes strongly to rapid beat-to-beat variation.
+        - paragraph [ref=f7e42]: Think of the two branches as an accelerator and a brake. A healthy autonomic nervous system maintains a dynamic balance between them, allowing the heart to respond rapidly to changing demands.
+      - generic [ref=f7e44]:
+        - heading "Why HRV matters" [level=2] [ref=f7e45]
+        - generic [ref=f7e46]:
+          - generic [ref=f7e47]:
+            - heading "Autonomic assessment" [level=3] [ref=f7e48]
+            - paragraph [ref=f7e49]: Provides an objective, non-invasive measure related to autonomic regulation.
+          - generic [ref=f7e50]:
+            - heading "Clinical stratification" [level=3] [ref=f7e51]
+            - paragraph [ref=f7e52]: Reduced HRV has been associated with adverse outcomes in several clinical populations, although five-minute HRV must not be substituted for validated 24-hour risk models.
+          - generic [ref=f7e53]:
+            - heading "Monitoring and research" [level=3] [ref=f7e54]
+            - paragraph [ref=f7e55]: Allows autonomic function to be evaluated before and after an intervention or across research cohorts when measurements are standardized.
+      - generic [ref=f7e57]:
+        - heading "Why five minutes?" [level=2] [ref=f7e58]
+        - generic [ref=f7e59]:
+          - paragraph [ref=f7e60]: Twenty-four-hour Holter HRV captures circadian variation and remains necessary for several established prognostic applications. However, it is resource-intensive and often impractical for routine autonomic assessment.
+          - paragraph [ref=f7e61]: A standardized five-minute recording provides a pragmatic method for measuring RMSSD, short-term SDNN, pNN50, HF power, LF power and LF/HF spectral distribution.
+      - generic [ref=f7e63]:
+        - heading "The standardized protocol" [level=2] [ref=f7e64]
+        - generic [ref=f7e65]:
+          - generic [ref=f7e66]:
+            - heading "Position" [level=3] [ref=f7e67]
+            - paragraph [ref=f7e68]: Supine, arms relaxed
+          - generic [ref=f7e69]:
+            - heading "Rest" [level=3] [ref=f7e70]
+            - paragraph [ref=f7e71]: Quiet rest, no talking
+          - generic [ref=f7e72]:
+            - heading "Breathing" [level=3] [ref=f7e73]
+            - paragraph [ref=f7e74]: Quiet spontaneous
+          - generic [ref=f7e75]:
+            - heading "Duration" [level=3] [ref=f7e76]
+            - paragraph [ref=f7e77]: Approx. 5 minutes
+          - generic [ref=f7e78]:
+            - heading "Quality" [level=3] [ref=f7e79]
+            - paragraph [ref=f7e80]: ECG preferred, ≥250 Hz, sinus rhythm, artefact correction
+        - link "Read the full method →" [ref=f7e82] [cursor=pointer]:
+          - /url: /method
+      - generic [ref=f7e84]:
+        - heading "HRV parameters" [level=2] [ref=f7e85]
+        - generic [ref=f7e86]:
+          - generic [ref=f7e87]:
+            - heading "RMSSD" [level=3] [ref=f7e88]
+            - paragraph [ref=f7e89]: Root mean square of successive differences — reflects parasympathetic activity.
+          - generic [ref=f7e90]:
+            - heading "SDNN" [level=3] [ref=f7e91]
+            - paragraph [ref=f7e92]: Standard deviation of all NN intervals — reflects overall variability.
+          - generic [ref=f7e93]:
+            - heading "pNN50" [level=3] [ref=f7e94]
+            - paragraph [ref=f7e95]: Proportion of NN intervals differing by more than 50 ms — vagal tone index.
+          - generic [ref=f7e96]:
+            - heading "HF power" [level=3] [ref=f7e97]
+            - paragraph [ref=f7e98]: High-frequency power (0.15–0.40 Hz) — primarily reflects vagal activity.
+          - generic [ref=f7e99]:
+            - heading "LF power" [level=3] [ref=f7e100]
+            - paragraph [ref=f7e101]: Low-frequency power (0.04–0.15 Hz) — reflects both sympathetic and vagal influences.
+          - generic [ref=f7e102]:
+            - heading "LF/HF ratio" [level=3] [ref=f7e103]
+            - paragraph [ref=f7e104]: Ratio of low- to high-frequency power — describes the relative distribution of spectral power; not a direct measurement of autonomic balance.
+        - link "Detailed parameter guide →" [ref=f7e106] [cursor=pointer]:
+          - /url: /parameters
+      - generic [ref=f7e108]:
+        - heading "Clinical interpretation" [level=2] [ref=f7e109]
+        - generic [ref=f7e110]:
+          - paragraph [ref=f7e111]: Interpretation uses age- and sex-stratified reference percentiles from the DanFunD population study, providing a normative framework for clinical decision-making.
+          - paragraph [ref=f7e112]: "Several patterns may be identified: combined reduction in rapid beat-to-beat and overall short-term variability, reduced vagal-related variability with better-preserved overall variability, or isolated changes in spectral parameters."
+        - link "Interpretation guide →" [ref=f7e114] [cursor=pointer]:
+          - /url: /interpretation
+      - generic [ref=f7e116]:
+        - heading "Clinical applications" [level=2] [ref=f7e117]
+        - generic [ref=f7e118]:
+          - generic [ref=f7e119]:
+            - heading "Autonomic dysfunction" [level=3] [ref=f7e120]
+            - paragraph [ref=f7e121]: Screening and monitoring of autonomic impairment in neurologic and systemic disorders.
+          - generic [ref=f7e122]:
+            - heading "POTS and orthostatic intolerance" [level=3] [ref=f7e123]
+            - paragraph [ref=f7e124]: Assessment of autonomic regulation patterns in postural tachycardia syndrome.
+          - generic [ref=f7e125]:
+            - heading "PAIS / ME / CFS / Long COVID" [level=3] [ref=f7e126]
+            - paragraph [ref=f7e127]: Evaluation of autonomic dysregulation in post-acute infection syndromes and chronic fatigue conditions.
+          - generic [ref=f7e128]:
+            - heading "Research applications" [level=3] [ref=f7e129]
+            - paragraph [ref=f7e130]: Standardized autonomic outcome measurement in clinical trials and observational studies.
+        - link "Clinical applications →" [ref=f7e132] [cursor=pointer]:
+          - /url: /applications
+      - generic [ref=f7e135]:
+        - heading "Apply the method" [level=2] [ref=f7e136]
+        - paragraph [ref=f7e137]: Enter a standardized five-minute HRV recording and receive a structured interpretation with age- and sex-specific reference percentiles.
+        - link "Open the calculator" [ref=f7e139] [cursor=pointer]:
+          - /url: /calculator
+      - generic [ref=f7e141]:
+        - heading "About the 5HRV method" [level=2] [ref=f7e142]
+        - paragraph [ref=f7e144]: The 5HRV framework was developed by Willem Gielen, Cardiologist and Internist, as a practical approach to standardized five-minute HRV assessment in clinical practice and research.
+        - link "About →" [ref=f7e146] [cursor=pointer]:
+          - /url: /about
+  - contentinfo [ref=f7e147]:
+    - generic [ref=f7e148]:
+      - generic [ref=f7e149]:
+        - generic [ref=f7e150]:
+          - heading "5HRV" [level=3] [ref=f7e151]
+          - paragraph [ref=f7e152]: A practical clinical and research framework for assessing autonomic function from a standardized five-minute HRV recording.
+        - generic [ref=f7e153]:
+          - heading "Pages" [level=3] [ref=f7e154]
+          - list [ref=f7e155]:
+            - listitem [ref=f7e156]:
+              - link "Overview" [ref=f7e157] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=f7e158]:
+              - link "The 5-Minute Method" [ref=f7e159] [cursor=pointer]:
+                - /url: /method
+            - listitem [ref=f7e160]:
+              - link "HRV Parameters" [ref=f7e161] [cursor=pointer]:
+                - /url: /parameters
+            - listitem [ref=f7e162]:
+              - link "Clinical Interpretation" [ref=f7e163] [cursor=pointer]:
+                - /url: /interpretation
+            - listitem [ref=f7e164]:
+              - link "Clinical Applications" [ref=f7e165] [cursor=pointer]:
+                - /url: /applications
+            - listitem [ref=f7e166]:
+              - link "Calculator" [ref=f7e167] [cursor=pointer]:
+                - /url: /calculator
+            - listitem [ref=f7e168]:
+              - link "Evidence" [ref=f7e169] [cursor=pointer]:
+                - /url: /evidence
+            - listitem [ref=f7e170]:
+              - link "About" [ref=f7e171] [cursor=pointer]:
+                - /url: /about
+        - generic [ref=f7e172]:
+          - heading "Clinical framework" [level=3] [ref=f7e173]
+          - paragraph [ref=f7e174]: Developed by Willem Gielen, Cardiologist and Internist, as a practical approach to standardized five-minute HRV assessment in clinical practice and research.
+          - paragraph [ref=f7e175]: 5HRV provides contextual interpretation of HRV measurements for educational and professional reference. It does not diagnose disease, replace ECG review or substitute for clinical assessment.
+      - generic [ref=f7e176]: © 2026 5HRV. All rights reserved.

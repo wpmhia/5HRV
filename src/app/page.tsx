@@ -244,8 +244,8 @@ export default function Home() {
               LF/HF ratio
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Ratio of low- to high-frequency power &mdash; used as an index of sympathovagal
-              balance.
+              Ratio of low- to high-frequency power &mdash; describes the relative distribution
+              of spectral power; not a direct measurement of autonomic balance.
             </p>
           </Card>
         </div>
@@ -270,9 +270,9 @@ export default function Home() {
             population study, providing a normative framework for clinical decision-making.
           </p>
           <p>
-            Several autonomic patterns may be identified: both RMSSD and SDNN reduced (global
-            autonomic reduction), RMSSD reduced with preserved SDNN (predominant vagal withdrawal),
-            or isolated changes in spectral parameters.
+            Several patterns may be identified: combined reduction in rapid beat-to-beat and overall
+            short-term variability, reduced vagal-related variability with better-preserved overall
+            variability, or isolated changes in spectral parameters.
           </p>
         </div>
         <div className="mt-6">
@@ -302,8 +302,7 @@ export default function Home() {
               POTS and orthostatic intolerance
             </h3>
             <p className="text-sm text-muted-foreground">
-              Assessment of vagal withdrawal and sympathetic predominance in postural tachycardia
-              syndrome.
+              Assessment of autonomic regulation patterns in postural tachycardia syndrome.
             </p>
           </Card>
           <Card className="flex flex-col items-start gap-1">

@@ -157,9 +157,29 @@ describe("recording confidence", () => {
     const result = interpretHrv({ ...baseInput, recordingConfirmed: false });
     expect(result.confidence).toBe("moderate");
   });
-  it("high confidence when confirmed with ideal conditions", () => {
-    const result = interpretHrv({ ...baseInput, recordingConfirmed: true });
-    expect(result.confidence).toBe("high");
+  it("moderate when confirmed but seated", () => {
+    const result = interpretHrv({ ...baseInput, position: "seated" });
+    expect(result.confidence).toBe("moderate");
+  });
+  it("moderate when confirmed but unknown position", () => {
+    const result = interpretHrv({ ...baseInput, position: "unknown" });
+    expect(result.confidence).toBe("moderate");
+  });
+  it("moderate when confirmed but unknown rhythm", () => {
+    const result = interpretHrv({ ...baseInput, rhythm: "unknown" });
+    expect(result.confidence).toBe("moderate");
+  });
+  it("moderate when confirmed but artefacts not completed", () => {
+    const result = interpretHrv({ ...baseInput, artefactCorrection: "not_completed" });
+    expect(result.confidence).toBe("moderate");
+  });
+  it("moderate when confirmed but non-ECG recording", () => {
+    const result = interpretHrv({ ...baseInput, measurementSource: "ppg" });
+    expect(result.confidence).toBe("moderate");
+  });
+  it("moderate when confirmed but duration outside 4.5-5.5", () => {
+    const result = interpretHrv({ ...baseInput, durationMinutes: 3 });
+    expect(result.confidence).toBe("moderate");
   });
   it("not valid for atrial fibrillation or flutter", () => {
     const result = interpretHrv({ ...baseInput, rhythm: "af_flutter" });

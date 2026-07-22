@@ -54,13 +54,18 @@ export default function ApplicationsPage() {
               tachycardia syndrome in adults requires all of the following:
               chronic (&ge;3 months) orthostatic symptoms that worsen with
               upright posture and improve with recumbency; a sustained heart-rate
-              increase of at least 30 beats per minute (or a standing heart rate
-              &ge;120 bpm) within ten minutes of upright posture; a higher
-              threshold of 40 bpm in adolescents aged 12&ndash;19 years; the
-              absence of orthostatic hypotension (a fall in systolic blood
-              pressure &gt;20 mmHg); and exclusion of alternative explanations
-              such as dehydration, anaemia, hyperthyroidism, medications that
-              affect heart rate, and other causes of sinus tachycardia.
+              increase of at least 30 beats per minute within ten minutes of
+              upright posture; a higher threshold of 40 bpm in adolescents aged
+              12&ndash;19 years; the absence of orthostatic hypotension (a
+              sustained fall of at least 20 mmHg systolic or 10 mmHg diastolic);
+              and exclusion of alternative explanations such as dehydration,
+              anaemia, hyperthyroidism, medications that affect heart rate, and
+              other causes of sinus tachycardia.
+            </p>
+            <p className="mt-3 leading-relaxed text-foreground">
+              An absolute standing heart rate of 120 bpm or higher is
+              commonly observed in some patients but is not a mandatory current
+              diagnostic criterion.
             </p>
             <p className="mt-3 leading-relaxed text-foreground">
               Orthostatic assessment may be performed using an active stand test,
@@ -217,10 +222,10 @@ export default function ApplicationsPage() {
             </ul>
             <div className="mt-3 rounded-lg border border-border bg-muted/50 p-4">
               <p className="text-sm leading-relaxed text-foreground">
-                The heart-rate increase of 47 beats/minute without orthostatic
-                hypotension is consistent with the haemodynamic criterion for
-                POTS in an adult when accompanied by the required chronic
-                symptoms and after exclusion of alternative causes.
+                The heart-rate increase reaches the adult increment threshold
+                after two minutes. A complete orthostatic assessment is required
+                to establish that the increase is sustained, evaluate the full
+                blood-pressure response and exclude alternative causes.
               </p>
             </div>
 

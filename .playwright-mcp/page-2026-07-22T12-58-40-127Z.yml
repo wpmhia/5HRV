@@ -1,0 +1,215 @@
+- generic [active] [ref=f6e1]:
+  - banner [ref=f6e2]:
+    - generic [ref=f6e3]:
+      - link "5HRV" [ref=f6e4] [cursor=pointer]:
+        - /url: /
+      - navigation "Main" [ref=f6e5]:
+        - link "Overview" [ref=f6e6] [cursor=pointer]:
+          - /url: /
+        - link "The 5-Min. Method" [ref=f6e7] [cursor=pointer]:
+          - /url: /method
+        - link "HRV Parameters" [ref=f6e8] [cursor=pointer]:
+          - /url: /parameters
+        - link "Interpretation" [ref=f6e9] [cursor=pointer]:
+          - /url: /interpretation
+        - link "Applications" [ref=f6e10] [cursor=pointer]:
+          - /url: /applications
+        - link "Calculator" [ref=f6e11] [cursor=pointer]:
+          - /url: /calculator
+        - link "Evidence" [ref=f6e12] [cursor=pointer]:
+          - /url: /evidence
+        - link "About" [ref=f6e13] [cursor=pointer]:
+          - /url: /about
+  - main [ref=f6e14]:
+    - generic [ref=f6e15]:
+      - generic [ref=f6e16]:
+        - heading "HRV Calculator" [level=1] [ref=f6e17]
+        - paragraph [ref=f6e18]: Enter the results of a standardized five-minute HRV recording. The calculator places RMSSD and SDNN within age- and sex-specific reference distributions and provides a structured interpretation of the entered metrics.
+      - generic [ref=f6e20]:
+        - region [ref=f6e21]:
+          - heading "1. Reference information" [level=2] [ref=f6e22]
+          - generic [ref=f6e23]:
+            - generic [ref=f6e25]:
+              - generic [ref=f6e26]:
+                - text: Age*
+                - generic [ref=f6e27]: (years)
+              - textbox "Age*(years)" [ref=f6e28]
+              - paragraph [ref=f6e29]: Age-specific reference percentiles cover 18–72 years.
+            - group "Reference sex *" [ref=f6e30]:
+              - paragraph [ref=f6e32]: This selection is used only to select the corresponding published reference distribution.
+              - generic [ref=f6e33]:
+                - generic [ref=f6e34] [cursor=pointer]:
+                  - radio "Female reference" [ref=f6e35]
+                  - text: Female reference
+                - generic [ref=f6e37] [cursor=pointer]:
+                  - radio "Male reference" [ref=f6e38]
+                  - text: Male reference
+                - generic [ref=f6e40] [cursor=pointer]:
+                  - radio "Do not use sex-specific reference values" [ref=f6e41]
+                  - text: Do not use sex-specific reference values
+        - region [ref=f6e43]:
+          - heading "2. Recording conditions" [level=2] [ref=f6e44]
+          - paragraph [ref=f6e45]: Select the actual recording conditions. Leave a field unselected if the detail is not known.
+          - generic [ref=f6e46]:
+            - group "Recording method" [ref=f6e47]:
+              - generic [ref=f6e49]:
+                - generic [ref=f6e50] [cursor=pointer]:
+                  - radio "ECG" [ref=f6e51]
+                  - text: ECG
+                - generic [ref=f6e53] [cursor=pointer]:
+                  - radio "ECG-based RR chest strap" [ref=f6e54]
+                  - text: ECG-based RR chest strap
+                - generic [ref=f6e56] [cursor=pointer]:
+                  - radio "PPG" [ref=f6e57]
+                  - text: PPG
+                - generic [ref=f6e59] [cursor=pointer]:
+                  - radio "Smartwatch or wearable" [ref=f6e60]
+                  - text: Smartwatch or wearable
+                - generic [ref=f6e62] [cursor=pointer]:
+                  - radio "Other or unknown" [ref=f6e63]
+                  - text: Other or unknown
+            - generic [ref=f6e66]:
+              - generic [ref=f6e67]:
+                - text: Analysable recording duration
+                - generic [ref=f6e68]: (min)
+              - textbox "Analysable recording duration(min)" [ref=f6e69]
+              - paragraph [ref=f6e70]: If left blank, 5 minutes is assumed but the result will note this.
+            - group "Recording position" [ref=f6e71]:
+              - generic [ref=f6e73]:
+                - generic [ref=f6e74] [cursor=pointer]:
+                  - radio "Supine" [ref=f6e75]
+                  - text: Supine
+                - generic [ref=f6e77] [cursor=pointer]:
+                  - radio "Seated" [ref=f6e78]
+                  - text: Seated
+                - generic [ref=f6e80] [cursor=pointer]:
+                  - radio "Other or unknown" [ref=f6e81]
+                  - text: Other or unknown
+            - group "Rhythm" [ref=f6e83]:
+              - generic [ref=f6e85]:
+                - generic [ref=f6e86] [cursor=pointer]:
+                  - radio "Sinus rhythm without significant ectopy" [ref=f6e87]
+                  - text: Sinus rhythm without significant ectopy
+                - generic [ref=f6e89] [cursor=pointer]:
+                  - radio "Atrial fibrillation or flutter" [ref=f6e90]
+                  - text: Atrial fibrillation or flutter
+                - generic [ref=f6e92] [cursor=pointer]:
+                  - radio "Paced rhythm" [ref=f6e93]
+                  - text: Paced rhythm
+                - generic [ref=f6e95] [cursor=pointer]:
+                  - radio "Frequent ectopic beats" [ref=f6e96]
+                  - text: Frequent ectopic beats
+                - generic [ref=f6e98] [cursor=pointer]:
+                  - radio "Unknown" [ref=f6e99]
+                  - text: Unknown
+            - group "Recording quality" [ref=f6e101]:
+              - generic [ref=f6e103]:
+                - generic [ref=f6e104] [cursor=pointer]:
+                  - radio "Artefacts and ectopic beats reviewed and corrected" [ref=f6e105]
+                  - text: Artefacts and ectopic beats reviewed and corrected
+                - generic [ref=f6e107] [cursor=pointer]:
+                  - radio "Artefact correction not completed" [ref=f6e108]
+                  - text: Artefact correction not completed
+                - generic [ref=f6e110] [cursor=pointer]:
+                  - radio "Unknown" [ref=f6e111]
+                  - text: Unknown
+        - region [ref=f6e113]:
+          - heading "3. Recording confirmation" [level=2] [ref=f6e114]
+          - generic [ref=f6e116] [cursor=pointer]:
+            - checkbox "I confirm that the recording information entered above is accurate. The status Protocol compatible is shown only when confirmed conditions match the reference protocol (supine, sinus rhythm, ECG, approx. five minutes, artefacts corrected). Otherwise the result shows Interpretation with methodological limitations." [ref=f6e117]
+            - generic [ref=f6e118]:
+              - paragraph [ref=f6e119]: I confirm that the recording information entered above is accurate.
+              - paragraph [ref=f6e120]: The status Protocol compatible is shown only when confirmed conditions match the reference protocol (supine, sinus rhythm, ECG, approx. five minutes, artefacts corrected). Otherwise the result shows Interpretation with methodological limitations.
+        - region [ref=f6e121]:
+          - heading "4. HRV values" [level=2] [ref=f6e122]
+          - paragraph [ref=f6e123]: Decimal points and decimal commas are both accepted. At least RMSSD or SDNN is required.
+          - generic [ref=f6e124]:
+            - generic [ref=f6e125]:
+              - generic [ref=f6e126]:
+                - text: Mean heart rate
+                - generic [ref=f6e127]: (bpm)
+              - textbox "Mean heart rate(bpm)" [ref=f6e128]
+            - generic [ref=f6e129]:
+              - generic [ref=f6e130]:
+                - text: RMSSD
+                - generic [ref=f6e131]: (ms)
+              - textbox "RMSSD(ms)" [ref=f6e132]
+              - paragraph [ref=f6e133]: Primary five-minute HRV metric.
+            - generic [ref=f6e134]:
+              - generic [ref=f6e135]:
+                - text: SDNN
+                - generic [ref=f6e136]: (ms)
+              - textbox "SDNN(ms)" [ref=f6e137]
+              - paragraph [ref=f6e138]: Overall variability during the five-minute recording.
+            - generic [ref=f6e139]:
+              - generic [ref=f6e140]:
+                - text: pNN50
+                - generic [ref=f6e141]: (%)
+              - textbox "pNN50(%)" [ref=f6e142]
+            - generic [ref=f6e143]:
+              - generic [ref=f6e144]:
+                - text: HF power
+                - generic [ref=f6e145]: (ms²)
+              - textbox "HF power(ms²)" [ref=f6e146]
+              - paragraph [ref=f6e147]: Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values.
+            - generic [ref=f6e148]:
+              - generic [ref=f6e149]:
+                - text: LF power
+                - generic [ref=f6e150]: (ms²)
+              - textbox "LF power(ms²)" [ref=f6e151]
+              - paragraph [ref=f6e152]: Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values.
+            - generic [ref=f6e153]:
+              - text: LF/HF ratio
+              - textbox "LF/HF ratio" [ref=f6e154]
+              - paragraph [ref=f6e155]: Calculated automatically when LF and HF are entered.
+        - generic [ref=f6e156]:
+          - button "Interpret HRV" [ref=f6e157]
+          - button "Clear values" [ref=f6e158]
+        - generic [ref=f6e159]:
+          - group [ref=f6e160]:
+            - generic "How to obtain a comparable five-minute HRV measurement" [ref=f6e161] [cursor=pointer]
+          - group [ref=f6e162]:
+            - generic "Why five minutes?" [ref=f6e163] [cursor=pointer]
+      - paragraph [ref=f6e165]:
+        - text: Results are labelled Protocol compatible only when the recording conditions have been explicitly confirmed. Without confirmation, the result is labelled Interpretation with methodological limitations. All results must be integrated with rhythm review, symptoms and other clinical findings.
+        - link "Learn more about the standardized method" [ref=f6e166] [cursor=pointer]:
+          - /url: /method
+        - text: .
+  - contentinfo [ref=f6e167]:
+    - generic [ref=f6e168]:
+      - generic [ref=f6e169]:
+        - generic [ref=f6e170]:
+          - heading "5HRV" [level=3] [ref=f6e171]
+          - paragraph [ref=f6e172]: A practical clinical and research framework for assessing autonomic function from a standardized five-minute HRV recording.
+        - generic [ref=f6e173]:
+          - heading "Pages" [level=3] [ref=f6e174]
+          - list [ref=f6e175]:
+            - listitem [ref=f6e176]:
+              - link "Overview" [ref=f6e177] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=f6e178]:
+              - link "The 5-Minute Method" [ref=f6e179] [cursor=pointer]:
+                - /url: /method
+            - listitem [ref=f6e180]:
+              - link "HRV Parameters" [ref=f6e181] [cursor=pointer]:
+                - /url: /parameters
+            - listitem [ref=f6e182]:
+              - link "Clinical Interpretation" [ref=f6e183] [cursor=pointer]:
+                - /url: /interpretation
+            - listitem [ref=f6e184]:
+              - link "Clinical Applications" [ref=f6e185] [cursor=pointer]:
+                - /url: /applications
+            - listitem [ref=f6e186]:
+              - link "Calculator" [ref=f6e187] [cursor=pointer]:
+                - /url: /calculator
+            - listitem [ref=f6e188]:
+              - link "Evidence" [ref=f6e189] [cursor=pointer]:
+                - /url: /evidence
+            - listitem [ref=f6e190]:
+              - link "About" [ref=f6e191] [cursor=pointer]:
+                - /url: /about
+        - generic [ref=f6e192]:
+          - heading "Clinical framework" [level=3] [ref=f6e193]
+          - paragraph [ref=f6e194]: Developed by Willem Gielen, Cardiologist and Internist, as a practical approach to standardized five-minute HRV assessment in clinical practice and research.
+          - paragraph [ref=f6e195]: 5HRV provides contextual interpretation of HRV measurements for educational and professional reference. It does not diagnose disease, replace ECG review or substitute for clinical assessment.
+      - generic [ref=f6e196]: © 2026 5HRV. All rights reserved.

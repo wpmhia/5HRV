@@ -148,7 +148,17 @@ function assessConfidence(input: MeasurementInput): {
     reasons.push("The rhythm during the recording is unknown.");
   }
 
-  if (input.recordingConfirmed) {
+  const protocolCompatible =
+    input.recordingConfirmed &&
+    (input.measurementSource === "ecg" ||
+      input.measurementSource === "ecg_chest_strap") &&
+    input.durationMinutes >= 4.5 &&
+    input.durationMinutes <= 5.5 &&
+    input.position === "supine" &&
+    input.rhythm === "sinus" &&
+    input.artefactCorrection === "completed";
+
+  if (protocolCompatible) {
     return {
       confidence: "high",
       reasons: reasons.length > 0
@@ -157,6 +167,12 @@ function assessConfidence(input: MeasurementInput): {
             "Recording conditions confirmed by the user as consistent with the five-minute supine reference protocol.",
           ],
     };
+  }
+
+  if (input.recordingConfirmed) {
+    reasons.unshift(
+      "Recording conditions have been confirmed, but one or more details differ from the reference protocol."
+    );
   }
 
   return { confidence: "moderate", reasons };

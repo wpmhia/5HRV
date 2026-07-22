@@ -12,6 +12,8 @@ type Props = {
 type FormState = {
   age: string;
   referenceSex: string;
+  measurementSource: string;
+  recordingDuration: string;
   recordingPosition: string;
   rhythm: string;
   recordingQuality: string;
@@ -27,6 +29,8 @@ type FormState = {
 const initialState: FormState = {
   age: "",
   referenceSex: "unselected",
+  measurementSource: "",
+  recordingDuration: "",
   recordingPosition: "",
   rhythm: "",
   recordingQuality: "",
@@ -261,15 +265,12 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
-    const rhythmMap: Record<string, MeasurementInput["rhythm"]> = {
-      sinus: "sinus",
-      af_paced_ectopy: "af_flutter",
+    const sourceMap: Record<string, MeasurementInput["measurementSource"]> = {
+      ecg: "ecg",
+      ecg_chest_strap: "ecg_chest_strap",
+      ppg: "ppg",
+      smartwatch: "smartwatch",
       unknown: "unknown",
-    };
-
-    const qualityMap: Record<string, MeasurementInput["artefactCorrection"]> = {
-      corrected: "completed",
-      not_corrected: "unknown",
     };
 
     const positionMap: Record<string, MeasurementInput["position"]> = {
@@ -277,16 +278,36 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       seated: "seated",
       other_or_unknown: "unknown",
     };
+
+    const rhythmMap: Record<string, MeasurementInput["rhythm"]> = {
+      sinus: "sinus",
+      af_flutter: "af_flutter",
+      paced: "paced",
+      frequent_ectopy: "frequent_ectopy",
+      unknown: "unknown",
+    };
+
+    const qualityMap: Record<string, MeasurementInput["artefactCorrection"]> = {
+      corrected: "completed",
+      not_corrected: "not_completed",
+      unknown: "unknown",
+    };
+
+    const measurementSource = form.measurementSource === "" ? "unknown" : sourceMap[form.measurementSource] || "unknown";
+    const recordingDuration = normalizeNumber(form.recordingDuration);
+    const durationMinutes = recordingDuration !== null ? recordingDuration : 5;
     const position = form.recordingPosition === "" ? "unknown" : positionMap[form.recordingPosition] || "unknown";
+    const rhythm = form.rhythm === "" ? "unknown" : rhythmMap[form.rhythm] || "unknown";
+    const artefactCorrection = form.recordingQuality === "" ? "unknown" : qualityMap[form.recordingQuality] || "unknown";
 
     return {
       age: age!,
       referenceSex: form.referenceSex as MeasurementInput["referenceSex"],
-      measurementSource: "ecg",
-      durationMinutes: 5,
+      measurementSource,
+      durationMinutes,
       position,
-      rhythm: form.rhythm === "" ? "unknown" : rhythmMap[form.rhythm] || "unknown",
-      artefactCorrection: form.recordingQuality === "" ? "unknown" : qualityMap[form.recordingQuality] || "unknown",
+      rhythm,
+      artefactCorrection,
       recordingConfirmed: confirmed,
       meanHeartRate: meanHeartRate ?? undefined,
       rmssd: rmssd ?? undefined,
@@ -360,9 +381,32 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           2. Recording conditions
         </h2>
         <p className="mt-2 text-xs text-muted-foreground">
-          Select the recording conditions. If a detail is not known, leave it unselected.
+          Select the actual recording conditions. Leave a field unselected if the detail is not known.
         </p>
         <div className="mt-4 space-y-5">
+          <RadioGroup
+            legend="Recording method"
+            name="measurementSource"
+            value={form.measurementSource}
+            onChange={(v) => set("measurementSource", v)}
+            options={[
+              { value: "ecg", label: "ECG" },
+              { value: "ecg_chest_strap", label: "ECG-based RR chest strap" },
+              { value: "ppg", label: "PPG" },
+              { value: "smartwatch", label: "Smartwatch or wearable" },
+              { value: "unknown", label: "Other or unknown" },
+            ]}
+          />
+          <div className="max-w-xs">
+            <NumberField
+              id="recordingDuration"
+              label="Analysable recording duration"
+              unit="min"
+              value={form.recordingDuration}
+              onChange={(v) => set("recordingDuration", v)}
+              helper="If left blank, 5 minutes is assumed but the result will note this."
+            />
+          </div>
           <RadioGroup
             legend="Recording position"
             name="recordingPosition"
@@ -381,7 +425,9 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             onChange={(v) => set("rhythm", v)}
             options={[
               { value: "sinus", label: "Sinus rhythm without significant ectopy" },
-              { value: "af_paced_ectopy", label: "AF, paced rhythm or frequent ectopy" },
+              { value: "af_flutter", label: "Atrial fibrillation or flutter" },
+              { value: "paced", label: "Paced rhythm" },
+              { value: "frequent_ectopy", label: "Frequent ectopic beats" },
               { value: "unknown", label: "Unknown" },
             ]}
           />
@@ -391,8 +437,9 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             value={form.recordingQuality}
             onChange={(v) => set("recordingQuality", v)}
             options={[
-              { value: "corrected", label: "Artefacts and ectopic beats corrected" },
-              { value: "not_corrected", label: "Not corrected or unknown" },
+              { value: "corrected", label: "Artefacts and ectopic beats reviewed and corrected" },
+              { value: "not_corrected", label: "Artefact correction not completed" },
+              { value: "unknown", label: "Unknown" },
             ]}
           />
         </div>
@@ -415,10 +462,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             />
             <div>
               <p className="text-sm font-medium text-foreground">
-                I confirm that this was an approximately five-minute supine recording in sinus rhythm, with artefacts and ectopic beats appropriately reviewed.
+                I confirm that the recording information entered above is accurate.
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Checking this box applies the Protocol compatible status. Without this confirmation, the result will be labelled Interpretation with methodological limitations.
+                The status Protocol compatible is shown only when confirmed conditions match the reference protocol (supine, sinus rhythm, ECG, approx. five minutes, artefacts corrected). Otherwise the result shows Interpretation with methodological limitations.
               </p>
             </div>
           </label>
