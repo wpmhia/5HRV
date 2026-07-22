@@ -10,7 +10,15 @@ type Props = {
 };
 
 export function hasHrvContent(text: string): boolean {
-  return /rmssd|sdnn|pnn50|hf\b|lf\b|lf\/hf|heart\s*rate|duration|frequency/i.test(text);
+  const markers = [
+    /\brmssd\s*[:=]?\s*\d/i,
+    /\bsdnn\s*[:=]?\s*\d/i,
+    /\bpnn50\s*[:=]?\s*\d/i,
+    /\blf\s*\/\s*hf\s*[:=]?\s*\d/i,
+    /(?<!\/)\bhf(?:\s+power)?\s*[:=]?\s*\d/i,
+    /(?<!\/)\blf(?:\s+power)?\s*[:=]?\s*\d/i,
+  ];
+  return markers.filter((p) => p.test(text)).length >= 2;
 }
 
 async function ocrWithTesseract(image: string | HTMLCanvasElement): Promise<string> {

@@ -148,23 +148,32 @@ pNN50 3.28%`;
 });
 
 describe("hasHrvContent", () => {
-  it("returns true for text containing RMSSD", () => {
-    expect(hasHrvContent("RMSSD: 23.14")).toBe(true);
+  it("returns true when two markers present (RMSSD + SDNN)", () => {
+    expect(hasHrvContent("RMSSD: 23.14 SDNN: 39.33")).toBe(true);
   });
-  it("returns true for text containing SDNN", () => {
-    expect(hasHrvContent("SDNN: 39.33")).toBe(true);
+  it("returns true when two markers present (SDNN + pNN50)", () => {
+    expect(hasHrvContent("SDNN: 39.33 pNN50: 3.28")).toBe(true);
   });
-  it("returns true for heart rate", () => {
-    expect(hasHrvContent("Heart rate: 74")).toBe(true);
+  it("returns false for a single marker alone", () => {
+    expect(hasHrvContent("RMSSD: 23.14")).toBe(false);
   });
-  it("returns true for LF/HF", () => {
-    expect(hasHrvContent("LF/HF: 2.5")).toBe(true);
+  it("returns false for a single marker (LF/HF)", () => {
+    expect(hasHrvContent("LF/HF: 2.5")).toBe(false);
   });
   it("returns false for non-HRV text", () => {
     expect(hasHrvContent("Grocery list: milk, eggs, bread.")).toBe(false);
   });
   it("returns false for empty text", () => {
     expect(hasHrvContent("")).toBe(false);
+  });
+  it("accepts HF + SDNN together", () => {
+    expect(hasHrvContent("HF: 70.55 SDNN: 39.33")).toBe(true);
+  });
+  it("accepts LF + RMSSD together", () => {
+    expect(hasHrvContent("LF: 416.47 RMSSD: 23.14")).toBe(true);
+  });
+  it("still requires a numeric value after the label", () => {
+    expect(hasHrvContent("SDNN was measured but no value given")).toBe(false);
   });
 });
 
@@ -196,13 +205,16 @@ describe("PDF OCR fallback path", () => {
   it("hasHrvContent returns false for scanned PDF text (no clear labels)", () => {
     expect(hasHrvContent("lorem ipsum dolor sit amet")).toBe(false);
   });
-  it("hasHrvContent returns true when OCR recovers key labels", () => {
-    expect(hasHrvContent("SDNN 39.33 ms")).toBe(true);
+  it("hasHrvContent returns false for a single label from OCR", () => {
+    expect(hasHrvContent("SDNN 39.33 ms")).toBe(false);
+  });
+  it("hasHrvContent returns true when OCR recovers two or more labels", () => {
+    expect(hasHrvContent("SDNN 39.33 ms RMSSD 23.14 ms")).toBe(true);
   });
 });
 
 describe("JPG/PNG OCR path", () => {
-  it("hasHrvContent detects labels that OCR would produce from a report image", () => {
+  it("hasHrvContent detects two labels that OCR would produce from a report image", () => {
     const ocrText = `Sample Length 322s
 SDNN 39.33
 rMSSD 23.14`;
