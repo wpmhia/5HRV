@@ -2,6 +2,8 @@ import type { PercentileCategory } from "@/data/hrvReferenceData";
 
 export type ReferenceSex = "female" | "male" | "none";
 
+export type LfhfSource = "calculated" | "manual" | "imported";
+
 export type MeasurementInput = {
   age: number;
   referenceSex: ReferenceSex;
@@ -11,6 +13,7 @@ export type MeasurementInput = {
   hfPower?: number;
   lfPower?: number;
   lfhfRatio?: number;
+  lfhfSource?: LfhfSource;
 };
 
 export type MetricResult = {
@@ -23,6 +26,7 @@ export type MetricResult = {
   referencePercentiles?: number[];
   interpretation: string;
   limitation?: string;
+  lfhfSource?: LfhfSource;
 };
 
 export type AutonomicScore = {
@@ -38,7 +42,6 @@ export type HrvInterpretation = {
   clinicalNote: string;
   referenceAvailable: boolean;
   referenceNote?: string;
-  lfhfWarning?: string;
   safetyMessage: string;
   autonomicScore?: AutonomicScore;
 };

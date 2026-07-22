@@ -11,6 +11,7 @@ import type {
   MetricResult,
   PercentileCategory,
   AutonomicScore,
+  LfhfSource,
 } from "@/lib/types";
 
 export function normalizeNumber(value: string): number | null {
@@ -374,35 +375,35 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     });
   }
 
-  let lfhfWarning: string | undefined;
-  let ratio = input.lfhfRatio;
-  let ratioCalculated = false;
+  let ratio: number | undefined;
+  let lfhfSource: LfhfSource | undefined;
   if (
     input.lfPower !== undefined &&
     input.hfPower !== undefined &&
     input.hfPower > 0
   ) {
-    const calculated = input.lfPower / input.hfPower;
-    if (ratio === undefined) {
-      ratio = calculated;
-      ratioCalculated = true;
-    } else if (hasLfhfDiscrepancy(ratio, input.lfPower, input.hfPower)) {
-      lfhfWarning =
-        "The entered LF/HF ratio differs by more than 10% from LF \u00F7 HF. Verify the entered LF, HF and LF/HF values.";
-    }
+    ratio = input.lfPower / input.hfPower;
+    lfhfSource = "calculated";
+  } else if (input.lfhfRatio !== undefined) {
+    ratio = input.lfhfRatio;
+    lfhfSource = input.lfhfSource ?? "imported";
   }
 
   if (ratio !== undefined) {
+    const sourceText =
+      lfhfSource === "calculated"
+        ? " Calculated from LF and HF."
+        : lfhfSource === "manual"
+          ? " Entered ratio."
+          : " Reported ratio from the uploaded analysis.";
     metrics.push({
       key: "lfhf",
       name: "LF/HF ratio",
       value: Math.round(ratio * 100) / 100,
       unit: "",
-      interpretation:
-        describeLfhf(ratio) +
-        "." +
-        (ratioCalculated ? " Calculated from the entered LF and HF values." : ""),
-      limitation: (lfhfWarning ? `${lfhfWarning} ${LFHF_CAUTION}` : LFHF_CAUTION),
+      lfhfSource,
+      interpretation: describeLfhf(ratio) + "." + sourceText,
+      limitation: LFHF_CAUTION,
     });
   }
 
@@ -420,7 +421,6 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     clinicalNote: CLINICAL_NOTE,
     referenceAvailable,
     referenceNote,
-    lfhfWarning,
     safetyMessage: "",
     autonomicScore,
   };

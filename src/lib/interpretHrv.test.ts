@@ -32,7 +32,6 @@ function allText(result: HrvInterpretation): string {
     ...result.limitations,
   ];
   if (result.referenceNote) parts.push(result.referenceNote);
-  if (result.lfhfWarning) parts.push(result.lfhfWarning);
   for (const m of result.metrics) {
     parts.push(m.name, m.categoryLabel ?? "", m.interpretation, m.limitation ?? "");
   }
@@ -119,14 +118,61 @@ describe("LF/HF calculation", () => {
     expect(lfhf).toBeDefined();
     expect(lfhf!.value).toBe(2);
   });
-  it("warns when entered ratio disagrees with LF/HF", () => {
+  it("reported LF/HF includes source in metric and is used for Autonomic Score", () => {
+    const result = interpretHrv({
+      ...baseInput, rmssd: 14.53, sdnn: 34.19, pnn50: 0.21,
+      lfhfRatio: 9.49, lfhfSource: "reported",
+    });
+    const lfhf = result.metrics.find((m) => m.key === "lfhf");
+    expect(lfhf).toBeDefined();
+    expect(lfhf!.lfhfSource).toBe("reported");
+    expect(lfhf!.interpretation).toContain("Reported ratio");
+    expect(result.autonomicScore).toBeDefined();
+    expect(result.autonomicScore!.value).toBeGreaterThan(0);
+  });
+  it("reported-only LF/HF produces clinical paragraph with frequency domain LF/HF only", () => {
+    const result = interpretHrv({
+      ...baseInput, rmssd: 14.53, sdnn: 34.19, pnn50: 0.21,
+      lfhfRatio: 9.49, lfhfSource: "reported",
+    });
+    const paragraph = buildClinicalParagraph(result.metrics, result.autonomicScore);
+    expect(paragraph).toContain("LF/HF 9.49");
+    expect(paragraph).not.toContain(" HF ");
+    expect(paragraph).not.toContain(" LF ");
+  });
+  it("calculated LF/HF takes priority over reported ratio", () => {
+    const result = interpretHrv({
+      ...baseInput, lfPower: 300, hfPower: 150, lfhfRatio: 9.49,
+    });
+    const lfhf = result.metrics.find((m) => m.key === "lfhf");
+    expect(lfhf).toBeDefined();
+    expect(lfhf!.value).toBe(2);
+    expect(lfhf!.lfhfSource).toBe("calculated");
+    expect(lfhf!.interpretation).toContain("Calculated from the entered LF and HF");
+  });
+  it("uses calculated LF/HF when LF and HF are present, ignoring reported ratio", () => {
     const result = interpretHrv({
       ...baseInput,
       lfPower: 300,
       hfPower: 150,
       lfhfRatio: 5,
     });
-    expect(result.lfhfWarning).toBeDefined();
+    const lfhf = result.metrics.find((m) => m.key === "lfhf");
+    expect(lfhf).toBeDefined();
+    expect(lfhf!.value).toBe(2);
+    expect(lfhf!.lfhfSource).toBe("calculated");
+  });
+  it("uses reported LF/HF when LF and HF are absent", () => {
+    const result = interpretHrv({ ...baseInput, lfhfRatio: 3.5 });
+    const lfhf = result.metrics.find((m) => m.key === "lfhf");
+    expect(lfhf).toBeDefined();
+    expect(lfhf!.value).toBe(3.5);
+    expect(lfhf!.lfhfSource).toBe("reported");
+  });
+  it("omits LF/HF when neither LF/HF nor ratio is available", () => {
+    const result = interpretHrv(baseInput);
+    const lfhf = result.metrics.find((m) => m.key === "lfhf");
+    expect(lfhf).toBeUndefined();
   });
   it("describes ratio categories", () => {
     expect(describeLfhf(0.3)).toBe("Relative HF predominance");
@@ -134,7 +180,7 @@ describe("LF/HF calculation", () => {
     expect(describeLfhf(2.6)).toBe("Relative LF predominance");
     expect(describeLfhf(5)).toBe("Marked relative LF predominance");
   });
-  it("always attaches the LF/HF caution", () => {
+  it("always attaches the LF/HF caution to limitation", () => {
     const result = interpretHrv({ ...baseInput, lfhfRatio: 2.6 });
     const lfhf = result.metrics.find((m) => m.key === "lfhf");
     expect(lfhf!.limitation).toContain(

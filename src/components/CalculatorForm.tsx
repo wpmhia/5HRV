@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { MeasurementInput } from "@/lib/types";
+import { useCallback, useState } from "react";
+import type { MeasurementInput, LfhfSource } from "@/lib/types";
 import type { ParsedReportValues } from "@/lib/parseHrvReport";
 import { normalizeNumber } from "@/lib/interpretHrv";
 import { ReportUpload } from "@/components/ReportUpload";
@@ -17,8 +17,11 @@ type FormState = {
   rmssd: string;
   sdnn: string;
   pnn50: string;
+  freqMode: "powers" | "ratio";
   hfPower: string;
   lfPower: string;
+  lfhfRatio: string;
+  lfhfSource: string;
 };
 
 const initialState: FormState = {
@@ -27,8 +30,11 @@ const initialState: FormState = {
   rmssd: "",
   sdnn: "",
   pnn50: "",
+  freqMode: "powers",
   hfPower: "",
   lfPower: "",
+  lfhfRatio: "",
+  lfhfSource: "",
 };
 
 const inputClass =
@@ -153,15 +159,29 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
-    return {
+    const result: MeasurementInput = {
       age: age!,
       referenceSex: form.referenceSex as MeasurementInput["referenceSex"],
       rmssd: rmssd ?? undefined,
       sdnn: sdnn ?? undefined,
       pnn50: pnn50 ?? undefined,
-      hfPower: hfPower ?? undefined,
-      lfPower: lfPower ?? undefined,
     };
+
+    if (form.freqMode === "powers") {
+      if (lfPower !== null && hfPower !== null && hfPower > 0) {
+        result.hfPower = hfPower;
+        result.lfPower = lfPower;
+        result.lfhfSource = "calculated";
+      }
+    } else {
+      const ratio = normalizeNumber(form.lfhfRatio);
+      if (ratio !== null && !isNaN(ratio)) {
+        result.lfhfRatio = ratio;
+        result.lfhfSource = form.lfhfSource === "imported" ? "imported" : "manual";
+      }
+    }
+
+    return result;
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -177,6 +197,20 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     onClear();
   };
 
+  const switchFreqMode = (mode: "powers" | "ratio") => {
+    setForm((prev) => {
+      const next = { ...prev, freqMode: mode, lfhfSource: "" };
+      if (mode === "powers") {
+        next.lfhfRatio = "";
+      } else {
+        next.hfPower = "";
+        next.lfPower = "";
+      }
+      return next;
+    });
+    setErrors({});
+  };
+
   const handleClearImport = () => {
     setForm((prev) => ({
       ...prev,
@@ -185,6 +219,9 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       pnn50: "",
       hfPower: "",
       lfPower: "",
+      lfhfRatio: "",
+      lfhfSource: "",
+      freqMode: "powers",
     }));
     setErrors({});
     setImportedFromReport(false);
@@ -195,8 +232,20 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     if (values.rmssd !== undefined) updates.rmssd = String(values.rmssd);
     if (values.sdnn !== undefined) updates.sdnn = String(values.sdnn);
     if (values.pnn50 !== undefined) updates.pnn50 = String(values.pnn50);
-    if (values.hfPower !== undefined) updates.hfPower = String(values.hfPower);
-    if (values.lfPower !== undefined) updates.lfPower = String(values.lfPower);
+    const hasLfAndHf = values.lfPower !== undefined && values.hfPower !== undefined && values.hfPower > 0;
+    if (hasLfAndHf) {
+      updates.hfPower = String(values.hfPower);
+      updates.lfPower = String(values.lfPower);
+      updates.freqMode = "powers";
+      updates.lfhfRatio = "";
+      updates.lfhfSource = "";
+    } else if (values.lfhfRatio !== undefined) {
+      updates.freqMode = "ratio";
+      updates.lfhfRatio = String(values.lfhfRatio);
+      updates.lfhfSource = "imported";
+      updates.hfPower = "";
+      updates.lfPower = "";
+    }
     setForm((prev) => ({ ...prev, ...updates }));
     setErrors({});
     setImportedFromReport(true);
@@ -293,37 +342,84 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
               error={errors.pnn50}
             />
           </div>
-          <NumberField
-            id="hfPower"
-            label="HF power"
-            unit="ms²"
-            value={form.hfPower}
-            onChange={(v) => set("hfPower", v)}
-            error={errors.hfPower}
-            helper="Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values."
-          />
-          <NumberField
-            id="lfPower"
-            label="LF power"
-            unit="ms²"
-            value={form.lfPower}
-            onChange={(v) => set("lfPower", v)}
-            error={errors.lfPower}
-            helper="Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values."
-          />
-        </div>
-        {(() => {
-          const lf = normalizeNumber(form.lfPower);
-          const hf = normalizeNumber(form.hfPower);
-          if (lf !== null && hf !== null && hf > 0) {
-            return (
-              <p className="mt-3 text-xs text-muted-foreground">
-                Calculated LF/HF: <span className="font-mono font-medium text-foreground">{(lf / hf).toFixed(2)}</span>
-              </p>
-            );
-          }
-          return null;
-        })()}
+          <div className="sm:col-span-2">
+            <fieldset>
+              <legend className="text-sm font-medium text-foreground mb-2">Frequency-domain data</legend>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={form.freqMode === "powers"}
+                  onClick={() => switchFreqMode("powers")}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    form.freqMode === "powers"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-foreground hover:bg-muted"
+                  }`}
+                >
+                  LF and HF power
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={form.freqMode === "ratio"}
+                  onClick={() => switchFreqMode("ratio")}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    form.freqMode === "ratio"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-foreground hover:bg-muted"
+                  }`}
+                >
+                  LF/HF ratio only
+                </button>
+              </div>
+            </fieldset>
+          </div>
+          {form.freqMode === "powers" ? (
+            <>
+              <NumberField
+                id="hfPower"
+                label="HF power"
+                unit="ms²"
+                value={form.hfPower}
+                onChange={(v) => set("hfPower", v)}
+                error={errors.hfPower}
+                helper="Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values."
+              />
+              <NumberField
+                id="lfPower"
+                label="LF power"
+                unit="ms²"
+                value={form.lfPower}
+                onChange={(v) => set("lfPower", v)}
+                error={errors.lfPower}
+                helper="Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values."
+              />
+              {(() => {
+                const lf = normalizeNumber(form.lfPower);
+                const hf = normalizeNumber(form.hfPower);
+                if (lf !== null && hf !== null && hf > 0) {
+                  return (
+                    <p className="-mt-2 sm:col-span-2 text-xs text-muted-foreground">
+                      Calculated LF/HF: <span className="font-mono font-medium text-foreground">{(lf / hf).toFixed(2)}</span>
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+            </>
+          ) : (
+            <div className="sm:col-span-2">
+              <NumberField
+                id="lfhfRatio"
+                label="LF/HF ratio"
+                value={form.lfhfRatio}
+                onChange={(v) => set("lfhfRatio", v)}
+                error={errors.lfhfRatio}
+                helper="Use this when the source report provides only the LF/HF ratio and not the separate LF and HF powers."
+              />
+            </div>
+          )}
       </section>
 
       <div className="flex flex-col gap-3 sm:flex-row">

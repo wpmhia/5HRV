@@ -214,7 +214,8 @@ function buildPlainText(
       }
       lines.push("");
     } else {
-      lines.push(`${m.key === "lfhf" ? "LF/HF" : m.name}: ${m.value}${m.unit ? ` ${m.unit}` : ""}`);
+      const src = m.lfhfSource === "calculated" ? " (calculated)" : m.lfhfSource === "manual" ? " (entered)" : m.lfhfSource === "imported" ? " (reported)" : "";
+      lines.push(`${m.key === "lfhf" ? "LF/HF" : m.name}: ${m.value}${m.unit ? ` ${m.unit}` : ""}${src}`);
       lines.push(m.interpretation);
       if (m.limitation) lines.push(m.limitation);
       lines.push("");
