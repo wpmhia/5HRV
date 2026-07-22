@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { MeasurementInput } from "@/lib/types";
 import type { ParsedReportValues } from "@/lib/parseHrvReport";
-import { hasLfhfDiscrepancy, normalizeNumber } from "@/lib/interpretHrv";
+import { normalizeNumber } from "@/lib/interpretHrv";
 import { ReportUpload } from "@/components/ReportUpload";
 
 type Props = {
@@ -19,7 +19,6 @@ type FormState = {
   pnn50: string;
   hfPower: string;
   lfPower: string;
-  lfhfRatio: string;
 };
 
 const initialState: FormState = {
@@ -30,7 +29,6 @@ const initialState: FormState = {
   pnn50: "",
   hfPower: "",
   lfPower: "",
-  lfhfRatio: "",
 };
 
 const inputClass =
@@ -102,17 +100,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const lfhfLiveWarning = useMemo(() => {
-    const lf = normalizeNumber(form.lfPower);
-    const hf = normalizeNumber(form.hfPower);
-    const ratio = normalizeNumber(form.lfhfRatio);
-    if (lf === null || hf === null || ratio === null || hf <= 0) return null;
-    if (hasLfhfDiscrepancy(ratio, lf, hf)) {
-      return `Entered LF/HF differs by more than 10% from LF \u00F7 HF (${(lf / hf).toFixed(2)}).`;
-    }
-    return null;
-  }, [form.lfPower, form.hfPower, form.lfhfRatio]);
-
   const validate = (): MeasurementInput | null => {
     const nextErrors: Record<string, string> = {};
 
@@ -163,13 +150,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     } else if (lfPower !== null && lfPower < 0) {
       nextErrors.lfPower = "LF power cannot be negative.";
     }
-    const lfhfRatio = normalizeNumber(form.lfhfRatio);
-    if (form.lfhfRatio.trim() !== "" && lfhfRatio === null) {
-      nextErrors.lfhfRatio = "Enter a valid number.";
-    } else if (lfhfRatio !== null && lfhfRatio < 0) {
-      nextErrors.lfhfRatio = "LF/HF cannot be negative.";
-    }
-
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
@@ -181,7 +161,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       pnn50: pnn50 ?? undefined,
       hfPower: hfPower ?? undefined,
       lfPower: lfPower ?? undefined,
-      lfhfRatio: lfhfRatio ?? undefined,
     };
   };
 
@@ -206,7 +185,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       pnn50: "",
       hfPower: "",
       lfPower: "",
-      lfhfRatio: "",
     }));
     setErrors({});
     setImportedFromReport(false);
@@ -219,7 +197,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     if (values.pnn50 !== undefined) updates.pnn50 = String(values.pnn50);
     if (values.hfPower !== undefined) updates.hfPower = String(values.hfPower);
     if (values.lfPower !== undefined) updates.lfPower = String(values.lfPower);
-    if (values.lfhfRatio !== undefined) updates.lfhfRatio = String(values.lfhfRatio);
     setForm((prev) => ({ ...prev, ...updates }));
     setErrors({});
     setImportedFromReport(true);
@@ -332,20 +309,19 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             error={errors.lfPower}
             helper="Enter absolute spectral power in ms². Do not enter normalized units, percentages or log-transformed values."
           />
-          <NumberField
-            id="lfhfRatio"
-            label="LF/HF ratio"
-            value={form.lfhfRatio}
-            onChange={(v) => set("lfhfRatio", v)}
-            error={errors.lfhfRatio}
-            helper="Calculated automatically when LF and HF are entered."
-          />
         </div>
-        {lfhfLiveWarning && (
-          <p role="alert" className="mt-3 rounded-md border border-destructive/40 bg-muted px-3 py-2 text-xs text-foreground">
-            {lfhfLiveWarning}
-          </p>
-        )}
+        {(() => {
+          const lf = normalizeNumber(form.lfPower);
+          const hf = normalizeNumber(form.hfPower);
+          if (lf !== null && hf !== null && hf > 0) {
+            return (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Calculated LF/HF: <span className="font-mono font-medium text-foreground">{(lf / hf).toFixed(2)}</span>
+              </p>
+            );
+          }
+          return null;
+        })()}
       </section>
 
       <div className="flex flex-col gap-3 sm:flex-row">
