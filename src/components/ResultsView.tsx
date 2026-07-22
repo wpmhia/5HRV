@@ -39,6 +39,10 @@ function buildPlainText(
     lines.push(`Rhythm: ${input.rhythm.replace(/_/g, " ")}`);
   if (input.artefactCorrection !== "unknown")
     lines.push(`Artefact correction: ${input.artefactCorrection.replace(/_/g, " ")}`);
+  if (input.quietRest !== undefined && input.quietRest !== "unknown")
+    lines.push(`Quiet rest: ${input.quietRest.replace(/_/g, " ")}`);
+  if (input.breathing !== undefined && input.breathing !== "unknown")
+    lines.push(`Breathing: ${input.breathing.replace(/_/g, " ")}`);
   if (input.meanHeartRate !== undefined)
     lines.push(`Mean heart rate: ${input.meanHeartRate} bpm`);
   if (input.rmssd !== undefined) lines.push(`RMSSD: ${input.rmssd} ms`);

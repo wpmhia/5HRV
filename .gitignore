@@ -113,3 +113,6 @@ $RECYCLE.BIN/
 
 # Ideavo specific
 .ideavo/project
+
+# Playwright MCP artefacts
+.playwright-mcp/

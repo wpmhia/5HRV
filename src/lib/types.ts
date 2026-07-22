@@ -20,6 +20,10 @@ export type Rhythm =
 
 export type ArtefactCorrection = "completed" | "not_completed" | "unknown";
 
+export type QuietRest = "completed" | "not_completed" | "unknown";
+
+export type Breathing = "quiet_spontaneous" | "paced" | "irregular_talking" | "unknown";
+
 export type Confidence = "high" | "moderate" | "low" | "not-valid";
 
 export type MeasurementInput = {
@@ -31,6 +35,8 @@ export type MeasurementInput = {
   rhythm: Rhythm;
   artefactCorrection: ArtefactCorrection;
   recordingConfirmed: boolean;
+  quietRest?: QuietRest;
+  breathing?: Breathing;
   meanHeartRate?: number;
   rmssd?: number;
   sdnn?: number;

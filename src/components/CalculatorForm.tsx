@@ -17,6 +17,8 @@ type FormState = {
   recordingPosition: string;
   rhythm: string;
   recordingQuality: string;
+  quietRest: string;
+  breathing: string;
   meanHeartRate: string;
   rmssd: string;
   sdnn: string;
@@ -34,6 +36,8 @@ const initialState: FormState = {
   recordingPosition: "",
   rhythm: "",
   recordingQuality: "",
+  quietRest: "",
+  breathing: "",
   meanHeartRate: "",
   rmssd: "",
   sdnn: "",
@@ -262,6 +266,13 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       nextErrors.lfhfRatio = "LF/HF cannot be negative.";
     }
 
+    const recordingDuration = normalizeNumber(form.recordingDuration);
+    if (recordingDuration === null) {
+      nextErrors.recordingDuration = "Analysable recording duration is required.";
+    } else if (recordingDuration <= 0) {
+      nextErrors.recordingDuration = "Recording duration must be greater than zero.";
+    }
+
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
@@ -294,11 +305,22 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     };
 
     const measurementSource = form.measurementSource === "" ? "unknown" : sourceMap[form.measurementSource] || "unknown";
-    const recordingDuration = normalizeNumber(form.recordingDuration);
-    const durationMinutes = recordingDuration !== null ? recordingDuration : 5;
+    const durationMinutes = recordingDuration ?? 0;
     const position = form.recordingPosition === "" ? "unknown" : positionMap[form.recordingPosition] || "unknown";
     const rhythm = form.rhythm === "" ? "unknown" : rhythmMap[form.rhythm] || "unknown";
     const artefactCorrection = form.recordingQuality === "" ? "unknown" : qualityMap[form.recordingQuality] || "unknown";
+
+    const quietRestMap: Record<string, MeasurementInput["quietRest"]> = {
+      completed: "completed",
+      not_completed: "not_completed",
+      unknown: "unknown",
+    };
+    const breathingMap: Record<string, MeasurementInput["breathing"]> = {
+      quiet_spontaneous: "quiet_spontaneous",
+      paced: "paced",
+      irregular_talking: "irregular_talking",
+      unknown: "unknown",
+    };
 
     return {
       age: age!,
@@ -308,6 +330,8 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       position,
       rhythm,
       artefactCorrection,
+      quietRest: form.quietRest === "" ? "unknown" : quietRestMap[form.quietRest] || "unknown",
+      breathing: form.breathing === "" ? "unknown" : breathingMap[form.breathing] || "unknown",
       recordingConfirmed: confirmed,
       meanHeartRate: meanHeartRate ?? undefined,
       rmssd: rmssd ?? undefined,
@@ -402,9 +426,11 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
               id="recordingDuration"
               label="Analysable recording duration"
               unit="min"
+              required
               value={form.recordingDuration}
               onChange={(v) => set("recordingDuration", v)}
-              helper="If left blank, 5 minutes is assumed but the result will note this."
+              error={errors.recordingDuration}
+              helper="Decimal points and decimal commas are accepted. The reference protocol uses approximately five minutes."
             />
           </div>
           <RadioGroup
@@ -442,6 +468,29 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
               { value: "unknown", label: "Unknown" },
             ]}
           />
+          <RadioGroup
+            legend="Quiet rest before recording"
+            name="quietRest"
+            value={form.quietRest}
+            onChange={(v) => set("quietRest", v)}
+            options={[
+              { value: "completed", label: "Completed" },
+              { value: "not_completed", label: "Not completed" },
+              { value: "unknown", label: "Unknown" },
+            ]}
+          />
+          <RadioGroup
+            legend="Breathing during recording"
+            name="breathing"
+            value={form.breathing}
+            onChange={(v) => set("breathing", v)}
+            options={[
+              { value: "quiet_spontaneous", label: "Quiet spontaneous breathing" },
+              { value: "paced", label: "Paced breathing" },
+              { value: "irregular_talking", label: "Irregular breathing or talking" },
+              { value: "unknown", label: "Unknown" },
+            ]}
+          />
         </div>
       </section>
 
@@ -465,7 +514,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
                 I confirm that the recording information entered above is accurate.
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                The status Protocol compatible is shown only when confirmed conditions match the reference protocol (supine, sinus rhythm, ECG, approx. five minutes, artefacts corrected). Otherwise the result shows Interpretation with methodological limitations.
+                The status Protocol compatible is shown only when confirmed conditions match the reference protocol (supine, sinus rhythm, ECG, approx. five minutes, artefacts corrected, quiet rest completed, quiet spontaneous breathing). Otherwise the result shows Interpretation with methodological limitations.
               </p>
             </div>
           </label>

@@ -23,10 +23,9 @@ export default function ParametersPage() {
             RMSSD (Root Mean Square of Successive Differences)
           </h3>
           <p className="mb-3 text-foreground">
-            RMSSD quantifies rapid beat-to-beat variation between successive
-            normal intervals. It is strongly influenced by cardiac vagal
-            modulation and is the preferred primary parameter for short-term
-            five-minute HRV assessment.
+            Short-term beat-to-beat variability strongly influenced by cardiac
+            vagal modulation. RMSSD is the preferred primary parameter for
+            short-term five-minute HRV assessment.
           </p>
           <p className="rounded-md bg-accent p-3 text-sm text-accent-foreground">
             RMSSD is influenced by vagal modulation but is not a direct
@@ -55,8 +54,7 @@ export default function ParametersPage() {
             pNN50
           </h3>
           <p className="text-foreground">
-            The percentage of successive NN intervals that differ by more than
-            50 milliseconds. It is another beat-to-beat vagal-related measure,
+            A vagal-related measure of successive NN-interval variation,
             strongly influenced by age and recording conditions.
           </p>
         </div>
@@ -72,9 +70,9 @@ export default function ParametersPage() {
             HF power (0.15–0.40 Hz)
           </h3>
           <p className="text-foreground">
-            HF power represents respiratory-frequency heart-rate variability. It
-            is strongly influenced by cardiac vagal modulation, respiratory
-            rate, respiratory depth and spectral methodology.
+            Respiratory-frequency variability influenced by cardiac vagal
+            modulation and breathing. Values depend strongly on respiratory
+            rate, depth and spectral methodology.
           </p>
         </div>
 

@@ -148,6 +148,20 @@ function assessConfidence(input: MeasurementInput): {
     reasons.push("The rhythm during the recording is unknown.");
   }
 
+  if (input.quietRest === "not_completed") {
+    reasons.push("Quiet rest before the recording was not completed.");
+  } else if (input.quietRest === "unknown" || input.quietRest === undefined) {
+    reasons.push("Whether quiet rest was completed before the recording is unknown.");
+  }
+
+  if (input.breathing === "paced") {
+    reasons.push("Paced breathing during the recording differs from the spontaneous-breathing reference condition.");
+  } else if (input.breathing === "irregular_talking") {
+    reasons.push("Irregular breathing or talking during the recording differs materially from the quiet-spontaneous-breathing reference condition.");
+  } else if (input.breathing === "unknown" || input.breathing === undefined) {
+    reasons.push("The breathing pattern during the recording is unknown.");
+  }
+
   const protocolCompatible =
     input.recordingConfirmed &&
     (input.measurementSource === "ecg" ||
@@ -156,7 +170,9 @@ function assessConfidence(input: MeasurementInput): {
     input.durationMinutes <= 5.5 &&
     input.position === "supine" &&
     input.rhythm === "sinus" &&
-    input.artefactCorrection === "completed";
+    input.artefactCorrection === "completed" &&
+    input.quietRest === "completed" &&
+    input.breathing === "quiet_spontaneous";
 
   if (protocolCompatible) {
     return {
@@ -322,7 +338,7 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
         ? [...rmssdPercentiles]
         : undefined,
       interpretation:
-        "RMSSD reflects short-term beat-to-beat variability and is strongly influenced by cardiac vagal modulation." +
+        "Short-term beat-to-beat variability strongly influenced by cardiac vagal modulation." +
         (rmssdCategory ? " " + percentileExplanations[rmssdCategory] : ""),
       limitation:
         "RMSSD does not directly measure vagal nerve activity; it is a statistical marker influenced by it.",
@@ -355,11 +371,16 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
       value: input.pnn50,
       unit: "%",
       interpretation:
-        "pNN50 is the percentage of successive normal intervals differing by more than 50 ms and is related to short-term vagal modulation.",
+        "A vagal-related measure of successive NN-interval variation.",
       limitation:
         "No validated age- and sex-specific percentile dataset is implemented for pNN50, so no reference category is assigned.",
     });
   }
+
+  const breathingLimitation =
+    input.breathing !== undefined && input.breathing !== "quiet_spontaneous"
+      ? " Breathing pattern during this recording introduces methodological limitations for frequency-domain interpretation."
+      : "";
 
   if (input.hfPower !== undefined) {
     metrics.push({
@@ -368,9 +389,11 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
       value: input.hfPower,
       unit: "ms\u00B2",
       interpretation:
-        "HF power reflects respiratory-frequency variability and is influenced by vagal modulation, breathing pattern and the spectral-analysis method.",
+        "Respiratory-frequency variability influenced by cardiac vagal modulation and breathing." +
+        (breathingLimitation ? "" : ""),
       limitation:
-        "No universal reference range is applied to HF power; values depend strongly on breathing and analysis settings.",
+        "No universal reference range is applied to HF power; values depend strongly on breathing and analysis settings." +
+        breathingLimitation,
     });
   }
 
@@ -383,7 +406,8 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
       interpretation:
         "LF power reflects mixed autonomic and baroreflex-related influences.",
       limitation:
-        "LF power does not directly measure sympathetic activity and must not be interpreted as a pure sympathetic marker.",
+        "LF power does not directly measure sympathetic activity and must not be interpreted as a pure sympathetic marker." +
+        breathingLimitation,
     });
   }
 
@@ -415,7 +439,7 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
         describeLfhf(ratio) +
         "." +
         (ratioCalculated ? " Calculated from the entered LF and HF values." : ""),
-      limitation: lfhfWarning ? `${lfhfWarning} ${LFHF_CAUTION}` : LFHF_CAUTION,
+      limitation: (lfhfWarning ? `${lfhfWarning} ${LFHF_CAUTION}` : LFHF_CAUTION) + breathingLimitation,
     });
   }
 

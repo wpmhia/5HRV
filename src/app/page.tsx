@@ -207,7 +207,7 @@ export default function Home() {
               RMSSD
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Root mean square of successive differences &mdash; reflects parasympathetic activity.
+              Short-term beat-to-beat variability strongly influenced by cardiac vagal modulation.
             </p>
           </Card>
           <Card>
@@ -219,7 +219,7 @@ export default function Home() {
           <Card>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">pNN50</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Proportion of NN intervals differing by more than 50 ms &mdash; vagal tone index.
+              A vagal-related measure of successive NN-interval variation.
             </p>
           </Card>
           <Card>
@@ -227,7 +227,7 @@ export default function Home() {
               HF power
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              High-frequency power (0.15&ndash;0.40 Hz) &mdash; primarily reflects vagal activity.
+              Respiratory-frequency variability influenced by cardiac vagal modulation and breathing.
             </p>
           </Card>
           <Card>
