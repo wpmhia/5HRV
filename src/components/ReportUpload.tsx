@@ -9,42 +9,86 @@ type Props = {
   onPrefill: (values: ParsedReportValues) => void;
 };
 
+export function hasHrvContent(text: string): boolean {
+  return /rmssd|sdnn|pnn50|hf\b|lf\b|lf\/hf|heart\s*rate|duration|frequency/i.test(text);
+}
+
+async function ocrWithTesseract(image: string | HTMLCanvasElement): Promise<string> {
+  const { createWorker } = await import("tesseract.js");
+  const worker = await createWorker("eng");
+  try {
+    const { data } = await worker.recognize(image);
+    return data.text;
+  } finally {
+    await worker.terminate();
+  }
+}
+
+async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version}/pdf.worker.min.js`;
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const pages: string[] = [];
+  for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const text = content.items.map((item: any) => item.str).join(" ");
+    pages.push(text);
+  }
+  return pages.join("\n");
+}
+
+async function renderFirstPageToCanvas(buffer: ArrayBuffer): Promise<HTMLCanvasElement> {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version}/pdf.worker.min.js`;
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const page = await pdf.getPage(1);
+  const viewport = page.getViewport({ scale: 2.0 });
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({ canvas, viewport }).promise;
+  return canvas;
+}
+
+async function extractTextFromPdf(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const text = await extractPdfText(buffer);
+  if (text.trim() && hasHrvContent(text)) return text;
+  const canvas = await renderFirstPageToCanvas(buffer);
+  return await ocrWithTesseract(canvas);
+}
+
+async function extractTextFromImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const text = await ocrWithTesseract(reader.result as string);
+        resolve(text);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 async function extractTextFromFile(file: File): Promise<string> {
   const ext = file.name.split(".").pop()?.toLowerCase();
 
   if (ext === "pdf") {
-    const buffer = await file.arrayBuffer();
-    const pdfjsLib = await import("pdfjs-dist");
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version}/pdf.worker.min.js`;
-    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-    const pages: string[] = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const text = content.items.map((item: any) => item.str).join(" ");
-      pages.push(text);
-    }
-    return pages.join("\n");
+    return await extractTextFromPdf(file);
   }
 
   if (ext === "jpg" || ext === "jpeg" || ext === "png") {
-    const Tesseract = await import("tesseract.js");
-    const dataUrl = await fileToDataUrl(file);
-    const { data } = await Tesseract.recognize(dataUrl, "eng");
-    return data.text;
+    return await extractTextFromImage(file);
   }
 
   throw new Error("Unsupported file type. Please upload a PDF, JPG, JPEG or PNG file.");
-}
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }
 
 export function ReportUpload({ onPrefill }: Props) {
