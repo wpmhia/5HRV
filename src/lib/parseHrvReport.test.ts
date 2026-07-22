@@ -98,6 +98,13 @@ pNN50 3.28%`;
     const result = parseHrvReport("Low Frequency: 350.2");
     expect(result.lfPower).toBeCloseTo(350.2, 1);
   });
+
+  it("does not misread LF/HF ratio as HF power", () => {
+    const result = parseHrvReport("LF: 416.47\nLF/HF: 9.49");
+    expect(result.lfPower).toBeCloseTo(416.47, 1);
+    expect(result.lfhfRatio).toBeCloseTo(9.49, 1);
+    expect(result.hfPower).toBeUndefined();
+  });
 });
 
 describe("hasHrvContent", () => {

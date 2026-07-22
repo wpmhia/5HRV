@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { MeasurementInput, LfhfSource } from "@/lib/types";
 import type { ParsedReportValues } from "@/lib/parseHrvReport";
 import { normalizeNumber } from "@/lib/interpretHrv";
@@ -101,9 +101,18 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [importedFromReport, setImportedFromReport] = useState(false);
+  const [extracting, setExtracting] = useState(false);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => {
+      if (prev[key as string]) {
+        const next = { ...prev };
+        delete next[key as string];
+        return next;
+      }
+      return prev;
+    });
   };
 
   const validate = (): MeasurementInput | null => {
@@ -117,24 +126,26 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     }
 
     if (form.referenceSex === "unselected") {
-      nextErrors.referenceSex = "Select a gender.";
+      nextErrors.referenceSex = "Select a reference sex.";
     }
 
     const rmssd = normalizeNumber(form.rmssd);
     const sdnn = normalizeNumber(form.sdnn);
+    const rmssdError = form.rmssd.trim() !== "" && rmssd === null
+      ? "Enter a valid number."
+      : rmssd !== null && rmssd <= 0
+        ? "RMSSD must be greater than zero."
+        : undefined;
+    const sdnnError = form.sdnn.trim() !== "" && sdnn === null
+      ? "Enter a valid number."
+      : sdnn !== null && sdnn <= 0
+        ? "SDNN must be greater than zero."
+        : undefined;
     if (rmssd === null && sdnn === null) {
       nextErrors.rmssd = "Enter at least RMSSD or SDNN.";
-      nextErrors.sdnn = "Enter at least RMSSD or SDNN.";
-    }
-    if (form.rmssd.trim() !== "" && rmssd === null) {
-      nextErrors.rmssd = "Enter a valid number.";
-    } else if (rmssd !== null && rmssd <= 0) {
-      nextErrors.rmssd = "RMSSD must be greater than zero.";
-    }
-    if (form.sdnn.trim() !== "" && sdnn === null) {
-      nextErrors.sdnn = "Enter a valid number.";
-    } else if (sdnn !== null && sdnn <= 0) {
-      nextErrors.sdnn = "SDNN must be greater than zero.";
+    } else {
+      if (rmssdError) nextErrors.rmssd = rmssdError;
+      if (sdnnError) nextErrors.sdnn = sdnnError;
     }
 
     const pnn50 = normalizeNumber(form.pnn50);
@@ -145,17 +156,45 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     }
 
     const hfPower = normalizeNumber(form.hfPower);
-    if (form.hfPower.trim() !== "" && hfPower === null) {
-      nextErrors.hfPower = "Enter a valid number.";
-    } else if (hfPower !== null && hfPower < 0) {
-      nextErrors.hfPower = "HF power cannot be negative.";
-    }
     const lfPower = normalizeNumber(form.lfPower);
-    if (form.lfPower.trim() !== "" && lfPower === null) {
-      nextErrors.lfPower = "Enter a valid number.";
-    } else if (lfPower !== null && lfPower < 0) {
-      nextErrors.lfPower = "LF power cannot be negative.";
+    if (form.freqMode === "powers") {
+      if (form.hfPower.trim() !== "" && hfPower === null) {
+        nextErrors.hfPower = "Enter a valid number.";
+      } else if (hfPower !== null && hfPower < 0) {
+        nextErrors.hfPower = "HF power cannot be negative.";
+      } else if (hfPower !== null && hfPower === 0) {
+        nextErrors.hfPower = "HF power must be greater than zero.";
+      }
+      if (form.lfPower.trim() !== "" && lfPower === null) {
+        nextErrors.lfPower = "Enter a valid number.";
+      } else if (lfPower !== null && lfPower < 0) {
+        nextErrors.lfPower = "LF power cannot be negative.";
+      }
+      if (hfPower !== null && lfPower === null) {
+        nextErrors.lfPower = "LF power is required when HF power is entered.";
+      } else if (lfPower !== null && hfPower === null) {
+        nextErrors.hfPower = "HF power is required when LF power is entered.";
+      }
+    } else {
+      if (form.hfPower.trim() !== "" && hfPower === null) {
+        nextErrors.hfPower = "Enter a valid number.";
+      } else if (hfPower !== null && hfPower < 0) {
+        nextErrors.hfPower = "HF power cannot be negative.";
+      }
+      if (form.lfPower.trim() !== "" && lfPower === null) {
+        nextErrors.lfPower = "Enter a valid number.";
+      } else if (lfPower !== null && lfPower < 0) {
+        nextErrors.lfPower = "LF power cannot be negative.";
+      }
     }
+
+    const ratio = normalizeNumber(form.lfhfRatio);
+    if (form.lfhfRatio.trim() !== "" && ratio === null) {
+      nextErrors.lfhfRatio = "Enter a valid number.";
+    } else if (ratio !== null && ratio < 0) {
+      nextErrors.lfhfRatio = "LF/HF cannot be negative.";
+    }
+
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
@@ -168,14 +207,15 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     };
 
     if (form.freqMode === "powers") {
-      if (lfPower !== null && hfPower !== null && hfPower > 0) {
+      if (lfPower !== null && hfPower !== null) {
         result.hfPower = hfPower;
         result.lfPower = lfPower;
-        result.lfhfSource = "calculated";
+        if (hfPower > 0) {
+          result.lfhfSource = "calculated";
+        }
       }
     } else {
-      const ratio = normalizeNumber(form.lfhfRatio);
-      if (ratio !== null && !isNaN(ratio)) {
+      if (ratio !== null && !isNaN(ratio) && ratio >= 0) {
         result.lfhfRatio = ratio;
         result.lfhfSource = form.lfhfSource === "imported" ? "imported" : "manual";
       }
@@ -184,10 +224,20 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     return result;
   };
 
+  const formRef = useRef<HTMLFormElement>(null);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const input = validate();
-    if (input) onInterpret(input);
+    if (input) {
+      onInterpret(input);
+    } else {
+      const firstError = Object.keys(errors)[0];
+      if (firstError) {
+        const el = formRef.current?.querySelector<HTMLElement>(`#${firstError}`);
+        el?.focus();
+      }
+    }
   };
 
   const handleClear = () => {
@@ -228,31 +278,32 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   };
 
   const handlePrefill = (values: ParsedReportValues) => {
-    const updates: Partial<FormState> = {};
-    if (values.rmssd !== undefined) updates.rmssd = String(values.rmssd);
-    if (values.sdnn !== undefined) updates.sdnn = String(values.sdnn);
-    if (values.pnn50 !== undefined) updates.pnn50 = String(values.pnn50);
-    const hasLfAndHf = values.lfPower !== undefined && values.hfPower !== undefined && values.hfPower > 0;
+    const base: FormState = {
+      ...initialState,
+      freqMode: "powers",
+      age: form.age,
+      referenceSex: form.referenceSex,
+    };
+    if (values.rmssd !== undefined) base.rmssd = String(values.rmssd);
+    if (values.sdnn !== undefined) base.sdnn = String(values.sdnn);
+    if (values.pnn50 !== undefined) base.pnn50 = String(values.pnn50);
+    const hasLfAndHf = values.lfPower !== undefined && values.hfPower !== undefined;
     if (hasLfAndHf) {
-      updates.hfPower = String(values.hfPower);
-      updates.lfPower = String(values.lfPower);
-      updates.freqMode = "powers";
-      updates.lfhfRatio = "";
-      updates.lfhfSource = "";
+      base.hfPower = String(values.hfPower!);
+      base.lfPower = String(values.lfPower!);
+      base.freqMode = "powers";
     } else if (values.lfhfRatio !== undefined) {
-      updates.freqMode = "ratio";
-      updates.lfhfRatio = String(values.lfhfRatio);
-      updates.lfhfSource = "imported";
-      updates.hfPower = "";
-      updates.lfPower = "";
+      base.freqMode = "ratio";
+      base.lfhfRatio = String(values.lfhfRatio);
+      base.lfhfSource = "imported";
     }
-    setForm((prev) => ({ ...prev, ...updates }));
+    setForm(base);
     setErrors({});
     setImportedFromReport(true);
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-8">
+    <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-8">
       <section aria-labelledby="section-person">
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -266,19 +317,31 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
               error={errors.age}
               helper="Age-specific reference percentiles cover 18–72 years."
             />
+            {(() => {
+              const age = normalizeNumber(form.age);
+              if (age !== null && age > 72) {
+                return (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                    No matching age-specific reference percentile is available above 72 years.
+                  </p>
+                );
+              }
+              return null;
+            })()}
             <div>
-              <label htmlFor="gender" className="text-sm font-medium text-foreground">
-                Gender
+              <label htmlFor="reference-sex" className="text-sm font-medium text-foreground">
+                Reference sex
               </label>
               <select
-                id="gender"
+                id="reference-sex"
                 value={form.referenceSex}
                 onChange={(e) => set("referenceSex", e.target.value)}
                 className={`mt-1 ${inputClass}`}
               >
-                <option value="unselected" disabled>Select gender</option>
+                <option value="unselected" disabled>Select reference sex</option>
                 <option value="female">Female</option>
                 <option value="male">Male</option>
+                <option value="none">No sex-specific reference</option>
               </select>
               {errors.referenceSex && (
                 <p role="alert" className="mt-1 text-xs text-destructive">{errors.referenceSex}</p>
@@ -300,12 +363,13 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             onPrefill={handlePrefill}
             onClearImport={handleClearImport}
             imported={importedFromReport}
+            onBusyChange={setExtracting}
           />
         </div>
 
         {importedFromReport && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Any values you enter manually will be replaced by imported values.
+            Report values are prefilled. Editing fields will update the values for this calculation only.
           </p>
         )}
 
@@ -345,33 +409,41 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           <div className="sm:col-span-2">
             <fieldset>
               <legend className="text-sm font-medium text-foreground mb-2">Frequency-domain data</legend>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={form.freqMode === "powers"}
-                  onClick={() => switchFreqMode("powers")}
-                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+              <div className="flex gap-2" role="radiogroup" aria-label="Frequency input mode">
+                <label
+                  className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
                     form.freqMode === "powers"
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-foreground hover:bg-muted"
                   }`}
                 >
+                  <input
+                    type="radio"
+                    name="freqMode"
+                    value="powers"
+                    checked={form.freqMode === "powers"}
+                    onChange={() => switchFreqMode("powers")}
+                    className="sr-only"
+                  />
                   LF and HF power
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={form.freqMode === "ratio"}
-                  onClick={() => switchFreqMode("ratio")}
-                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                </label>
+                <label
+                  className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
                     form.freqMode === "ratio"
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-foreground hover:bg-muted"
                   }`}
                 >
+                  <input
+                    type="radio"
+                    name="freqMode"
+                    value="ratio"
+                    checked={form.freqMode === "ratio"}
+                    onChange={() => switchFreqMode("ratio")}
+                    className="sr-only"
+                  />
                   LF/HF ratio only
-                </button>
+                </label>
               </div>
             </fieldset>
           </div>
@@ -414,7 +486,12 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
                 id="lfhfRatio"
                 label="LF/HF ratio"
                 value={form.lfhfRatio}
-                onChange={(v) => set("lfhfRatio", v)}
+                onChange={(v) => {
+                  set("lfhfRatio", v);
+                  if (form.lfhfSource === "imported") {
+                    set("lfhfSource", "manual");
+                  }
+                }}
                 error={errors.lfhfRatio}
                 helper="Use this when the source report provides only the LF/HF ratio and not the separate LF and HF powers."
               />
@@ -426,14 +503,16 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
           type="submit"
-          className="w-full rounded-md bg-primary px-6 py-3 text-base font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:w-auto"
+          disabled={extracting}
+          className="w-full rounded-md bg-primary px-6 py-3 text-base font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
-          Interpret
+          {extracting ? "Extracting…" : "Interpret"}
         </button>
         <button
           type="button"
           onClick={handleClear}
-          className="w-full rounded-md border border-border bg-card px-6 py-3 text-base font-medium text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:w-auto"
+          disabled={extracting}
+          className="w-full rounded-md border border-border bg-card px-6 py-3 text-base font-medium text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           Clear all
         </button>

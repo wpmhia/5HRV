@@ -78,10 +78,11 @@ export default function AboutPage() {
           Data processing and privacy
         </h2>
         <p className="text-base leading-7 text-foreground/85">
-          The calculator runs entirely in the browser. Entered values are not
-          transmitted, stored or shared. Do not enter names, identification
-          numbers, exact dates of birth or other directly identifiable patient
-          information.
+          All calculations run locally in the browser. Entered values are
+          processed locally and are not transmitted to a server. They are
+          temporarily retained in this browser tab so the result page can be
+          displayed. Do not enter names, identification numbers, exact dates of
+          birth or other directly identifiable patient information.
         </p>
       </section>
 

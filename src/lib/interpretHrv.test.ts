@@ -126,7 +126,7 @@ describe("LF/HF calculation", () => {
     const lfhf = result.metrics.find((m) => m.key === "lfhf");
     expect(lfhf).toBeDefined();
     expect(lfhf!.lfhfSource).toBe("manual");
-    expect(lfhf!.interpretation).toContain("Reported ratio");
+    expect(lfhf!.interpretation).toContain("Entered ratio.");
     expect(result.autonomicScore).toBeDefined();
     expect(result.autonomicScore!.value).toBeGreaterThan(0);
   });
@@ -148,7 +148,7 @@ describe("LF/HF calculation", () => {
     expect(lfhf).toBeDefined();
     expect(lfhf!.value).toBe(2);
     expect(lfhf!.lfhfSource).toBe("calculated");
-    expect(lfhf!.interpretation).toContain("Calculated from the entered LF and HF");
+    expect(lfhf!.interpretation).toContain("Calculated from LF and HF.");
   });
   it("uses calculated LF/HF when LF and HF are present, ignoring reported ratio", () => {
     const result = interpretHrv({
@@ -167,7 +167,7 @@ describe("LF/HF calculation", () => {
     const lfhf = result.metrics.find((m) => m.key === "lfhf");
     expect(lfhf).toBeDefined();
     expect(lfhf!.value).toBe(3.5);
-    expect(lfhf!.lfhfSource).toBe("reported");
+    expect(lfhf!.lfhfSource).toBe("imported");
   });
   it("omits LF/HF when neither LF/HF nor ratio is available", () => {
     const result = interpretHrv(baseInput);
@@ -398,34 +398,31 @@ describe("buildClinicalParagraph", () => {
     expect(result).not.toContain("mixed parasympathetic");
   });
 
-  it("reduced RMSSD with pNN50<1% → still reduced parasympathetic (RMSSD takes precedence)", () => {
+  it("reduced RMSSD with pNN50 → still reduced parasympathetic (RMSSD is primary)", () => {
     const rmssd: MetricResult = {
       ...baseRmssd, value: 15, category: "p5_to_p25", categoryLabel: "Low",
     };
     const pnn50: MetricResult = { ...basePnn50, value: 0.5 };
     const result = buildClinicalParagraph([rmssd, baseSdnn, pnn50]);
     expect(result).toContain("reduced parasympathetic activity");
-    expect(result).not.toContain("mixed parasympathetic");
   });
 
-  it("preserved RMSSD with pNN50<1% → mixed parasympathetic findings", () => {
+  it("preserved RMSSD with pNN50 — parasympathetic still preserved (RMSSD is primary)", () => {
     const pnn50: MetricResult = { ...basePnn50, value: 0.5 };
     const result = buildClinicalParagraph([baseRmssd, baseSdnn, pnn50]);
-    expect(result).toContain("mixed parasympathetic findings");
+    expect(result).toContain("preserved parasympathetic activity");
     expect(result).not.toContain("reduced parasympathetic activity");
-    expect(result).not.toContain("preserved parasympathetic activity");
   });
 
-  it("preserved RMSSD with HF<50 ms² → mixed parasympathetic findings", () => {
+  it("preserved RMSSD with HF — parasympathetic still preserved (RMSSD is primary)", () => {
     const hf: MetricResult = { ...baseHf, value: 30 };
     const result = buildClinicalParagraph([baseRmssd, baseSdnn, hf]);
-    expect(result).toContain("mixed parasympathetic findings");
+    expect(result).toContain("preserved parasympathetic activity");
   });
 
-  it("preserved RMSSD with both pNN50≥1% and HF≥50 ms² → preserved parasympathetic", () => {
+  it("preserved RMSSD with pNN50 and HF — preserved parasympathetic", () => {
     const result = buildClinicalParagraph([baseRmssd, baseSdnn, basePnn50, baseHf]);
     expect(result).toContain("preserved parasympathetic activity");
-    expect(result).not.toContain("mixed parasympathetic");
   });
 
   it("RMSSD absent → no parasympathetic statement at all", () => {
@@ -450,7 +447,7 @@ describe("buildClinicalParagraph", () => {
       [baseRmssd, baseSdnn, baseLfhf],
       { value: 10, label: "Balanced or mixed pattern" }
     );
-    expect(result).toContain("balanced autonomic activity");
+    expect(result).toContain("balanced or mixed autonomic pattern");
   });
 
   it("builds from autonomic score when score is available over LF/HF", () => {
@@ -464,7 +461,7 @@ describe("buildClinicalParagraph", () => {
   it("uses LF/HF direction when no autonomic score", () => {
     const lfhf: MetricResult = { ...baseLfhf, value: 3.5 };
     const result = buildClinicalParagraph([baseRmssd, baseSdnn, lfhf]);
-    expect(result).toContain("relative sympathetic predominance");
+    expect(result).toContain("relative LF predominance");
   });
 
   it("appends chronic stress sentence for abnormal patterns", () => {

@@ -137,7 +137,7 @@ export function parseHrvReport(text: string): ParsedReportValues {
     if (values.hfPower === undefined) {
       const hfPatterns = [
         /hf\s*power\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /hf\b(?!\s*\/\s*hf)(?!\s*power)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /(?<![a-z/])hf\b(?!\s*\/\s*hf)(?!\s*power)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
         /high\s*frequency\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
       ];
       for (const pat of hfPatterns) {

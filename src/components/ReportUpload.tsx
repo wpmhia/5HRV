@@ -9,6 +9,7 @@ type Props = {
   onPrefill: (values: ParsedReportValues) => void;
   onClearImport: () => void;
   imported: boolean;
+  onBusyChange?: (busy: boolean) => void;
 };
 
 async function loadPdfJs() {
@@ -85,11 +86,12 @@ async function extractTextFromFile(file: File): Promise<string> {
   throw new Error("Unsupported file type.");
 }
 
-export function ReportUpload({ onPrefill, onClearImport, imported }: Props) {
+export function ReportUpload({ onPrefill, onClearImport, imported, onBusyChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importedCount, setImportedCount] = useState(0);
+  const opCounter = useRef(0);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -105,11 +107,16 @@ export function ReportUpload({ onPrefill, onClearImport, imported }: Props) {
       return;
     }
 
+    opCounter.current += 1;
+    const opId = opCounter.current;
+
     setUploading(true);
+    onBusyChange?.(true);
     setError(null);
 
     try {
       const text = await extractTextFromFile(file);
+      if (opId !== opCounter.current) return; // stale response
       if (!text.trim()) {
         setError("Could not extract values. Try again or enter manually.");
         return;
@@ -125,16 +132,23 @@ export function ReportUpload({ onPrefill, onClearImport, imported }: Props) {
       setImportedCount(count);
       onPrefill(values);
     } catch {
-      setError("Could not extract values. Try again or enter manually.");
+      if (opId === opCounter.current) {
+        setError("Could not extract values. Try again or enter manually.");
+      }
     } finally {
-      setUploading(false);
+      if (opId === opCounter.current) {
+        setUploading(false);
+        onBusyChange?.(false);
+      }
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   const handleChangeFile = () => {
+    opCounter.current += 1;
     onClearImport();
     setImportedCount(0);
+    setError(null);
     fileInputRef.current?.click();
   };
 
@@ -160,7 +174,7 @@ export function ReportUpload({ onPrefill, onClearImport, imported }: Props) {
         aria-label="Upload HRV report"
       />
       {imported ? (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-xs text-muted-foreground">
             {importedCount} values imported — please review
           </span>

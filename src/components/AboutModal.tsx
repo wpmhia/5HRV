@@ -106,9 +106,10 @@ export function AboutModal({ open, onClose }: Props) {
             <h3 className="font-semibold text-foreground">Privacy</h3>
             <p className="mt-1">
               All calculations run locally in your browser. Entered values are
-              not transmitted, stored or shared. Do not enter names,
-              identification numbers, exact dates of birth or other directly
-              identifiable patient information.
+              processed locally and are not transmitted to a server. They are
+              temporarily retained in this browser tab so the result page can
+              be displayed. Do not enter names, identification numbers, exact
+              dates of birth or other directly identifiable patient information.
             </p>
           </section>
 

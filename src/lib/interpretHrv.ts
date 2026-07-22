@@ -122,7 +122,7 @@ function buildConclusion(
   if (autonomicScore) {
     let prefix: string;
     if (autonomicScore.value <= -25) prefix = "Vagal-predominant autonomic pattern";
-    else if (autonomicScore.value < 25) prefix = "Balanced autonomic pattern";
+    else if (autonomicScore.value < 25) prefix = "Balanced or mixed autonomic pattern";
     else if (autonomicScore.value < 50) prefix = "Mild sympathetic shift";
     else if (autonomicScore.value < 75) prefix = "Marked sympathicotonic pattern";
     else prefix = "Pronounced sympathicotonic pattern";
@@ -198,9 +198,6 @@ export function buildClinicalParagraph(
   const sdnnCat = sdnn?.category;
   const rmssdCat = rmssd?.category;
   const rmssdLow = rmssdCat === "below_p5" || rmssdCat === "p5_to_p25";
-  const pnn50Low = pnn50 !== undefined && pnn50.value < 1;
-  const hfLow = hf !== undefined && hf.value < 50;
-  const parasympConflict = rmssd !== undefined && !rmssdLow && (pnn50Low || hfLow);
 
   const overallVar =
     !sdnn
@@ -218,23 +215,21 @@ export function buildClinicalParagraph(
         ? "parasympathetic activity could not be classified"
         : rmssdLow
           ? "reduced parasympathetic activity"
-          : parasympConflict
-            ? "mixed parasympathetic findings"
-            : "preserved parasympathetic activity";
+          : "preserved parasympathetic activity";
 
   let sympDir: string | undefined;
   if (autonomicScore) {
     if (autonomicScore.value <= -25) sympDir = "parasympathetic predominance";
-    else if (autonomicScore.value < 25) sympDir = "balanced autonomic activity";
+    else if (autonomicScore.value < 25) sympDir = "balanced or mixed autonomic pattern";
     else if (autonomicScore.value < 50) sympDir = "mild sympathetic shift";
     else if (autonomicScore.value < 75) sympDir = "marked sympathetic predominance";
     else sympDir = "pronounced sympathetic predominance";
   } else if (lfhf) {
     const ratio = lfhf.value;
-    if (ratio < 1) sympDir = "relative parasympathetic predominance";
-    else if (ratio <= 2) sympDir = "balanced autonomic activity";
-    else if (ratio <= 4) sympDir = "relative sympathetic predominance";
-    else sympDir = "marked sympathetic predominance";
+    if (ratio < 1) sympDir = "relative HF predominance";
+    else if (ratio <= 2) sympDir = "balanced LF and HF magnitude";
+    else if (ratio <= 4) sympDir = "relative LF predominance";
+    else sympDir = "marked relative LF predominance";
   }
 
   const findings: string[] = [];
@@ -256,8 +251,8 @@ export function buildClinicalParagraph(
   const isAbnormal =
     (sdnnCat === "below_p5" || sdnnCat === "p5_to_p25") ||
     rmssdLow ||
-    parasympConflict ||
-    (sympDir !== undefined && (sympDir.includes("sympathetic") || sympDir.includes("parasympathetic predominance")));
+    (autonomicScore !== undefined && autonomicScore.value >= 25) ||
+    (autonomicScore === undefined && lfhf !== undefined && (lfhf.value < 1 || lfhf.value > 2));
 
   if (isAbnormal) {
     text += " This pattern may indicate chronic physiological stress or autonomic imbalance in the appropriate clinical context.";

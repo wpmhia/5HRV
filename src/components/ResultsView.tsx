@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
 import { buildClinicalParagraph } from "@/lib/interpretHrv";
 import { getAgeBand } from "@/data/hrvReferenceData";
@@ -193,15 +193,13 @@ function buildPlainText(
     `Reference: ${input.referenceSex === "none" ? "No sex-specific reference" : input.referenceSex === "female" ? "Female" : "Male"}${ageBand ? `, ${ageBand} years` : ""}`
   );
   lines.push(`Date: ${formatDate()}`);
+
   if (interpretation.autonomicScore) {
     lines.push("");
     lines.push(`5HRV Autonomic Score: ${interpretation.autonomicScore.value > 0 ? "+" : ""}${interpretation.autonomicScore.value} (${interpretation.autonomicScore.label})`);
   }
-  lines.push("");
-  const clinicalPara = buildClinicalParagraph(interpretation.metrics, interpretation.autonomicScore);
-  if (clinicalPara) lines.push(clinicalPara);
-  lines.push("");
 
+  lines.push("");
   for (const m of interpretation.metrics) {
     if (m.key === "rmssd" || m.key === "sdnn") {
       const ref = m.referencePercentiles;
@@ -222,6 +220,9 @@ function buildPlainText(
     }
   }
 
+  const clinicalPara = buildClinicalParagraph(interpretation.metrics, interpretation.autonomicScore);
+  if (clinicalPara) lines.push(clinicalPara);
+
   lines.push("Interpret HRV together with the ECG, symptoms and clinical context.");
   if (interpretation.referenceNote) {
     lines.push("");
@@ -239,35 +240,46 @@ export function ResultsView({ interpretation, input }: Props) {
 
   const handleCopy = useCallback(async () => {
     const text = buildPlainText(interpretation, input);
-    try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        try {
-          textarea.select();
-          const successful = document.execCommand("copy");
-          if (!successful) throw new Error("Copy command failed");
-        } finally {
-          document.body.removeChild(textarea);
-        }
+
+    const fallbackToTextarea = (): boolean => {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      try {
+        textarea.select();
+        return document.execCommand("copy");
+      } finally {
+        document.body.removeChild(textarea);
       }
-      setCopied(true);
-      setCopyError(false);
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-      copyTimerRef.current = setTimeout(() => {
-        setCopied(false);
-        setCopyError(false);
-      }, 2500);
+    };
+
+    try {
+      await navigator.clipboard.writeText(text);
     } catch {
-      setCopyError(true);
-      setCopied(false);
+      const ok = fallbackToTextarea();
+      if (!ok) {
+        setCopyError(true);
+        setCopied(false);
+        return;
+      }
     }
+
+    setCopied(true);
+    setCopyError(false);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => {
+      setCopied(false);
+      setCopyError(false);
+    }, 2500);
   }, [interpretation, input]);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   const handlePrint = () => {
     window.print();

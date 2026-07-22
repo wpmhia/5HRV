@@ -10,8 +10,8 @@ export default function CalculatorPage() {
   const router = useRouter();
 
   const handleInterpret = useCallback((input: MeasurementInput) => {
-    const result = interpretHrv(input);
-    sessionStorage.setItem("5hrv-result", JSON.stringify({ input, interpretation: result }));
+    const payload = { version: 1, input };
+    sessionStorage.setItem("5hrv-result", JSON.stringify(payload));
     router.push("/calculator/result");
   }, [router]);
 
