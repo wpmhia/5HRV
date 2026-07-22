@@ -9,14 +9,35 @@ type Props = {
   input: MeasurementInput;
 };
 
+function ordinal(value: number): string {
+  const mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${value}th`;
+  switch (value % 10) {
+    case 1: return `${value}st`;
+    case 2: return `${value}nd`;
+    case 3: return `${value}rd`;
+    default: return `${value}th`;
+  }
+}
+
 function approxPercentile(value: number, ref: number[]): number | null {
   if (ref.length !== 5) return null;
   const [p5, p25, p50, p75, p95] = ref;
-  if (value <= p5) return Math.round((value / p5) * 5);
-  if (value <= p25) return Math.round(5 + ((value - p5) / (p25 - p5)) * 20);
-  if (value <= p75) return Math.round(25 + ((value - p25) / (p75 - p25)) * 50);
-  if (value <= p95) return Math.round(75 + ((value - p75) / (p95 - p75)) * 20);
-  return Math.round(95 + ((value - p95) / p95) * 5);
+  let percentile: number;
+  if (value <= p5) {
+    percentile = (value / p5) * 5;
+  } else if (value <= p25) {
+    percentile = 5 + ((value - p5) / (p25 - p5)) * 20;
+  } else if (value <= p50) {
+    percentile = 25 + ((value - p25) / (p50 - p25)) * 25;
+  } else if (value <= p75) {
+    percentile = 50 + ((value - p50) / (p75 - p50)) * 25;
+  } else if (value <= p95) {
+    percentile = 75 + ((value - p75) / (p95 - p75)) * 20;
+  } else {
+    percentile = 95 + ((value - p95) / p95) * 5;
+  }
+  return Math.round(Math.min(100, Math.max(0, percentile)));
 }
 
 function MetricCard({
@@ -57,7 +78,7 @@ function MetricCard({
         )}
         {approxPct !== null && (
           <span className="text-xs text-muted-foreground">
-            Approximately {approxPct}th percentile
+            Approximately {ordinal(approxPct)} percentile
           </span>
         )}
       </div>
@@ -143,7 +164,7 @@ function buildPlainText(
       const ref = m.referencePercentiles;
       const pct = ref ? approxPercentile(m.value, ref) : null;
       lines.push(`${m.name}: ${m.value} ${m.unit}`);
-      if (m.categoryLabel) lines.push(`${m.categoryLabel}${pct !== null ? ` — approximately ${pct}th percentile` : ""}`);
+      if (m.categoryLabel) lines.push(`${m.categoryLabel}${pct !== null ? ` — approximately ${ordinal(pct)} percentile` : ""}`);
       lines.push(m.interpretation);
       if (ref) {
         lines.push(`Reference details: P5: ${ref[0]} · P25: ${ref[1]} · P50: ${ref[2]} · P75: ${ref[3]} · P95: ${ref[4]} ${m.unit}`);
@@ -183,9 +204,13 @@ export function ResultsView({ interpretation, input }: Props) {
         textarea.style.position = "fixed";
         textarea.style.opacity = "0";
         document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
+        try {
+          textarea.select();
+          const successful = document.execCommand("copy");
+          if (!successful) throw new Error("Copy command failed");
+        } finally {
+          document.body.removeChild(textarea);
+        }
       }
       setCopied(true);
       setCopyError(false);
