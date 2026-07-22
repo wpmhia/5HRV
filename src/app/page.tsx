@@ -2,378 +2,257 @@
 
 import Link from "next/link";
 
-function Section({ id, className = "", children, ...props }: React.ComponentPropsWithoutRef<"section"> & { id?: string }) {
-  return (
-    <section id={id} className={`border-b border-border ${className}`} {...props}>
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">{children}</div>
-    </section>
-  );
-}
-
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`rounded-xl bg-card p-6 shadow-sm ring-1 ring-border/50 ${className}`}>
-      {children}
-    </div>
-  );
-}
-
 export default function Home() {
   return (
-    <div className="bg-background">
-      {/* Section 1 – Hero */}
-      <section className="border-b border-border">
-        <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 lg:py-32">
-          <div className="max-w-3xl">
-            <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-              5HRV
-            </h1>
-            <p className="mt-4 text-lg text-[#286d6d] sm:text-xl">
-              Five-minute heart rate variability as a measure of autonomic nervous system function.
-            </p>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              5HRV provides clinicians and researchers with a standardized method for recording,
-              interpreting and applying short-term heart rate variability in clinical practice and
-              research.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link
-                href="/calculator"
-                className="inline-flex items-center rounded-lg bg-[#286d6d] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1f5555] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#286d6d]"
-              >
-                Open the calculator
-              </Link>
-              <Link
-                href="/method"
-                className="inline-flex items-center rounded-lg border border-[#286d6d] px-6 py-3 text-sm font-semibold text-[#286d6d] transition hover:bg-[#e8f4f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#286d6d]"
-              >
-                Learn the method
-              </Link>
-            </div>
-          </div>
+    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+      <section className="border-b border-border pb-12">
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          5HRV
+        </h1>
+        <p className="mt-2 text-lg leading-relaxed text-muted-foreground">
+          Five-minute heart rate variability as a measure of autonomic nervous
+          system function.
+        </p>
+        <p className="mt-4 text-base leading-7 text-foreground/85">
+          5HRV provides clinicians and researchers with a standardized method
+          for recording, interpreting and applying short-term heart rate
+          variability in clinical practice and research.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-4">
+          <Link
+            href="/calculator"
+            className="inline-flex items-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          >
+            Open the calculator
+          </Link>
+          <Link
+            href="/method"
+            className="inline-flex items-center text-sm font-semibold text-primary underline-offset-4 hover:underline"
+          >
+            Read the method &rarr;
+          </Link>
         </div>
       </section>
 
-      {/* Section 2 – What 5HRV measures */}
-      <Section className="bg-card/50">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          What 5HRV measures
-        </h2>
-        <div className="mt-8 max-w-3xl space-y-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-          <p>
-            Heart rate variability is the variation in time between successive normal heartbeats. A
-            healthy cardiovascular system does not behave like a rigid metronome. Beat-to-beat
-            variation reflects the capacity of the autonomic nervous system to adapt continuously to
-            internal and external demands.
-          </p>
-          <p>
-            HRV does <em className="font-semibold text-foreground">not</em> measure heart rate
-            itself. Two individuals with the same average heart rate may have profoundly different
-            HRV profiles, and HRV can change independently of heart rate.
-          </p>
-        </div>
-      </Section>
-
-      {/* Section 3 – Autonomic nervous system */}
-      <Section>
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          The autonomic nervous system
-        </h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
-          <Card>
-            <h3 className="text-xl font-semibold text-foreground">Sympathetic activity</h3>
-            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-              Supports cardiovascular activation through effects including increased sinus-node rate
-              and myocardial contractility.
-            </p>
-          </Card>
-          <Card>
-            <h3 className="text-xl font-semibold text-foreground">Parasympathetic activity</h3>
-            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-              Cardiac vagal activity slows the sinus node and contributes strongly to rapid
-              beat-to-beat variation.
-            </p>
-          </Card>
-        </div>
-        <p className="mt-6 text-sm leading-relaxed text-muted-foreground sm:text-base">
-          Think of the two branches as an accelerator and a brake. A healthy autonomic nervous
-          system maintains a dynamic balance between them, allowing the heart to respond rapidly to
-          changing demands.
+      <section className="mt-12 space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">Introduction</h2>
+        <p className="text-base leading-7 text-foreground/85">
+          Heart rate variability is the variation in time between successive
+          normal heartbeats. A healthy cardiovascular system does not behave
+          like a rigid metronome. Beat-to-beat variation reflects the capacity
+          of the autonomic nervous system to adapt continuously to internal and
+          external demands. HRV does not measure heart rate itself; two
+          individuals with the same average heart rate may have profoundly
+          different HRV profiles, and HRV can change independently of heart
+          rate.
         </p>
-      </Section>
+      </section>
 
-      {/* Section 4 – Why HRV matters */}
-      <Section className="bg-card/50">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Why HRV matters
+      <section className="mt-12 space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Physiological basis of HRV
         </h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-3">
-          <Card>
-            <h3 className="text-lg font-semibold text-foreground">Autonomic assessment</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Provides an objective, non-invasive measure related to autonomic regulation.
-            </p>
-          </Card>
-          <Card>
-            <h3 className="text-lg font-semibold text-foreground">Clinical stratification</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Reduced HRV has been associated with adverse outcomes in several clinical populations,
-              although five-minute HRV must not be substituted for validated 24-hour risk models.
-            </p>
-          </Card>
-          <Card>
-            <h3 className="text-lg font-semibold text-foreground">Monitoring and research</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Allows autonomic function to be evaluated before and after an intervention or across
-              research cohorts when measurements are standardized.
-            </p>
-          </Card>
-        </div>
-      </Section>
+        <p className="text-base leading-7 text-foreground/85">
+          The autonomic nervous system regulates cardiovascular function through
+          two principal branches. Sympathetic activity supports cardiovascular
+          activation through effects including increased sinus-node rate and
+          myocardial contractility. Parasympathetic (vagal) activity slows the
+          sinus node and contributes strongly to rapid beat-to-beat variation.
+          A healthy autonomic nervous system maintains a dynamic balance between
+          these two branches, allowing the heart to respond rapidly to changing
+          demands.
+        </p>
+        <p className="text-base leading-7 text-foreground/85">
+          Five-minute HRV provides a non-invasive window into this regulatory
+          system. RMSSD, the principal time-domain measure, is strongly
+          influenced by cardiac vagal modulation. SDNN reflects the overall
+          variability present during the recording period. Spectral analysis
+          further decomposes variability into frequency components that provide
+          additional physiological information.
+        </p>
+      </section>
 
-      {/* Section 5 – Why five minutes */}
-      <Section>
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Why five minutes?
+      <section className="mt-12 space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Rationale for a five-minute recording
         </h2>
-        <div className="mt-8 max-w-3xl space-y-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-          <p>
-            Twenty-four-hour Holter HRV captures circadian variation and remains necessary for
-            several established prognostic applications. However, it is resource-intensive and often
-            impractical for routine autonomic assessment.
-          </p>
-          <p>
-            A standardized five-minute recording provides a pragmatic method for measuring RMSSD,
-            short-term SDNN, pNN50, HF power, LF power and LF/HF spectral distribution.
-          </p>
-        </div>
-      </Section>
+        <p className="text-base leading-7 text-foreground/85">
+          Twenty-four-hour Holter HRV captures circadian variation and remains
+          necessary for several established prognostic applications. However, it
+          is resource-intensive and often impractical for routine autonomic
+          assessment. A standardized five-minute recording provides a pragmatic
+          method for measuring RMSSD, short-term SDNN, pNN50, HF power, LF
+          power and the LF/HF spectral distribution under controlled conditions.
+        </p>
+        <p className="text-base leading-7 text-foreground/85">
+          Five-minute and 24-hour HRV values are not interchangeable. Reference
+          ranges from 24-hour Holter monitoring must not be applied to
+          short-term recordings.
+        </p>
+      </section>
 
-      {/* Section 6 – The standardized protocol */}
-      <Section className="bg-card/50">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          The standardized protocol
+      <section className="mt-12 space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Principal time-domain and frequency-domain measures
         </h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">
-              Position
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">Supine, arms relaxed</p>
-          </Card>
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">Rest</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Quiet rest, no talking</p>
-          </Card>
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">
-              Breathing
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">Quiet spontaneous</p>
-          </Card>
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">
-              Duration
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">Approx. 5 minutes</p>
-          </Card>
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">
-              Quality
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              ECG preferred, &ge;250 Hz, sinus rhythm, artefact correction
-            </p>
-          </Card>
-        </div>
-        <div className="mt-6">
-          <Link
-            href="/method"
-            className="inline-flex items-center text-sm font-semibold text-[#286d6d] underline-offset-4 hover:underline"
-          >
-            Read the full method &rarr;
-          </Link>
-        </div>
-      </Section>
 
-      {/* Section 7 – HRV parameters */}
-      <Section>
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          HRV parameters
+        <h3 className="mt-8 text-lg font-semibold">Time-domain measures</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm leading-6">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 pr-4 text-left font-medium">Parameter</th>
+                <th className="py-2 pr-4 text-left font-medium">Principal interpretation</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              <tr>
+                <td className="py-2 pr-4 align-top font-mono text-xs">RMSSD</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Short-term variability strongly influenced by vagal modulation
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 align-top font-mono text-xs">SDNN</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Total variability during the five-minute recording
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 align-top font-mono text-xs">pNN50</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Supporting measure of successive NN-interval variation
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 className="mt-8 text-lg font-semibold">Frequency-domain measures</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm leading-6">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 pr-4 text-left font-medium">Parameter</th>
+                <th className="py-2 pr-4 text-left font-medium">Principal interpretation</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              <tr>
+                <td className="py-2 pr-4 align-top font-mono text-xs">HF</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Respiratory-frequency variability influenced by vagal modulation and breathing
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 align-top font-mono text-xs">LF</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Mixed autonomic and baroreflex-related variability
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 align-top font-mono text-xs">LF/HF</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Relative distribution of LF and HF power
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-12 space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Standardized recording conditions
         </h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">
-              RMSSD
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Short-term beat-to-beat variability strongly influenced by cardiac vagal modulation.
-            </p>
-          </Card>
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">SDNN</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Standard deviation of all NN intervals &mdash; reflects overall variability.
-            </p>
-          </Card>
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">pNN50</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              A vagal-related measure of successive NN-interval variation.
-            </p>
-          </Card>
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">
-              HF power
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Respiratory-frequency variability influenced by cardiac vagal modulation and breathing.
-            </p>
-          </Card>
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">
-              LF power
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Low-frequency power (0.04&ndash;0.15 Hz) &mdash; reflects both sympathetic and vagal
-              influences.
-            </p>
-          </Card>
-          <Card>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#286d6d]">
-              LF/HF ratio
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Ratio of low- to high-frequency power &mdash; describes the relative distribution
-              of spectral power; not a direct measurement of autonomic balance.
-            </p>
-          </Card>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm leading-6">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="py-2 pr-4 text-left font-medium">Element</th>
+                <th className="py-2 pr-4 text-left font-medium">Standardized condition</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              <tr>
+                <td className="py-2 pr-4 font-medium">Position</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Supine, arms relaxed
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 font-medium">Rest</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Quiet rest before recording; no talking
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 font-medium">Breathing</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Quiet spontaneous breathing
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 font-medium">Duration</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Approximately five analysable minutes
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 font-medium">Signal</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  ECG preferred; adequate sampling frequency
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 font-medium">Quality</td>
+                <td className="py-2 pr-4 text-foreground/85">
+                  Sinus rhythm, ectopy review and artefact correction
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div className="mt-6">
-          <Link
-            href="/parameters"
-            className="inline-flex items-center text-sm font-semibold text-[#286d6d] underline-offset-4 hover:underline"
-          >
-            Detailed parameter guide &rarr;
-          </Link>
-        </div>
-      </Section>
+      </section>
 
-      {/* Section 8 – Clinical interpretation */}
-      <Section className="bg-card/50">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Clinical interpretation
+      <section className="mt-12 space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Clinical and research applications
         </h2>
-        <div className="mt-8 max-w-3xl space-y-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-          <p>
-            Interpretation uses age- and sex-stratified reference percentiles from the DanFunD
-            population study, providing a normative framework for clinical decision-making.
-          </p>
-          <p>
-            Several patterns may be identified: combined reduction in rapid beat-to-beat and overall
-            short-term variability, reduced vagal-related variability with better-preserved overall
-            variability, or isolated changes in spectral parameters.
-          </p>
-        </div>
-        <div className="mt-6">
-          <Link
-            href="/interpretation"
-            className="inline-flex items-center text-sm font-semibold text-[#286d6d] underline-offset-4 hover:underline"
-          >
-            Interpretation guide &rarr;
-          </Link>
-        </div>
-      </Section>
+        <p className="text-base leading-7 text-foreground/85">
+          Standardized five-minute HRV recording may be used to characterize
+          autonomic function in a range of clinical contexts, including
+          suspected autonomic dysfunction, orthostatic intolerance syndromes
+          such as POTS, post-acute infection syndromes including ME/CFS and
+          Long COVID, and as an outcome measure in interventional research.
+          HRV parameters alone do not establish a diagnosis of any of these
+          disorders and must be interpreted within the full clinical picture.
+        </p>
+      </section>
 
-      {/* Section 9 – Clinical applications */}
-      <Section>
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Clinical applications
+      <section className="mt-12 space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Scope and limitations
         </h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <Card className="flex flex-col items-start gap-1">
-            <h3 className="text-lg font-semibold text-foreground">Autonomic dysfunction</h3>
-            <p className="text-sm text-muted-foreground">
-              Screening and monitoring of autonomic impairment in neurologic and systemic disorders.
-            </p>
-          </Card>
-          <Card className="flex flex-col items-start gap-1">
-            <h3 className="text-lg font-semibold text-foreground">
-              POTS and orthostatic intolerance
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Assessment of autonomic regulation patterns in postural tachycardia syndrome.
-            </p>
-          </Card>
-          <Card className="flex flex-col items-start gap-1">
-            <h3 className="text-lg font-semibold text-foreground">
-              PAIS / ME / CFS / Long COVID
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Evaluation of autonomic dysregulation in post-acute infection syndromes and chronic
-              fatigue conditions.
-            </p>
-          </Card>
-          <Card className="flex flex-col items-start gap-1">
-            <h3 className="text-lg font-semibold text-foreground">Research applications</h3>
-            <p className="text-sm text-muted-foreground">
-              Standardized autonomic outcome measurement in clinical trials and observational
-              studies.
-            </p>
-          </Card>
-        </div>
-        <div className="mt-6">
-          <Link
-            href="/applications"
-            className="inline-flex items-center text-sm font-semibold text-[#286d6d] underline-offset-4 hover:underline"
-          >
-            Clinical applications &rarr;
-          </Link>
-        </div>
-      </Section>
+        <p className="text-base leading-7 text-foreground/85">
+          The 5HRV framework provides age- and sex-stratified interpretation of
+          short-term HRV using reference percentiles from the DanFunD
+          population study. The method is not diagnostic for any condition.
+          Interpretation requires integration of clinical context, rhythm
+          assessment, medication effects and recording conditions. The
+          calculator is an educational and research tool, not a certified
+          medical device.
+        </p>
+      </section>
 
-      {/* Section 10 – Calculator preview */}
-      <Section className="bg-card/50">
-        <div className="max-w-2xl">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Apply the method
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Enter a standardized five-minute HRV recording and receive a structured interpretation
-            with age- and sex-specific reference percentiles.
-          </p>
-          <div className="mt-8">
-            <Link
-              href="/calculator"
-              className="inline-flex items-center rounded-lg bg-[#286d6d] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1f5555] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#286d6d]"
-            >
-              Open the calculator
-            </Link>
-          </div>
-        </div>
-      </Section>
-
-      {/* Section 11 – About */}
-      <Section>
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          About the 5HRV method
-        </h2>
-        <div className="mt-8 max-w-3xl space-y-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-          <p>
-            The 5HRV framework was developed by Willem Gielen, Cardiologist and Internist, as a
-            practical approach to standardized five-minute HRV assessment in clinical practice and
-            research.
-          </p>
-        </div>
-        <div className="mt-6">
-          <Link
-            href="/about"
-            className="inline-flex items-center text-sm font-semibold text-[#286d6d] underline-offset-4 hover:underline"
-          >
-            About &rarr;
-          </Link>
-        </div>
-      </Section>
+      <section className="mt-12 border-t border-border pt-12">
+        <Link
+          href="/calculator"
+          className="inline-flex items-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+        >
+          Open the calculator
+        </Link>
+      </section>
     </div>
   );
 }
