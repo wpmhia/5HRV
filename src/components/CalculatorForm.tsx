@@ -198,6 +198,20 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     onClear();
   };
 
+  const handleClearImport = () => {
+    setForm((prev) => ({
+      ...prev,
+      rmssd: "",
+      sdnn: "",
+      pnn50: "",
+      hfPower: "",
+      lfPower: "",
+      lfhfRatio: "",
+    }));
+    setErrors({});
+    setImportedFromReport(false);
+  };
+
   const handlePrefill = (values: ParsedReportValues) => {
     const updates: Partial<FormState> = {};
     if (values.rmssd !== undefined) updates.rmssd = String(values.rmssd);
@@ -256,12 +270,16 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           >
             HRV values
           </h2>
-          <ReportUpload onPrefill={handlePrefill} />
+          <ReportUpload
+            onPrefill={handlePrefill}
+            onClearImport={handleClearImport}
+            imported={importedFromReport}
+          />
         </div>
 
         {importedFromReport && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Values imported from HRV report.
+            Any values you enter manually will be replaced by imported values.
           </p>
         )}
 

@@ -11,14 +11,6 @@ export type ParsedReportValues = {
   vlfPower?: number;
 };
 
-export type ExtractedField = {
-  key: keyof ParsedReportValues;
-  label: string;
-  value: number | string | undefined;
-  unit: string;
-  status: "found" | "not_found" | "verify";
-};
-
 function normalizeNum(value: string): number | null {
   const trimmed = value.trim();
   if (trimmed === "") return null;
@@ -79,7 +71,7 @@ export function parseHrvReport(text: string): ParsedReportValues {
     // Total beats / RR intervals
     if (values.totalBeats === undefined) {
       const beatsMatch = trimmed.match(
-        /(?:total\s*(?:beats|rr\s*intervals?)|beats|intervals?)\s*[:=]?\s*(\d+)/i
+        /(?:total\s*beats|total\s*rr\s*intervals?|aantal\s*rr\s*totaal)\s*[:=]?\s*(\d+)/i
       );
       if (beatsMatch) {
         const num = Number(beatsMatch[1]);
@@ -165,7 +157,7 @@ export function parseHrvReport(text: string): ParsedReportValues {
     if (values.lfPower === undefined) {
       const lfPatterns = [
         /lf\s*power\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /lf\b(?!\s*\/\s*hf)(?!\s*power)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /(?<![a-z])lf\b(?!\s*\/\s*hf)(?!\s*power)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
         /low\s*frequency\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
       ];
       for (const pat of lfPatterns) {
@@ -233,78 +225,4 @@ export function hasHrvContent(text: string): boolean {
   return markers.filter((p) => p.test(text)).length >= 2;
 }
 
-export function buildExtractedFields(values: ParsedReportValues): ExtractedField[] {
-  const fields: ExtractedField[] = [
-    {
-      key: "rmssd",
-      label: "RMSSD",
-      value: values.rmssd,
-      unit: "ms",
-      status: values.rmssd !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "sdnn",
-      label: "SDNN",
-      value: values.sdnn,
-      unit: "ms",
-      status: values.sdnn !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "pnn50",
-      label: "pNN50",
-      value: values.pnn50,
-      unit: "%",
-      status: values.pnn50 !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "hfPower",
-      label: "HF power",
-      value: values.hfPower,
-      unit: "ms²",
-      status: values.hfPower !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "lfPower",
-      label: "LF power",
-      value: values.lfPower,
-      unit: "ms²",
-      status: values.lfPower !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "lfhfRatio",
-      label: "LF/HF ratio",
-      value: values.lfhfRatio,
-      unit: "",
-      status: values.lfhfRatio !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "samplingFrequency",
-      label: "Sampling frequency",
-      value: values.samplingFrequency,
-      unit: "Hz",
-      status: values.samplingFrequency !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "vlfPower",
-      label: "VLF power",
-      value: values.vlfPower,
-      unit: "ms²",
-      status: values.vlfPower !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "totalBeats",
-      label: "Total beats",
-      value: values.totalBeats,
-      unit: "",
-      status: values.totalBeats !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "recordingDate",
-      label: "Recording date",
-      value: values.recordingDate,
-      unit: "",
-      status: values.recordingDate !== undefined ? "found" : "not_found",
-    },
-  ];
-  return fields;
-}
+

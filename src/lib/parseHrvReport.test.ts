@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseHrvReport, buildExtractedFields, hasHrvContent } from "@/lib/parseHrvReport";
+import { parseHrvReport, hasHrvContent } from "@/lib/parseHrvReport";
 
 describe("parseHrvReport", () => {
   it("extracts all values from example report", () => {
@@ -193,18 +193,52 @@ describe("worker termination preservation", () => {
   });
 });
 
-describe("buildExtractedFields", () => {
-  it("marks fields as found", () => {
-    const fields = buildExtractedFields({ sdnn: 39.33, rmssd: 23.14 });
-    const sdnn = fields.find((f) => f.key === "sdnn");
-    const rmssd = fields.find((f) => f.key === "rmssd");
-    expect(sdnn?.status).toBe("found");
-    expect(rmssd?.status).toBe("found");
+describe("VLF / LF edge cases", () => {
+  it("does not match LF inside VLF when VLF and LF are on the same line", () => {
+    const result = parseHrvReport("VLF : 201.54 LF : 416.47 HF : 70.55");
+    expect(result.vlfPower).toBeCloseTo(201.54, 1);
+    expect(result.lfPower).toBeCloseTo(416.47, 1);
+    expect(result.hfPower).toBeCloseTo(70.55, 1);
   });
 
-  it("marks missing fields as not_found", () => {
-    const fields = buildExtractedFields({});
-    const missing = fields.filter((f) => f.status === "not_found");
-    expect(missing.length).toBeGreaterThan(0);
+  it("parses Caroline report line correctly (regression)", () => {
+    const text = `Sample Length 322s
+Frequency: 1000Hz
+Average HR: 74
+SDNN: 39.33
+rMSSD: 23.14
+VLF : 201.54 LF : 416.47 HF : 70.55
+LF/HF: 5.90
+pNN50 3.28%`;
+    const result = parseHrvReport(text);
+    expect(result.vlfPower).toBeCloseTo(201.54, 1);
+    expect(result.lfPower).toBeCloseTo(416.47, 1);
+    expect(result.hfPower).toBeCloseTo(70.55, 1);
+    expect(result.lfhfRatio).toBeCloseTo(5.90, 1);
+    expect(result.sdnn).toBeCloseTo(39.33, 1);
+    expect(result.rmssd).toBeCloseTo(23.14, 1);
+    expect(result.pnn50).toBeCloseTo(3.28, 1);
+  });
+});
+
+describe("total beats edge cases", () => {
+  it("does not extract total beats from chart axis labels", () => {
+    const result = parseHrvReport("RR Intervals 200\nTotal beats: 400");
+    expect(result.totalBeats).toBe(400);
+  });
+
+  it("extracts total beats from explicit 'Total RR intervals' label", () => {
+    const result = parseHrvReport("Total RR intervals: 400");
+    expect(result.totalBeats).toBe(400);
+  });
+
+  it("does not extract total beats from bare 'RR Intervals' chart label", () => {
+    const result = parseHrvReport("RR Intervals 200");
+    expect(result.totalBeats).toBeUndefined();
+  });
+
+  it("does not extract total beats from 'beats' in unrelated text", () => {
+    const result = parseHrvReport("Average HR: 74 beats/min");
+    expect(result.totalBeats).toBeUndefined();
   });
 });
