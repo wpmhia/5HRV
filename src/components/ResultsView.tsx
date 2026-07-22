@@ -19,95 +19,16 @@ function approxPercentile(value: number, ref: number[]): number | null {
   return Math.round(95 + ((value - p95) / p95) * 5);
 }
 
-function scalePosition(value: number, ref: number[]): number {
-  const [p5, p25, p50, p75, p95] = ref;
-  if (value <= p5) return Math.max(0, (value / p5) * 5);
-  if (value <= p25) return 5 + ((value - p5) / (p25 - p5)) * 20;
-  if (value <= p75) return 25 + ((value - p25) / (p75 - p25)) * 50;
-  if (value <= p95) return 75 + ((value - p75) / (p95 - p75)) * 20;
-  return Math.min(100, 95 + ((value - p95) / p95) * 5);
-}
-
-function PercentileScale({ value, percentiles }: { value: number; percentiles: number[] }) {
-  const pos = scalePosition(value, percentiles);
-  return (
-    <div className="mt-2">
-      <div className="relative h-2 w-full">
-        <div className="absolute inset-0 flex">
-          {[0, 20, 40, 60, 80, 100].map((pct, i) => (
-            <div
-              key={i}
-              className="h-full"
-              style={{ width: "20%", borderRight: i < 5 ? "1px solid hsl(var(--border))" : "none", background: i % 2 === 0 ? "hsl(var(--muted))" : "transparent" }}
-            />
-          ))}
-        </div>
-        <div
-          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#286d6d] bg-white"
-          style={{ left: `${pos}%` }}
-        />
-      </div>
-      <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
-        <span>P5</span>
-        <span>P25</span>
-        <span>P50</span>
-        <span>P75</span>
-        <span>P95</span>
-      </div>
-    </div>
-  );
-}
-
 function PrimaryMetric({
   metric,
 }: {
   metric: MetricResult;
 }) {
-  const pct = metric.referencePercentiles
-    ? approxPercentile(metric.value, metric.referencePercentiles)
-    : null;
-  const pctLabel = pct !== null ? `P${pct}` : null;
-
-  const refLine = metric.referencePercentiles
-    ? (() => {
-        const [p5, p25, p50, p75, p95] = metric.referencePercentiles;
-        return `Reference: P5 ${p5} · P25 ${p25} · P50 ${p50} · P75 ${p75} · P95 ${p95} ${metric.unit}`;
-      })()
-    : null;
-
-  const label = (() => {
-    switch (metric.key) {
-      case "rmssd": return "Short-term beat-to-beat variability";
-      case "sdnn": return "Overall five-minute variability";
-      default: return "";
-    }
-  })();
-
   return (
     <div>
-      <div className="flex items-baseline justify-between">
-        <div>
-          <span className="text-sm font-semibold text-foreground">{metric.name}</span>
-          <span className="ml-2 text-xs text-muted-foreground">{label}</span>
-        </div>
-        <div className="text-right">
-          <span className="text-lg font-semibold text-foreground tabular-nums">{metric.value}</span>
-          {metric.unit && <span className="ml-0.5 text-xs text-muted-foreground">{metric.unit}</span>}
-          {pctLabel && <span className="ml-2 text-xs text-muted-foreground">— {pctLabel}</span>}
-        </div>
-      </div>
-      {metric.referencePercentiles && (
-        <PercentileScale value={metric.value} percentiles={metric.referencePercentiles} />
-      )}
-      {refLine && (
-        <p className="mt-1 text-[11px] text-muted-foreground">{refLine}</p>
-      )}
-      {metric.categoryLabel && (
-        <p className="mt-1 text-sm leading-relaxed text-foreground/80">
-          {metric.name} is {metric.categoryLabel.toLowerCase()}
-          {metric.key === "rmssd" ? " of the reference distribution." : " of the reference distribution."}
-        </p>
-      )}
+      <span className="text-sm font-semibold text-foreground">{metric.name}</span>
+      <span className="ml-2 text-lg font-semibold text-foreground tabular-nums">{metric.value}</span>
+      {metric.unit && <span className="ml-0.5 text-xs text-muted-foreground">{metric.unit}</span>}
     </div>
   );
 }
@@ -232,7 +153,7 @@ export function ResultsView({ interpretation, input }: Props) {
         {primaryMetrics.length > 0 && (
           <div className="border-b border-border px-6 py-5">
             {primaryMetrics.length === 2 ? (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {primaryMetrics.map((m) => (
                   <PrimaryMetric key={m.key} metric={m} />
                 ))}

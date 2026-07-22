@@ -8,7 +8,6 @@ import { ReportUpload } from "@/components/ReportUpload";
 
 type Props = {
   onInterpret: (input: MeasurementInput) => void;
-  onClear: () => void;
 };
 
 type FormState = {
@@ -93,7 +92,7 @@ function NumberField({
   );
 }
 
-export function CalculatorForm({ onInterpret, onClear }: Props) {
+export function CalculatorForm({ onInterpret }: Props) {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadPanelOpen, setUploadPanelOpen] = useState(true);
@@ -203,14 +202,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     setForm((prev) => ({ ...prev, ...updates }));
     setErrors({});
     setImportedFromReport(true);
-  };
-
-  const handleClear = () => {
-    setForm(initialState);
-    setErrors({});
-    setImportedFromReport(false);
-    setUploadPanelOpen(false);
-    onClear();
   };
 
   return (
@@ -349,13 +340,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           className="w-full rounded-md bg-primary px-6 py-3 text-base font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:w-auto"
         >
           Calculate
-        </button>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="w-full rounded-md border border-border bg-card px-6 py-3 text-base font-medium text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:w-auto"
-        >
-          Clear values
         </button>
       </div>
     </form>
