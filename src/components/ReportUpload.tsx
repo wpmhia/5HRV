@@ -22,6 +22,13 @@ export function hasHrvContent(text: string): boolean {
   return markers.filter((p) => p.test(text)).length >= 2;
 }
 
+async function loadPdfJs() {
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  return pdfjsLib;
+}
+
 async function ocrWithTesseract(image: string | HTMLCanvasElement): Promise<string> {
   const { createWorker } = await import("tesseract.js");
   const worker = await createWorker("eng");
@@ -34,9 +41,7 @@ async function ocrWithTesseract(image: string | HTMLCanvasElement): Promise<stri
 }
 
 async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
-  const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version}/pdf.worker.min.js`;
+  const pdfjsLib = await loadPdfJs();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const pages: string[] = [];
   for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
@@ -49,9 +54,7 @@ async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
 }
 
 async function renderFirstPageToCanvas(buffer: ArrayBuffer): Promise<HTMLCanvasElement> {
-  const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${(pdfjsLib as any).version}/pdf.worker.min.js`;
+  const pdfjsLib = await loadPdfJs();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const page = await pdf.getPage(1);
   const viewport = page.getViewport({ scale: 2.0 });
@@ -131,7 +134,7 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
     try {
       const text = await extractTextFromFile(file);
       if (!text.trim()) {
-        setError("We could not reliably extract the HRV values from this report. Enter the values manually or upload a clearer PDF or image.");
+        setError("We could not extract values from this report. Please try again or enter the values manually.");
         return;
       }
 
@@ -140,7 +143,7 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
       const foundCount = extracted.filter((f) => f.status === "found").length;
 
       if (foundCount === 0) {
-        setError("We could not reliably extract the HRV values from this report. Enter the values manually or upload a clearer PDF or image.");
+        setError("We could not extract values from this report. Please try again or enter the values manually.");
         return;
       }
 
@@ -151,7 +154,8 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
       }
       setEditedValues(edits);
     } catch (err) {
-      setError("We could not reliably extract the HRV values from this report. Enter the values manually or upload a clearer PDF or image.");
+      console.error("HRV report extraction failed:", err);
+      setError("We could not extract values from this report. Please try again or enter the values manually.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
