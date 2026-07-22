@@ -151,20 +151,14 @@ function SecondaryMetricCard({
   value,
   unit,
   description,
-  wide = false,
 }: {
   label: string;
   value: number;
   unit: string;
   description: string;
-  wide?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-lg border border-border bg-background p-5 ${
-        wide ? "sm:col-span-2" : ""
-      }`}
-    >
+    <div className="rounded-lg border border-border bg-background p-5">
       <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
@@ -389,7 +383,6 @@ export function ResultsView({ interpretation, input }: Props) {
                   value={m.value}
                   unit={m.unit}
                   description={m.interpretation}
-                  wide={m.key === "lfhf"}
                 />
               ))}
             </div>
