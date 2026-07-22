@@ -271,13 +271,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-8">
       <section aria-labelledby="section-person">
-        <h2
-          id="section-person"
-          className="border-b border-border pb-2 text-base font-semibold text-foreground"
-        >
-          Reference
-        </h2>
-        <div className="mt-4 space-y-5">
+        <div className="space-y-5">
           <div className="max-w-xs">
             <NumberField
               id="age"
@@ -295,7 +289,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             name="referenceSex"
             value={form.referenceSex}
             onChange={(v) => set("referenceSex", v)}
-            helper="This selection is used only to select the corresponding published reference distribution."
             options={[
               { value: "female", label: "Female reference" },
               { value: "male", label: "Male reference" },
