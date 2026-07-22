@@ -12,11 +12,6 @@ type Props = {
 type FormState = {
   age: string;
   referenceSex: "female" | "male" | "none";
-  measurementSource: MeasurementInput["measurementSource"];
-  durationMinutes: string;
-  position: MeasurementInput["position"];
-  rhythm: MeasurementInput["rhythm"];
-  artefactCorrection: MeasurementInput["artefactCorrection"];
   meanHeartRate: string;
   rmssd: string;
   sdnn: string;
@@ -29,11 +24,6 @@ type FormState = {
 const initialState: FormState = {
   age: "",
   referenceSex: "female",
-  measurementSource: "ecg",
-  durationMinutes: "5",
-  position: "supine",
-  rhythm: "sinus",
-  artefactCorrection: "completed",
   meanHeartRate: "",
   rmssd: "",
   sdnn: "",
@@ -238,22 +228,17 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       nextErrors.lfhfRatio = "Enter a valid number.";
     }
 
-    const durationMinutes = normalizeNumber(form.durationMinutes);
-    if (durationMinutes === null || durationMinutes <= 0) {
-      nextErrors.durationMinutes = "Enter a valid recording duration in minutes.";
-    }
-
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
     return {
       age: age!,
       referenceSex: form.referenceSex,
-      measurementSource: form.measurementSource,
-      durationMinutes: durationMinutes!,
-      position: form.position,
-      rhythm: form.rhythm,
-      artefactCorrection: form.artefactCorrection,
+      measurementSource: "ecg",
+      durationMinutes: 5,
+      position: "supine",
+      rhythm: "sinus",
+      artefactCorrection: "completed",
       meanHeartRate: meanHeartRate ?? undefined,
       rmssd: rmssd ?? undefined,
       sdnn: sdnn ?? undefined,
@@ -314,83 +299,12 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
         </div>
       </section>
 
-      <section aria-labelledby="section-recording">
-        <h2
-          id="section-recording"
-          className="border-b border-border pb-2 text-base font-semibold text-foreground"
-        >
-          2. Recording information
-        </h2>
-        <div className="mt-4 space-y-5">
-          <RadioGroup
-            legend="Measurement method"
-            name="measurementSource"
-            value={form.measurementSource}
-            onChange={(v) => set("measurementSource", v)}
-            options={[
-              { value: "ecg", label: "ECG" },
-              { value: "ecg_chest_strap", label: "ECG chest strap" },
-              { value: "ppg", label: "PPG" },
-              { value: "smartwatch", label: "Smartwatch or wearable" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-          />
-          <div className="max-w-xs">
-            <NumberField
-              id="durationMinutes"
-              label="Recording duration"
-              unit="minutes"
-              value={form.durationMinutes}
-              onChange={(v) => set("durationMinutes", v)}
-              error={errors.durationMinutes}
-              helper="The reference framework assumes approximately five minutes."
-            />
-          </div>
-          <RadioGroup
-            legend="Position"
-            name="position"
-            value={form.position}
-            onChange={(v) => set("position", v)}
-            options={[
-              { value: "supine", label: "Supine" },
-              { value: "seated", label: "Seated" },
-              { value: "standing", label: "Standing" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-          />
-          <RadioGroup
-            legend="Rhythm and recording quality"
-            name="rhythm"
-            value={form.rhythm}
-            onChange={(v) => set("rhythm", v)}
-            options={[
-              { value: "sinus", label: "Sinus rhythm without significant ectopy" },
-              { value: "frequent_ectopy", label: "Frequent ectopic beats" },
-              { value: "af_flutter", label: "Atrial fibrillation or atrial flutter" },
-              { value: "paced", label: "Paced rhythm" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-          />
-          <RadioGroup
-            legend="Artefact correction"
-            name="artefactCorrection"
-            value={form.artefactCorrection}
-            onChange={(v) => set("artefactCorrection", v)}
-            options={[
-              { value: "completed", label: "Completed" },
-              { value: "not_completed", label: "Not completed" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-          />
-        </div>
-      </section>
-
       <section aria-labelledby="section-values">
         <h2
           id="section-values"
           className="border-b border-border pb-2 text-base font-semibold text-foreground"
         >
-          3. HRV values
+          2. HRV values
         </h2>
         <p className="mt-2 text-xs text-muted-foreground">
           Decimal points and decimal commas are both accepted. At least RMSSD
