@@ -36,61 +36,6 @@ const initialState: FormState = {
 const inputClass =
   "w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
 
-function RadioGroup<T extends string>({
-  legend,
-  name,
-  options,
-  value,
-  onChange,
-  helper,
-}: {
-  legend: string;
-  name: string;
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (value: T) => void;
-  helper?: string;
-}) {
-  return (
-    <fieldset>
-      <legend className="text-sm font-medium text-foreground">{legend}</legend>
-      {helper && (
-        <p className="mt-1 text-xs text-muted-foreground">{helper}</p>
-      )}
-      <div className="mt-2 flex flex-wrap gap-2">
-        {options.map((option) => (
-          <label
-            key={option.value}
-            className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
-              value === option.value
-                ? "border-primary bg-accent text-accent-foreground"
-                : "border-border bg-card text-foreground hover:bg-muted"
-            }`}
-          >
-            <input
-              type="radio"
-              name={name}
-              value={option.value}
-              checked={value === option.value}
-              onChange={() => onChange(option.value)}
-              className="sr-only"
-            />
-            <span
-              aria-hidden="true"
-              className={`h-3 w-3 rounded-full border ${
-                value === option.value
-                  ? "border-primary bg-primary"
-                  : "border-muted-foreground/50 bg-card"
-              }`}
-            />
-            {option.label}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
 function NumberField({
   id,
   label,
@@ -180,7 +125,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     }
 
     if (form.referenceSex === "unselected") {
-      nextErrors.referenceSex = "Select a reference sex or choose not to use sex-specific values.";
+      nextErrors.referenceSex = "Select a gender.";
     }
 
     const rmssd = normalizeNumber(form.rmssd);
@@ -284,20 +229,24 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
               helper="Age-specific reference percentiles cover 18–72 years."
             />
           </div>
-          <RadioGroup
-            legend="Reference sex *"
-            name="referenceSex"
-            value={form.referenceSex}
-            onChange={(v) => set("referenceSex", v)}
-            options={[
-              { value: "female", label: "Female reference" },
-              { value: "male", label: "Male reference" },
-              { value: "none", label: "Do not use sex-specific reference values" },
-            ]}
-          />
-          {errors.referenceSex && (
-            <p role="alert" className="text-xs text-destructive">{errors.referenceSex}</p>
-          )}
+          <div className="max-w-xs">
+            <label htmlFor="gender" className="text-sm font-medium text-foreground">
+              Gender
+            </label>
+            <select
+              id="gender"
+              value={form.referenceSex}
+              onChange={(e) => set("referenceSex", e.target.value)}
+              className={`mt-1 ${inputClass}`}
+            >
+              <option value="unselected" disabled>Select gender</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+            </select>
+            {errors.referenceSex && (
+              <p role="alert" className="mt-1 text-xs text-destructive">{errors.referenceSex}</p>
+            )}
+          </div>
         </div>
       </section>
 
