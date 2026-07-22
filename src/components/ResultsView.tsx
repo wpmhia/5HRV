@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { HrvInterpretation, MeasurementInput, MetricResult } from "@/lib/types";
+import { useCallback, useMemo, useRef, useState } from "react";
+import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
 import { getAgeBand } from "@/data/hrvReferenceData";
 
 type Props = {
@@ -19,32 +19,102 @@ function approxPercentile(value: number, ref: number[]): number | null {
   return Math.round(95 + ((value - p95) / p95) * 5);
 }
 
-function PrimaryMetric({
-  metric,
+function MetricCard({
+  label,
+  value,
+  unit,
+  category,
+  categoryLabel,
+  approxPct,
+  description,
+  percentiles,
 }: {
-  metric: MetricResult;
+  label: string;
+  value: number;
+  unit: string;
+  category?: string;
+  categoryLabel?: string;
+  approxPct: number | null;
+  description: string;
+  percentiles?: number[];
 }) {
-  const pct = metric.referencePercentiles
-    ? approxPercentile(metric.value, metric.referencePercentiles)
-    : null;
-  const refLine = metric.referencePercentiles
-    ? `P5 ${metric.referencePercentiles[0]} · P25 ${metric.referencePercentiles[1]} · P50 ${metric.referencePercentiles[2]} · P75 ${metric.referencePercentiles[3]} · P95 ${metric.referencePercentiles[4]} ${metric.unit}`
-    : null;
-
   return (
-    <div>
-      <div>
-        <span className="text-sm font-semibold text-foreground">{metric.name}</span>
-        <span className="ml-2 text-lg font-semibold text-foreground tabular-nums">{metric.value}</span>
-        {metric.unit && <span className="ml-0.5 text-xs text-muted-foreground">{metric.unit}</span>}
-        {pct !== null && <span className="ml-2 text-xs font-medium text-foreground">P{pct}</span>}
-        {metric.categoryLabel && <span className="ml-2 text-xs text-muted-foreground">— {metric.categoryLabel}</span>}
+    <div className="rounded-lg border border-border bg-background p-5">
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
       </div>
-      {refLine && (
-        <p className="mt-0.5 text-xs text-muted-foreground">{refLine}</p>
+      <div className="mt-1 flex items-baseline gap-1.5">
+        <span className="text-3xl font-bold text-foreground tabular-nums">
+          {value}
+        </span>
+        <span className="text-sm text-muted-foreground">{unit}</span>
+      </div>
+      <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
+        {categoryLabel && (
+          <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
+            {categoryLabel}
+          </span>
+        )}
+        {approxPct !== null && (
+          <span className="text-xs text-muted-foreground">
+            Approximately {approxPct}th percentile
+          </span>
+        )}
+      </div>
+      <p className="mt-3 text-sm text-foreground/80">{description}</p>
+      {percentiles && percentiles.length === 5 && (
+        <details className="mt-3">
+          <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Reference details
+          </summary>
+          <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+            <span className="block">P5: {percentiles[0]} {unit}</span>
+            <span className="block">P25: {percentiles[1]} {unit}</span>
+            <span className="block">P50: {percentiles[2]} {unit}</span>
+            <span className="block">P75: {percentiles[3]} {unit}</span>
+            <span className="block">P95: {percentiles[4]} {unit}</span>
+          </div>
+        </details>
       )}
     </div>
   );
+}
+
+function AutonomicScoreDisplay({ score }: { score: { value: number; label: string } }) {
+  const pct = ((score.value + 100) / 200) * 100;
+
+  return (
+    <div className="rounded-lg border border-border bg-background p-5">
+      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        5HRV Autonomic Score
+      </div>
+      <div className="mt-4">
+        <div className="flex justify-between text-[11px] text-muted-foreground">
+          <span>Parasympathetic</span>
+          <span>Sympathetic</span>
+        </div>
+        <div className="relative mt-1 h-2 rounded-full bg-gradient-to-r from-emerald-400 via-stone-300 to-rose-400">
+          <div
+            className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground bg-card shadow-sm"
+            style={{ left: `${pct}%` }}
+          />
+        </div>
+        <div className="mt-1 text-center text-xs font-semibold text-foreground tabular-nums">
+          {score.value > 0 ? "+" : ""}{score.value}
+        </div>
+      </div>
+      <p className="mt-2 text-sm font-medium text-foreground">{score.label}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Directional pattern derived from RMSSD and LF/HF. SDNN is reported separately as total short-term variability.
+      </p>
+    </div>
+  );
+}
+
+function formatDate(): string {
+  return new Date().toLocaleDateString("en-GB", {
+    day: "numeric", month: "long", year: "numeric",
+  });
 }
 
 function buildPlainText(
@@ -59,8 +129,12 @@ function buildPlainText(
   lines.push(
     `Reference: ${input.referenceSex === "none" ? "No sex-specific reference" : input.referenceSex === "female" ? "Female" : "Male"}${ageBand ? `, ${ageBand} years` : ""}`
   );
+  lines.push(`Date: ${formatDate()}`);
+  if (interpretation.autonomicScore) {
+    lines.push("");
+    lines.push(`5HRV Autonomic Score: ${interpretation.autonomicScore.value > 0 ? "+" : ""}${interpretation.autonomicScore.value} (${interpretation.autonomicScore.label})`);
+  }
   lines.push("");
-  lines.push("Summary");
   lines.push(interpretation.summary);
   lines.push("");
 
@@ -68,16 +142,21 @@ function buildPlainText(
     if (m.key === "rmssd" || m.key === "sdnn") {
       const ref = m.referencePercentiles;
       const pct = ref ? approxPercentile(m.value, ref) : null;
-      const label = m.categoryLabel ? ` — ${m.categoryLabel}` : "";
-      lines.push(`${m.name}: ${m.value} ${m.unit}${pct !== null ? ` — approximately P${pct}` : ""}${label}`);
+      lines.push(`${m.name}: ${m.value} ${m.unit}`);
+      if (m.categoryLabel) lines.push(`${m.categoryLabel}${pct !== null ? ` — approximately ${pct}th percentile` : ""}`);
+      lines.push(m.interpretation);
+      if (ref) {
+        lines.push(`Reference details: P5: ${ref[0]} · P25: ${ref[1]} · P50: ${ref[2]} · P75: ${ref[3]} · P95: ${ref[4]} ${m.unit}`);
+      }
+      lines.push("");
     } else {
-      lines.push(`${m.name === "LF/HF ratio" ? "LF/HF" : m.name}: ${m.value}${m.unit ? ` ${m.unit}` : ""}`);
+      lines.push(`${m.key === "lfhf" ? "LF/HF" : m.name}: ${m.value}${m.unit ? ` ${m.unit}` : ""}`);
+      lines.push(m.interpretation);
+      if (m.limitation) lines.push(m.limitation);
+      lines.push("");
     }
   }
-  lines.push("");
-  lines.push("Interpretation");
-  lines.push(interpretation.summary);
-  lines.push("");
+
   lines.push("Interpret HRV together with the ECG, symptoms and clinical context.");
   if (interpretation.referenceNote) {
     lines.push("");
@@ -86,38 +165,60 @@ function buildPlainText(
   return lines.join("\n");
 }
 
-function formatDate(): string {
-  return new Date().toLocaleDateString("en-GB", {
-    day: "numeric", month: "long", year: "numeric",
-  });
-}
-
 export function ResultsView({ interpretation, input }: Props) {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const ageBand = useMemo(() => getAgeBand(input.age), [input.age]);
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     const text = buildPlainText(interpretation, input);
     try {
-      await navigator.clipboard.writeText(text);
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopyError(false);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => {
+        setCopied(false);
+        setCopyError(false);
+      }, 2500);
     } catch {
+      setCopyError(true);
       setCopied(false);
     }
-  };
+  }, [interpretation, input]);
 
   const handlePrint = () => {
     window.print();
   };
 
-  const primaryMetrics = interpretation.metrics.filter((m) => m.key === "rmssd" || m.key === "sdnn");
-  const secondaryMetrics = interpretation.metrics.filter((m) => m.key !== "rmssd" && m.key !== "sdnn");
+  const handleNewCalculation = () => {
+    sessionStorage.removeItem("5hrv-result");
+    window.location.href = "/calculator";
+  };
+
+  const primaryMetrics = interpretation.metrics.filter(
+    (m) => m.key === "rmssd" || m.key === "sdnn"
+  );
+  const secondaryMetrics = interpretation.metrics.filter(
+    (m) => m.key !== "rmssd" && m.key !== "sdnn"
+  );
 
   return (
-    <div id="results" className="mt-10" aria-live="polite">
-      <div className="rounded-lg border border-border bg-card print:border-none">
+    <div className="mx-auto max-w-3xl">
+      <div className="rounded-lg border border-border bg-card print:border-none" aria-live="polite">
         {/* Header */}
         <div className="flex flex-col gap-3 border-b border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -131,11 +232,12 @@ export function ResultsView({ interpretation, input }: Props) {
               <span>{formatDate()}</span>
             </div>
           </div>
-          <div className="flex gap-2 print:hidden">
+          <div className="flex flex-wrap gap-2 print:hidden">
             <button
               type="button"
               onClick={handleCopy}
               className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              aria-label="Copy interpretation"
             >
               {copied ? "Copied" : "Copy all"}
             </button>
@@ -144,41 +246,75 @@ export function ResultsView({ interpretation, input }: Props) {
               onClick={handlePrint}
               className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
             >
-              Print result
+              Print
+            </button>
+            <button
+              type="button"
+              onClick={handleNewCalculation}
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 transition-colors"
+            >
+              New calculation
             </button>
           </div>
         </div>
 
-        {/* Main interpretation */}
+        {/* Copy status messages */}
+        {copied && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="border-b border-emerald-200 bg-emerald-50 px-6 py-3 text-sm text-emerald-800"
+          >
+            <span className="mr-1.5" aria-hidden="true">&#10003;</span>
+            Interpretation copied to clipboard
+          </div>
+        )}
+        {copyError && (
+          <div
+            role="alert"
+            className="border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-800"
+          >
+            Could not copy the interpretation.
+          </div>
+        )}
+
+        {/* Autonomic score */}
+        {interpretation.autonomicScore && (
+          <div className="border-b border-border px-6 py-5">
+            <AutonomicScoreDisplay score={interpretation.autonomicScore} />
+          </div>
+        )}
+
+        {/* Conclusion */}
         {interpretation.summary && (
           <div className="border-b border-border px-6 py-5">
-            <p className="text-base leading-relaxed text-foreground">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Conclusion
+            </h3>
+            <p className="mt-2 text-base leading-relaxed text-foreground">
               {interpretation.summary}
             </p>
-            {interpretation.referenceNote && (
-              <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm text-foreground/80">
-                {interpretation.referenceNote}
-              </p>
-            )}
           </div>
         )}
 
         {/* Primary metrics: RMSSD + SDNN */}
         {primaryMetrics.length > 0 && (
           <div className="border-b border-border px-6 py-5">
-            {primaryMetrics.length === 2 ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {primaryMetrics.map((m) => (
-                  <PrimaryMetric key={m.key} metric={m} />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {primaryMetrics.map((m) => (
-                  <PrimaryMetric key={m.key} metric={m} />
-                ))}
-              </div>
-            )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {primaryMetrics.map((m) => (
+                <MetricCard
+                  key={m.key}
+                  label={m.name}
+                  value={m.value}
+                  unit={m.unit}
+                  category={m.category}
+                  categoryLabel={m.categoryLabel}
+                  approxPct={m.referencePercentiles ? approxPercentile(m.value, m.referencePercentiles) : null}
+                  description={m.interpretation}
+                  percentiles={m.referencePercentiles}
+                />
+              ))}
+            </div>
           </div>
         )}
 
@@ -226,6 +362,11 @@ export function ResultsView({ interpretation, input }: Props) {
           <p className="text-sm text-muted-foreground">
             {interpretation.clinicalNote}
           </p>
+          {interpretation.referenceNote && (
+            <p className="mt-2 text-sm text-muted-foreground/70">
+              {interpretation.referenceNote}
+            </p>
+          )}
         </div>
       </div>
     </div>

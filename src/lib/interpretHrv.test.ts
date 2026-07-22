@@ -170,9 +170,7 @@ describe("combined interpretation patterns", () => {
       rmssd: 15,
       sdnn: 20,
     });
-    expect(result.overall).toContain(
-      "lower than expected for the selected reference group"
-    );
+    expect(result.overall).toContain("are reduced");
   });
   it("low RMSSD with preserved SDNN", () => {
     const result = interpretHrv({
@@ -182,7 +180,9 @@ describe("combined interpretation patterns", () => {
       rmssd: 15,
       sdnn: 40,
     });
-    expect(result.overall).toContain("better preserved");
+    expect(result.overall).toContain(
+      "Parasympathetic activity is reduced, while overall short-term HRV is preserved"
+    );
   });
   it("low SDNN with central RMSSD", () => {
     const result = interpretHrv({
@@ -193,10 +193,10 @@ describe("combined interpretation patterns", () => {
       sdnn: 15,
     });
     expect(result.overall).toContain(
-      "without a corresponding reduction in RMSSD"
+      "Parasympathetic activity is preserved, but overall short-term HRV is reduced"
     );
   });
-  it("both central includes the non-exclusion statement", () => {
+  it("both central", () => {
     const result = interpretHrv({
       ...baseInput,
       age: 45,
@@ -204,12 +204,9 @@ describe("combined interpretation patterns", () => {
       rmssd: 30,
       sdnn: 34.04,
     });
-    expect(result.overall).toContain("central 50%");
-    expect(result.overall).toContain(
-      "does not exclude autonomic dysfunction"
-    );
+    expect(result.overall).toContain("within the expected range");
   });
-  it("above 95th percentile warns that higher is not automatically better", () => {
+  it("RMSSD above 95th percentile with central SDNN", () => {
     const result = interpretHrv({
       ...baseInput,
       age: 45,
@@ -217,8 +214,9 @@ describe("combined interpretation patterns", () => {
       rmssd: 100,
       sdnn: 40,
     });
-    expect(result.overall).toContain("unusually high");
-    expect(result.overall).toContain("not automatically better");
+    expect(result.overall).toContain(
+      "Parasympathetic activity is high and overall short-term HRV is preserved"
+    );
   });
 });
 
@@ -243,9 +241,11 @@ describe("seed example 1", () => {
       "p5_to_p25"
     );
   });
-  it("reports reduced short-term HRV", () => {
+  it("reports reduced HRV with autonomic score", () => {
     const result = interpretHrv(example1);
-    expect(result.overall).toContain("lower than expected");
+    expect(result.autonomicScore).toBeDefined();
+    expect(result.overall).toContain("reduced parasympathetic activity");
+    expect(result.overall).toContain("reduced overall HRV");
   });
   it("describes relative LF predominance", () => {
     const result = interpretHrv(example1);
@@ -253,9 +253,10 @@ describe("seed example 1", () => {
       "Relative LF predominance"
     );
   });
-  it("states the finding cannot diagnose an autonomic condition", () => {
+  it("conclusion is concise without diagnostic disclaimer", () => {
     const result = interpretHrv(example1);
-    expect(result.summary).toContain("does not by itself diagnose");
+    expect(result.summary).not.toContain("nonspecific");
+    expect(result.summary).not.toContain("does not by itself diagnose");
   });
 });
 
@@ -298,11 +299,11 @@ describe("seed example 2", () => {
       "breathing"
     );
   });
-  it("does not report generally reduced variability", () => {
+  it("reports preserved parasympathetic activity and high overall HRV with autonomic score", () => {
     const result = interpretHrv(example2);
-    expect(result.overall).toContain(
-      "do not show generally reduced short-term variability"
-    );
+    expect(result.autonomicScore).toBeDefined();
+    expect(result.overall).toContain("preserved parasympathetic activity");
+    expect(result.overall).toContain("high overall HRV");
   });
 });
 

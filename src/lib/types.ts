@@ -25,6 +25,11 @@ export type MetricResult = {
   limitation?: string;
 };
 
+export type AutonomicScore = {
+  value: number;
+  label: string;
+};
+
 export type HrvInterpretation = {
   summary: string;
   metrics: MetricResult[];
@@ -35,6 +40,7 @@ export type HrvInterpretation = {
   referenceNote?: string;
   lfhfWarning?: string;
   safetyMessage: string;
+  autonomicScore?: AutonomicScore;
 };
 
 export { type PercentileCategory };

@@ -1,24 +1,22 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
+import { useCallback } from "react";
+import { useRouter } from "next/navigation";
+import type { MeasurementInput } from "@/lib/types";
 import { interpretHrv } from "@/lib/interpretHrv";
 import { CalculatorForm } from "@/components/CalculatorForm";
-import { ResultsView } from "@/components/ResultsView";
 
 export default function CalculatorPage() {
-  const [interpretation, setInterpretation] = useState<HrvInterpretation | null>(null);
-  const [lastInput, setLastInput] = useState<MeasurementInput | null>(null);
+  const router = useRouter();
 
   const handleInterpret = useCallback((input: MeasurementInput) => {
     const result = interpretHrv(input);
-    setLastInput(input);
-    setInterpretation(result);
-  }, []);
+    sessionStorage.setItem("5hrv-result", JSON.stringify({ input, interpretation: result }));
+    router.push("/calculator/result");
+  }, [router]);
 
   const handleClear = useCallback(() => {
-    setInterpretation(null);
-    setLastInput(null);
+    sessionStorage.removeItem("5hrv-result");
   }, []);
 
   return (
@@ -35,13 +33,6 @@ export default function CalculatorPage() {
           onClear={handleClear}
         />
       </div>
-
-      {interpretation && lastInput && (
-        <ResultsView
-          interpretation={interpretation}
-          input={lastInput}
-        />
-      )}
     </div>
   );
 }

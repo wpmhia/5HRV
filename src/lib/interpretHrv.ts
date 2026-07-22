@@ -10,6 +10,7 @@ import type {
   HrvInterpretation,
   MetricResult,
   PercentileCategory,
+  AutonomicScore,
 } from "@/lib/types";
 
 export function normalizeNumber(value: string): number | null {
@@ -49,109 +50,118 @@ export function describeLfhf(ratio: number): string {
 const CLINICAL_NOTE =
   "HRV results should be interpreted together with symptoms, examination findings, rhythm assessment and other clinical information.";
 
-const SAFETY_MESSAGE =
-  "Seek medical assessment for concerning symptoms such as syncope, chest pain, severe breathlessness, a sustained irregular heartbeat or new neurological symptoms. HRV interpretation must not delay urgent care.";
-
-const STANDING_LIMITATIONS = [
-  "Age",
-  "Heart rate",
-  "Breathing pattern",
-  "Body position",
-  "Time of day",
-  "Acute illness",
-  "Medication",
-  "Recent physical activity",
-  "Sleep",
-  "Alcohol",
-  "Caffeine",
-  "Nicotine",
-  "Recording artefacts",
-  "Ectopic beats",
-  "Recording device and analysis method",
-];
-
-function combinedPattern(
-  rmssdCategory: PercentileCategory | undefined,
-  sdnnCategory: PercentileCategory | undefined
-): string {
-  const rmssdLow =
-    rmssdCategory === "below_p5" || rmssdCategory === "p5_to_p25";
-  const sdnnLow =
-    sdnnCategory === "below_p5" || sdnnCategory === "p5_to_p25";
-  const rmssdCentral = rmssdCategory === "p25_to_p75";
-  const sdnnCentral = sdnnCategory === "p25_to_p75";
-  const anyAboveP95 =
-    rmssdCategory === "above_p95" || sdnnCategory === "above_p95";
-
-  if (anyAboveP95) {
-    return "One or more values are unusually high within the selected reference distribution. Higher HRV is not automatically better; rhythm, ectopy, breathing and artefact correction should be reviewed.";
-  }
-  if (rmssdLow && sdnnLow) {
-    return "Short-term HRV is lower than expected for the selected reference group, with reduced beat-to-beat vagal-related variability and reduced overall five-minute variability.";
-  }
-  if (rmssdLow && !sdnnLow && sdnnCategory !== undefined) {
-    return "Beat-to-beat vagal-related variability is relatively low, while overall five-minute variability is better preserved.";
-  }
-  if (sdnnLow && !rmssdLow && rmssdCategory !== undefined) {
-    return "Overall five-minute variability is relatively low without a corresponding reduction in RMSSD.";
-  }
-  if (rmssdCentral && sdnnCentral) {
-    return "RMSSD and SDNN are within the central 50% of the selected reference distribution. This does not exclude autonomic dysfunction or another medical condition.";
-  }
-  if (rmssdCategory !== undefined && sdnnCategory !== undefined) {
-    return "RMSSD and SDNN fall in different parts of the selected reference distribution. RMSSD and SDNN do not show generally reduced short-term variability.";
-  }
-  return "Only one reference metric was entered, so a combined RMSSD\u2013SDNN pattern cannot be determined.";
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
-function buildSummary(
-  input: MeasurementInput,
+export function calculateAutonomicScore(
+  rmssd?: number,
+  lfhfRatio?: number
+): AutonomicScore | undefined {
+  if (rmssd === undefined || lfhfRatio === undefined) return undefined;
+
+  const vagalComponent =
+    rmssd < 20
+      ? clamp((20 - rmssd) / 20, 0, 1) * 50
+      : rmssd > 50
+        ? -clamp((rmssd - 50) / 50, 0, 1) * 50
+        : 0;
+
+  const sympatheticComponent =
+    lfhfRatio > 2
+      ? clamp((lfhfRatio - 2) / 6, 0, 1) * 50
+      : lfhfRatio < 1
+        ? -clamp(1 - lfhfRatio, 0, 1) * 50
+        : 0;
+
+  const value = Math.round(clamp(vagalComponent + sympatheticComponent, -100, 100));
+
+  const label =
+    value <= -25
+      ? "Parasympathetic predominance"
+      : value < 25
+        ? "Balanced or mixed pattern"
+        : value < 50
+          ? "Mild sympathetic shift"
+          : value < 75
+            ? "Marked sympathetic predominance"
+            : "Pronounced sympathetic predominance";
+
+  return { value, label };
+}
+
+function rmssdDesc(category: PercentileCategory): string {
+  if (category === "below_p5") return "Parasympathetic activity is markedly reduced.";
+  if (category === "p5_to_p25") return "Parasympathetic activity is reduced.";
+  if (category === "p25_to_p75") return "Parasympathetic activity is preserved.";
+  if (category === "p75_to_p95") return "Parasympathetic activity is high.";
+  return "Parasympathetic activity is very high.";
+}
+
+function sdnnDesc(category: PercentileCategory): string {
+  if (category === "below_p5") return "Overall short-term HRV is markedly reduced.";
+  if (category === "p5_to_p25") return "Overall short-term HRV is reduced.";
+  if (category === "p25_to_p75") return "Overall short-term HRV is within the expected range.";
+  if (category === "p75_to_p95") return "Overall short-term HRV is high.";
+  return "Overall short-term HRV is very high.";
+}
+
+function buildConclusion(
   rmssdCategory: PercentileCategory | undefined,
   sdnnCategory: PercentileCategory | undefined,
-  referenceAvailable: boolean
+  autonomicScore?: AutonomicScore
 ): string {
-  if (!referenceAvailable) {
-    return "The entered values are described below, but they cannot be placed within an age- and sex-specific reference distribution. Interpretation is limited to the recording conditions and the descriptive behaviour of each metric.";
+  const rmssdLow = rmssdCategory === "below_p5" || rmssdCategory === "p5_to_p25";
+  const sdnnLow = sdnnCategory === "below_p5" || sdnnCategory === "p5_to_p25";
+  const rmssdTypical = rmssdCategory === "p25_to_p75";
+  const sdnnTypical = sdnnCategory === "p25_to_p75";
+  const rmssdHigh = rmssdCategory === "p75_to_p95" || rmssdCategory === "above_p95";
+  const sdnnHigh = sdnnCategory === "p75_to_p95" || sdnnCategory === "above_p95";
+
+  if (autonomicScore) {
+    let prefix: string;
+    if (autonomicScore.value <= -25) prefix = "Vagal-predominant autonomic pattern";
+    else if (autonomicScore.value < 25) prefix = "Balanced autonomic pattern";
+    else if (autonomicScore.value < 50) prefix = "Mild sympathetic shift";
+    else if (autonomicScore.value < 75) prefix = "Marked sympathicotonic pattern";
+    else prefix = "Pronounced sympathicotonic pattern";
+
+    const parts: string[] = [];
+    if (rmssdCategory) {
+      parts.push(rmssdLow ? "reduced parasympathetic activity" : "preserved parasympathetic activity");
+    }
+    if (sdnnCategory) {
+      if (sdnnLow) parts.push("reduced overall HRV");
+      else if (sdnnHigh) parts.push("high overall HRV");
+      else parts.push("preserved overall HRV");
+    }
+    if (parts.length > 0) prefix += ` with ${parts.join(" and ")}`;
+    return prefix + ".";
   }
 
-  const sentences: string[] = [];
-
-  const summaryPhrases: Record<PercentileCategory, string> = {
-    below_p5: "below the fifth percentile",
-    p5_to_p25: "in the lower part of the reference distribution",
-    p25_to_p75: "within the central 50% of the reference distribution",
-    p75_to_p95: "in the upper part of the reference distribution",
-    above_p95: "unusually high within the reference distribution",
-  };
-
-  const parts: string[] = [];
-  if (input.rmssd !== undefined && rmssdCategory !== undefined) {
-    parts.push(`RMSSD is ${summaryPhrases[rmssdCategory]}`);
-  }
-  if (input.sdnn !== undefined && sdnnCategory !== undefined) {
-    parts.push(`SDNN is ${summaryPhrases[sdnnCategory]}`);
+  if (rmssdCategory && sdnnCategory) {
+    if (rmssdLow && sdnnLow) return "Parasympathetic activity and overall short-term HRV are reduced.";
+    if (rmssdLow) return `Parasympathetic activity is reduced, while overall short-term HRV ${sdnnLow ? "is" : sdnnHigh ? "is high" : "is preserved"}.`;
+    if (sdnnLow) return `Parasympathetic activity ${rmssdLow ? "is" : rmssdHigh ? "is high" : "is preserved"}, but overall short-term HRV is reduced.`;
+    if (rmssdTypical && sdnnTypical) return "Parasympathetic activity and overall short-term HRV are within the expected range.";
+    if (rmssdTypical && sdnnHigh) return "Parasympathetic activity is preserved and overall short-term HRV is high. There is no pattern of reduced HRV.";
+    if (rmssdHigh && sdnnHigh) return "Parasympathetic activity and overall short-term HRV are high.";
+    return `Parasympathetic activity ${rmssdHigh ? "is high" : "is preserved"} and overall short-term HRV ${sdnnHigh ? "is high" : "is preserved"}.`;
   }
 
-  if (parts.length > 0) {
-    sentences.push(
-      `${parts.join(" and ")} for the selected age and reference-sex group.`
-    );
+  if (rmssdCategory) {
+    if (rmssdLow) return "Parasympathetic activity is reduced.";
+    if (rmssdTypical) return "Parasympathetic activity is within the expected range.";
+    return "Parasympathetic activity is high.";
   }
 
-  sentences.push(combinedPattern(rmssdCategory, sdnnCategory));
-
-  const anyLow =
-    rmssdCategory === "below_p5" ||
-    rmssdCategory === "p5_to_p25" ||
-    sdnnCategory === "below_p5" ||
-    sdnnCategory === "p5_to_p25";
-  if (anyLow) {
-    sentences.push(
-      "The finding is nonspecific and does not by itself diagnose autonomic dysfunction or another medical condition."
-    );
+  if (sdnnCategory) {
+    if (sdnnLow) return "Overall short-term HRV is reduced.";
+    if (sdnnTypical) return "Overall short-term HRV is within the expected range.";
+    return "Overall short-term HRV is high.";
   }
 
-  return sentences.join(" ");
+  return "";
 }
 
 export function interpretHrv(input: MeasurementInput): HrvInterpretation {
@@ -201,11 +211,9 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
       referencePercentiles: rmssdPercentiles
         ? [...rmssdPercentiles]
         : undefined,
-      interpretation:
-        "Short-term beat-to-beat variability strongly influenced by cardiac vagal modulation." +
-        (rmssdCategory ? " " + percentileExplanations[rmssdCategory] : ""),
-      limitation:
-        "RMSSD does not directly measure vagal nerve activity; it is a statistical marker influenced by it.",
+      interpretation: rmssdCategory
+        ? rmssdDesc(rmssdCategory)
+        : "Short-term beat-to-beat variability strongly influenced by cardiac vagal modulation.",
     });
   }
 
@@ -220,11 +228,9 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
       referencePercentiles: sdnnPercentiles
         ? [...sdnnPercentiles]
         : undefined,
-      interpretation:
-        "SDNN reflects overall variability during this five-minute recording." +
-        (sdnnCategory ? " " + percentileExplanations[sdnnCategory] : ""),
-      limitation:
-        "Five-minute SDNN must not be compared with 24-hour Holter SDNN reference values.",
+      interpretation: sdnnCategory
+        ? sdnnDesc(sdnnCategory)
+        : "SDNN reflects overall variability during this five-minute recording.",
     });
   }
 
@@ -299,22 +305,23 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     });
   }
 
-  const summary = buildSummary(input, rmssdCategory, sdnnCategory, referenceAvailable);
+  const autonomicScore = calculateAutonomicScore(input.rmssd, ratio);
 
-  const overall = referenceAvailable
-    ? combinedPattern(rmssdCategory, sdnnCategory)
-    : "Without a matching reference distribution, only descriptive statements can be made. Interpret the values descriptively and together with the recording conditions and clinical context.";
+  const conclusion = referenceAvailable
+    ? buildConclusion(rmssdCategory, sdnnCategory, autonomicScore)
+    : "The entered values cannot be placed within an age- and sex-specific reference distribution. Interpret the values descriptively and together with the clinical context.";
 
   return {
-    summary,
+    summary: conclusion,
     metrics,
-    overall,
-    limitations: STANDING_LIMITATIONS,
+    overall: conclusion,
+    limitations: [],
     clinicalNote: CLINICAL_NOTE,
     referenceAvailable,
     referenceNote,
     lfhfWarning,
-    safetyMessage: SAFETY_MESSAGE,
+    safetyMessage: "",
+    autonomicScore,
   };
 }
 

@@ -77,11 +77,11 @@ export type PercentileCategory =
   | "above_p95";
 
 export const percentileLabels: Record<PercentileCategory, string> = {
-  below_p5: "Unusually low within this reference distribution",
-  p5_to_p25: "Lower part of the reference distribution",
-  p25_to_p75: "Within the central 50% of the reference distribution",
-  p75_to_p95: "Upper part of the reference distribution",
-  above_p95: "Unusually high within this reference distribution",
+  below_p5: "Very low",
+  p5_to_p25: "Low",
+  p25_to_p75: "Typical",
+  p75_to_p95: "High",
+  above_p95: "Very high",
 };
 
 export const percentileExplanations: Record<PercentileCategory, string> = {
