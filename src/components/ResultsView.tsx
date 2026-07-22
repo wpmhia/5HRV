@@ -7,7 +7,6 @@ import { getAgeBand } from "@/data/hrvReferenceData";
 type Props = {
   interpretation: HrvInterpretation;
   input: MeasurementInput;
-  onClear: () => void;
 };
 
 function approxPercentile(value: number, ref: number[]): number | null {
@@ -158,7 +157,7 @@ function formatDate(): string {
   });
 }
 
-export function ResultsView({ interpretation, input, onClear }: Props) {
+export function ResultsView({ interpretation, input }: Props) {
   const [copied, setCopied] = useState(false);
 
   const ageBand = useMemo(() => getAgeBand(input.age), [input.age]);
@@ -203,21 +202,14 @@ export function ResultsView({ interpretation, input, onClear }: Props) {
               onClick={handleCopy}
               className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
             >
-              {copied ? "Copied" : "Copy"}
+              {copied ? "Copied" : "Copy report"}
             </button>
             <button
               type="button"
               onClick={handlePrint}
               className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
             >
-              Print
-            </button>
-            <button
-              type="button"
-              onClick={onClear}
-              className="rounded-md bg-[#286d6d] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1f5555] transition-colors"
-            >
-              New calculation
+              Print result
             </button>
           </div>
         </div>
