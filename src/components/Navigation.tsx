@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { Button } from "./ui/button";
 
 const navItems = [
-  { href: "/method", label: "The 5-Min. Method" },
-  { href: "/parameters", label: "HRV Parameters" },
-  { href: "/interpretation", label: "Interpretation" },
-  { href: "/applications", label: "Applications" },
-  { href: "/calculator", label: "Calculator" },
+  { href: "/method", label: "Method" },
+  { href: "/applications", label: "Clinical Use" },
   { href: "/evidence", label: "Evidence" },
-  { href: "/about", label: "About" },
+  { href: "/calculator", label: "Calculator" },
 ];
+
+const textItems = navItems.slice(0, 3);
+const calculatorItem = navItems[3];
 
 export function Navigation() {
   const path = usePathname();
@@ -29,7 +30,7 @@ export function Navigation() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
-          {navItems.map((item) => (
+          {textItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -42,6 +43,9 @@ export function Navigation() {
               {item.label}
             </Link>
           ))}
+          <Button variant="outline" size="sm" asChild>
+            <Link href={calculatorItem.href}>{calculatorItem.label}</Link>
+          </Button>
         </nav>
 
         <button
@@ -63,17 +67,25 @@ export function Navigation() {
           <ul className="space-y-1">
             {navItems.map((item) => (
               <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className={`block rounded-md px-3 py-2 text-sm ${
-                    path === item.href
-                      ? "bg-accent text-accent-foreground font-medium"
-                      : "text-foreground/80 hover:bg-muted"
-                  }`}
-                >
-                  {item.label}
-                </Link>
+                {item.href === "/calculator" ? (
+                  <Button variant="outline" size="sm" asChild className="w-full">
+                    <Link href={item.href} onClick={() => setOpen(false)}>
+                      {item.label}
+                    </Link>
+                  </Button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={`block rounded-md px-3 py-2 text-sm ${
+                      path === item.href
+                        ? "bg-accent text-accent-foreground font-medium"
+                        : "text-foreground/80 hover:bg-muted"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
