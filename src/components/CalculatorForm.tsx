@@ -283,14 +283,16 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             error={errors.sdnn}
             helper="Overall variability during the five-minute recording."
           />
-          <NumberField
-            id="pnn50"
-            label="pNN50"
-            unit="%"
-            value={form.pnn50}
-            onChange={(v) => set("pnn50", v)}
-            error={errors.pnn50}
-          />
+          <div className="sm:col-span-2">
+            <NumberField
+              id="pnn50"
+              label="pNN50"
+              unit="%"
+              value={form.pnn50}
+              onChange={(v) => set("pnn50", v)}
+              error={errors.pnn50}
+            />
+          </div>
           <NumberField
             id="hfPower"
             label="HF power"
