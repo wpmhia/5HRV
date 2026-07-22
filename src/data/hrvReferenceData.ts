@@ -59,43 +59,40 @@ export function getAgeBand(age: number): AgeBand | null {
   return null;
 }
 
-export function getPercentileRanks(): readonly number[] {
-  return [5, 25, 50, 75, 95] as const;
+export function classifyPercentile(value: number, percentiles: readonly number[]): PercentileCategory {
+  const [p5, p25, _p50, p75, p95] = percentiles;
+
+  if (value < p5) return "below_p5";
+  if (value < p25) return "p5_to_p25";
+  if (value <= p75) return "p25_to_p75";
+  if (value <= p95) return "p75_to_p95";
+  return "above_p95";
 }
 
-export function classifyPercentile(value: number, percentiles: readonly number[]): {
-  category: "below_p5" | "p5_to_p25" | "p25_to_p75" | "p75_to_p95" | "above_p95";
-  rank: number | null;
-} {
-  const [p5, p25, p50, p75, p95] = percentiles;
+export type PercentileCategory =
+  | "below_p5"
+  | "p5_to_p25"
+  | "p25_to_p75"
+  | "p75_to_p95"
+  | "above_p95";
 
-  if (value < p5) {
-    return { category: "below_p5", rank: null };
-  }
-  if (value < p25) {
-    return { category: "p5_to_p25", rank: null };
-  }
-  if (value <= p75) {
-    return { category: "p25_to_p75", rank: null };
-  }
-  if (value <= p95) {
-    return { category: "p75_to_p95", rank: null };
-  }
-  return { category: "above_p95", rank: null };
-}
-
-export const percentileLabels: Record<string, string> = {
-  below_p5: "Below reference distribution",
+export const percentileLabels: Record<PercentileCategory, string> = {
+  below_p5: "Unusually low within this reference distribution",
   p5_to_p25: "Lower part of the reference distribution",
-  p25_to_p75: "Within central reference distribution",
+  p25_to_p75: "Within the central 50% of the reference distribution",
   p75_to_p95: "Upper part of the reference distribution",
-  above_p95: "Above reference distribution",
+  above_p95: "Unusually high within this reference distribution",
 };
 
-export const percentileExplanations: Record<string, string> = {
-  below_p5: "The value is below the fifth percentile for the selected age and reference-sex group. This is a nonspecific finding and may reflect physiology, illness, medication, measurement conditions or recording-quality problems.",
-  p5_to_p25: "The value falls in the lower part of the reference distribution for the selected age and reference-sex group.",
-  p25_to_p75: "The value falls within the central 50% of the age- and sex-specific reference distribution.",
-  p75_to_p95: "The value falls in the upper part of the reference distribution for the selected age and reference-sex group.",
-  above_p95: "Unusually high within this reference distribution. Higher HRV is not automatically better. Verify rhythm, ectopy, artefact correction, breathing and clinical context.",
+export const percentileExplanations: Record<PercentileCategory, string> = {
+  below_p5:
+    "The value is below the fifth percentile for the selected age and reference-sex group. This is a nonspecific finding and may reflect physiology, acute illness, medication, measurement conditions or recording quality.",
+  p5_to_p25:
+    "The value falls between the 5th and 25th percentiles of the selected age- and sex-specific reference distribution.",
+  p25_to_p75:
+    "The value falls within the central 50% of the selected age- and sex-specific reference distribution.",
+  p75_to_p95:
+    "The value falls between the 75th and 95th percentiles of the selected age- and sex-specific reference distribution.",
+  above_p95:
+    "The value is above the 95th percentile of the selected reference distribution. Higher HRV is not automatically better; rhythm, ectopy, breathing and artefact correction should be reviewed.",
 };

@@ -1,60 +1,56 @@
-"use client";
-
 import type { Confidence } from "@/lib/types";
 
-type ConfidenceCardProps = {
+type Props = {
   confidence: Confidence;
+  label: string;
   reasons: string[];
 };
 
-const confidenceConfig: Record<
-  Confidence,
-  { label: string; bg: string; text: string }
-> = {
-  high: {
-    label: "High confidence",
-    bg: "bg-accent",
-    text: "text-accent-foreground",
-  },
-  moderate: {
-    label: "Moderate confidence",
-    bg: "bg-accent/60",
-    text: "text-accent-foreground",
-  },
-  low: {
-    label: "Low confidence",
-    bg: "bg-muted",
-    text: "text-muted-foreground",
-  },
-  "not-interpretable": {
-    label: "Not interpretable",
-    bg: "bg-muted",
-    text: "text-muted-foreground",
-  },
+const styles: Record<Confidence, string> = {
+  high: "border-primary/40 bg-accent",
+  moderate: "border-border bg-muted",
+  low: "border-border bg-muted",
+  "not-valid": "border-destructive/40 bg-muted",
 };
 
-export function ConfidenceCard({ confidence, reasons }: ConfidenceCardProps) {
-  const config = confidenceConfig[confidence];
+const badgeStyles: Record<Confidence, string> = {
+  high: "bg-primary text-primary-foreground",
+  moderate: "bg-foreground/80 text-background",
+  low: "bg-foreground/80 text-background",
+  "not-valid": "bg-destructive text-primary-foreground",
+};
 
+export function ConfidenceCard({ confidence, label, reasons }: Props) {
   return (
-    <div className="bg-card rounded-lg border border-border p-5">
-      <div className="flex items-center gap-3 mb-3">
+    <section
+      aria-labelledby="confidence-heading"
+      className={`rounded-lg border p-5 ${styles[confidence]}`}
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 id="confidence-heading" className="text-base font-semibold text-foreground">
+          Recording confidence
+        </h2>
         <span
-          className={`text-sm font-semibold px-3 py-1 rounded-md ${config.bg} ${config.text}`}
+          className={`rounded-md px-2.5 py-1 text-xs font-semibold ${badgeStyles[confidence]}`}
         >
-          {config.label}
+          {label}
         </span>
       </div>
       {reasons.length > 0 && (
-        <ul className="space-y-1">
-          {reasons.map((reason, i) => (
-            <li key={i} className="text-sm text-muted-foreground flex gap-2">
-              <span className="text-accent-foreground mt-0.5 shrink-0">&#x2022;</span>
+        <ul className="mt-3 space-y-1.5">
+          {reasons.map((reason) => (
+            <li
+              key={reason}
+              className="flex gap-2 text-sm leading-relaxed text-foreground/80"
+            >
+              <span aria-hidden="true" className="mt-0.5 shrink-0">
+                &#x2022;
+              </span>
               <span>{reason}</span>
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

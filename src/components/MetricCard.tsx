@@ -1,50 +1,31 @@
-"use client";
+import type { MetricResult } from "@/lib/types";
 
-import type { MetricInterpretation, PercentileCategory } from "@/lib/types";
-import { PercentileBar } from "@/components/PercentileBar";
-
-type MetricCardProps = {
-  metricName: string;
-  interpretation: MetricInterpretation;
-  percentiles?: number[];
-};
-
-export function MetricCard({ metricName, interpretation, percentiles }: MetricCardProps) {
+export function MetricCard({ metric }: { metric: MetricResult }) {
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
-      <div className="flex items-baseline justify-between mb-2">
-        <h3 className="text-sm font-semibold text-foreground">{metricName}</h3>
-        <div className="text-right">
-          <span className="text-2xl font-bold text-foreground">{interpretation.value}</span>
-          {interpretation.unit && (
-            <span className="text-sm text-muted-foreground ml-1">{interpretation.unit}</span>
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold text-foreground">{metric.name}</h3>
+        <p className="text-lg font-bold text-foreground">
+          {metric.value}
+          {metric.unit && (
+            <span className="ml-1 text-sm font-normal text-muted-foreground">
+              {metric.unit}
+            </span>
           )}
-        </div>
+        </p>
       </div>
-
-      <div className="mb-2">
-        <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded ${
-          interpretation.percentileCategory
-            ? "bg-accent text-accent-foreground"
-            : "bg-muted text-muted-foreground"
-        }`}>
-          {interpretation.label}
+      {metric.categoryLabel && (
+        <span className="mt-2 inline-block rounded-md bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
+          {metric.categoryLabel}
         </span>
-      </div>
-
-      <p className="text-sm text-muted-foreground mb-2">{interpretation.explanation}</p>
-
-      {interpretation.limitation && (
-        <p className="text-xs text-muted-foreground/80 italic">{interpretation.limitation}</p>
       )}
-
-      {percentiles && (
-        <PercentileBar
-          value={interpretation.value}
-          percentiles={percentiles}
-          unit={interpretation.unit}
-          metricName={metricName}
-        />
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        {metric.interpretation}
+      </p>
+      {metric.limitation && (
+        <p className="mt-2 text-xs italic leading-relaxed text-muted-foreground/80">
+          {metric.limitation}
+        </p>
       )}
     </div>
   );

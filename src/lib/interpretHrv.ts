@@ -8,203 +8,172 @@ import {
 import type {
   MeasurementInput,
   HrvInterpretation,
-  MetricInterpretation,
+  MetricResult,
   Confidence,
   PercentileCategory,
 } from "@/lib/types";
 
-export function normalizeNumber(value: string | number): number {
-  if (typeof value === "number") return value;
-  const normalized = value.replace(",", ".").trim();
-  return parseFloat(normalized);
+export function normalizeNumber(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  const normalized = trimmed.replace(",", ".");
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
 }
+
+export function computeLfhfRatio(lfPower: number, hfPower: number): number | null {
+  if (hfPower <= 0) return null;
+  return lfPower / hfPower;
+}
+
+export function hasLfhfDiscrepancy(
+  enteredRatio: number,
+  lfPower: number,
+  hfPower: number
+): boolean {
+  const calculated = computeLfhfRatio(lfPower, hfPower);
+  if (calculated === null || calculated === 0) return false;
+  return Math.abs(enteredRatio - calculated) / calculated > 0.1;
+}
+
+const LFHF_CAUTION =
+  "LF/HF is not a direct measurement of sympathetic\u2013parasympathetic balance.";
+
+export function describeLfhf(ratio: number): string {
+  if (ratio < 0.5) return "Relative HF predominance";
+  if (ratio <= 2.0) return "LF and HF are of broadly comparable magnitude";
+  if (ratio <= 4.0) return "Relative LF predominance";
+  return "Marked relative LF predominance";
+}
+
+const CLINICAL_NOTE =
+  "HRV results should be interpreted together with symptoms, examination findings, rhythm assessment and other clinical information.";
+
+const SAFETY_MESSAGE =
+  "Seek medical assessment for concerning symptoms such as syncope, chest pain, severe breathlessness, a sustained irregular heartbeat or new neurological symptoms. HRV interpretation must not delay urgent care.";
+
+const STANDING_LIMITATIONS = [
+  "Age",
+  "Heart rate",
+  "Breathing pattern",
+  "Body position",
+  "Time of day",
+  "Acute illness",
+  "Medication",
+  "Recent physical activity",
+  "Sleep",
+  "Alcohol",
+  "Caffeine",
+  "Nicotine",
+  "Recording artefacts",
+  "Ectopic beats",
+  "Recording device and analysis method",
+];
 
 function assessConfidence(input: MeasurementInput): {
   confidence: Confidence;
   reasons: string[];
-  notInterpretableReason?: string;
 } {
+  if (input.rhythm === "af_flutter") {
+    return {
+      confidence: "not-valid",
+      reasons: [
+        "Atrial fibrillation or atrial flutter was present. Standard sinus-rhythm HRV interpretation is not valid for this recording.",
+      ],
+    };
+  }
+  if (input.rhythm === "paced") {
+    return {
+      confidence: "not-valid",
+      reasons: [
+        "A paced rhythm was present. Standard sinus-rhythm HRV interpretation is not valid for this recording.",
+      ],
+    };
+  }
+  if (input.rhythm === "frequent_ectopy") {
+    return {
+      confidence: "not-valid",
+      reasons: [
+        "Frequent ectopic beats substantially affect the recording. Standard sinus-rhythm HRV interpretation is not valid.",
+      ],
+    };
+  }
+
   const reasons: string[] = [];
 
-  if (
-    input.rhythmConditions.includes("atrial_fibrillation") ||
-    input.rhythmConditions.includes("atrial_flutter") ||
-    input.rhythmConditions.includes("paced_ventricular")
-  ) {
-    return {
-      confidence: "not-interpretable",
-      reasons: [
-        "Standard sinus-rhythm HRV interpretation may not be valid for this recording.",
-      ],
-      notInterpretableReason:
-        "Atrial fibrillation, atrial flutter, or paced ventricular rhythm was present. Standard sinus-rhythm HRV interpretation is not valid.",
-    };
-  }
-
-  if (input.rhythmConditions.includes("frequent_ectopy") && input.artefactCorrection !== "completed") {
-    return {
-      confidence: "not-interpretable",
-      reasons: [
-        "Frequent ectopic beats were present and artefact correction was not completed.",
-      ],
-      notInterpretableReason:
-        "Frequent ectopic beats with no artefact correction. Standard HRV interpretation is not valid.",
-    };
-  }
-
-  let flagCount = 0;
-
-  if (input.measurementSource === "unknown") {
-    reasons.push("Measurement source is unknown.");
-    flagCount++;
-  }
-  if (input.measurementSource === "smartwatch" || input.measurementSource === "ppg") {
-    reasons.push("PPG or smartwatch source limits accuracy, especially for frequency-domain measurements.");
-    flagCount++;
-  }
-  if (input.recordingDuration < 4.5 || input.recordingDuration > 5.5) {
+  if (input.measurementSource === "ppg") {
     reasons.push(
-      "Recording duration is not approximately five minutes, which this reference framework is designed for."
+      "PPG measurement has lower precision than ECG, particularly for frequency-domain metrics."
     );
-    flagCount++;
+  } else if (input.measurementSource === "smartwatch") {
+    reasons.push(
+      "Smartwatch or wearable measurements have lower precision than ECG, particularly for frequency-domain metrics."
+    );
+  } else if (input.measurementSource === "unknown") {
+    reasons.push("The measurement method is unknown.");
   }
+
+  if (input.durationMinutes < 4.5 || input.durationMinutes > 5.5) {
+    reasons.push(
+      "The recording duration differs from the approximately five-minute reference protocol."
+    );
+  }
+
   if (input.position === "standing") {
-    reasons.push("Standing position materially affects HRV compared to the supine reference condition.");
-    flagCount++;
-  }
-  if (input.position === "seated" || input.position === "unknown") {
     reasons.push(
-      input.position === "seated"
-        ? "Seated position may affect HRV compared to the supine reference condition."
-        : "Body position is unknown, limiting comparability with reference data."
+      "A standing measurement differs materially from the supine reference condition."
     );
-    flagCount++;
-  }
-  if (input.breathing === "irregular" || input.breathing === "talking_or_irregular") {
-    reasons.push("Irregular breathing or talking during recording may affect HRV measurements.");
-    flagCount++;
-  }
-  if (input.artefactCorrection !== "completed") {
-    reasons.push("Artefact correction was not confirmed as completed.");
-    flagCount++;
-  }
-  if (input.rhythmConditions.includes("unknown")) {
-    reasons.push("Rhythm quality during recording is unknown.");
-    flagCount++;
-  }
-  if (input.restBefore === "less_than_5" || input.restBefore === "unknown") {
+  } else if (input.position === "seated") {
     reasons.push(
-      input.restBefore === "less_than_5"
-        ? "Rest period before recording was less than five minutes."
-        : "Rest period before recording is unknown."
+      "A seated measurement differs from the supine reference condition."
     );
-    flagCount++;
-  }
-  if (input.rhythmConditions.includes("frequent_ectopy")) {
-    reasons.push("Frequent ectopic beats were present. Interpretation confidence is reduced.");
-    flagCount++;
-  }
-  if (input.samplingRate !== undefined && input.samplingRate < 250) {
-    reasons.push(
-      `Sampling rate of ${input.samplingRate} Hz may reduce RR-interval precision.`
-    );
-    flagCount++;
+  } else if (input.position === "unknown") {
+    reasons.push("The body position during recording is unknown.");
   }
 
-  if (flagCount >= 2) {
-    return { confidence: "low", reasons };
-  }
-  if (flagCount === 1 || (
-    input.measurementSource === "unknown" ||
-    input.artefactCorrection === "unknown" ||
-    input.breathing === "unknown" ||
-    input.rhythmConditions.includes("unknown")
-  )) {
-    return { confidence: "moderate", reasons };
+  if (input.artefactCorrection === "not_completed") {
+    reasons.push("Artefact correction was not completed.");
+  } else if (input.artefactCorrection === "unknown") {
+    reasons.push("The artefact-correction status is unknown.");
   }
 
-  if (
-    (input.measurementSource === "ecg" || input.measurementSource === "ecg_chest_strap") &&
-    input.recordingDuration >= 4.5 &&
-    input.recordingDuration <= 5.5 &&
+  if (input.rhythm === "unknown") {
+    reasons.push("The rhythm during the recording is unknown.");
+  }
+
+  const isHigh =
+    (input.measurementSource === "ecg" ||
+      input.measurementSource === "ecg_chest_strap") &&
+    input.durationMinutes >= 4.5 &&
+    input.durationMinutes <= 5.5 &&
     input.position === "supine" &&
-    input.breathing === "spontaneous" &&
-    input.restBefore === "at_least_5" &&
-    input.artefactCorrection === "completed" &&
-    input.rhythmConditions.includes("sinus_rhythm") &&
-    !input.rhythmConditions.includes("frequent_ectopy") &&
-    (input.samplingRate === undefined || input.samplingRate >= 250)
-  ) {
-    if (reasons.length === 0) {
-      return { confidence: "high", reasons };
-    }
+    input.rhythm === "sinus" &&
+    input.artefactCorrection === "completed";
+
+  if (isHigh) {
+    return {
+      confidence: "high",
+      reasons: [
+        "Recording conditions match the five-minute supine ECG reference protocol.",
+      ],
+    };
   }
 
-  if (flagCount > 0) {
+  if (reasons.length >= 2) {
     return { confidence: "low", reasons };
   }
   return { confidence: "moderate", reasons };
 }
 
-function buildMetricInterpretation(
-  metricName: string,
-  value: number,
-  unit: string,
-  percentileCategory: PercentileCategory | undefined,
-  additionalContext?: string
-): MetricInterpretation {
-  const label = percentileCategory
-    ? percentileLabels[percentileCategory]
-    : "Limited interpretation";
+const confidenceLabels: Record<Confidence, string> = {
+  high: "High confidence",
+  moderate: "Moderate confidence",
+  low: "Low confidence",
+  "not-valid": "Standard interpretation not valid",
+};
 
-  let explanation = percentileCategory
-    ? percentileExplanations[percentileCategory]
-    : `No matched reference-percentile for ${metricName}.`;
-
-  if (additionalContext) {
-    explanation += " " + additionalContext;
-  }
-
-  return {
-    value,
-    unit,
-    percentileCategory,
-    label,
-    explanation,
-  };
-}
-
-function getSpectralInterpretation(input: MeasurementInput): string | undefined {
-  const ratio = input.lfhfRatio;
-  if (ratio === undefined) return undefined;
-
-  const base: Record<string, string> = {
-    below_0_5: "The spectral distribution is relatively HF weighted.",
-    between: "LF and HF are of broadly comparable magnitude.",
-    above_2: "The spectral distribution shows relative LF predominance.",
-    above_4: "The spectral distribution shows marked relative LF predominance.",
-  };
-
-  let category: string;
-  if (ratio < 0.5) {
-    category = base.below_0_5;
-  } else if (ratio <= 2.0) {
-    category = base.between;
-  } else if (ratio <= 4.0) {
-    category = base.above_2;
-  } else {
-    category = base.above_4;
-  }
-
-  return (
-    category +
-    " LF/HF is not a direct measurement of sympathetic" +
-    "\u2013parasympathetic balance and must be interpreted cautiously."
-  );
-}
-
-function buildSummary(
-  input: MeasurementInput,
+function combinedPattern(
   rmssdCategory: PercentileCategory | undefined,
   sdnnCategory: PercentileCategory | undefined
 ): string {
@@ -212,248 +181,250 @@ function buildSummary(
     rmssdCategory === "below_p5" || rmssdCategory === "p5_to_p25";
   const sdnnLow =
     sdnnCategory === "below_p5" || sdnnCategory === "p5_to_p25";
-  const rmssdMid = rmssdCategory === "p25_to_p75";
-  const sdnnMid = sdnnCategory === "p25_to_p75";
-  const anyHigh =
+  const rmssdCentral = rmssdCategory === "p25_to_p75";
+  const sdnnCentral = sdnnCategory === "p25_to_p75";
+  const anyAboveP95 =
     rmssdCategory === "above_p95" || sdnnCategory === "above_p95";
 
+  if (anyAboveP95) {
+    return "One or more values are unusually high within the selected reference distribution. Higher HRV is not automatically better; rhythm, ectopy, breathing and artefact correction should be reviewed.";
+  }
   if (rmssdLow && sdnnLow) {
-    return "Short-term HRV is lower than expected for the selected reference group, with reductions in both beat-to-beat vagal-related variability and overall five-minute variability. This pattern is nonspecific and cannot identify its cause.";
+    return "Short-term HRV is lower than expected for the selected reference group, with reduced beat-to-beat vagal-related variability and reduced overall five-minute variability.";
   }
-  if (rmssdLow && (sdnnMid || sdnnCategory === "p75_to_p95" || sdnnCategory === "above_p95")) {
-    return "Beat-to-beat vagal-related variability is relatively low, while overall short-term variability is better preserved.";
+  if (rmssdLow && !sdnnLow && sdnnCategory !== undefined) {
+    return "Beat-to-beat vagal-related variability is relatively low, while overall five-minute variability is better preserved.";
   }
-  if (sdnnLow && (rmssdMid || rmssdCategory === "p75_to_p95" || rmssdCategory === "above_p95")) {
-    return "Overall five-minute variability is relatively low without a corresponding reduction in RMSSD. Confirm recording quality and consider the influence of heart rate, breathing and recording conditions.";
+  if (sdnnLow && !rmssdLow && rmssdCategory !== undefined) {
+    return "Overall five-minute variability is relatively low without a corresponding reduction in RMSSD.";
   }
-  if (rmssdMid && sdnnMid) {
-    return "RMSSD and SDNN fall within the central 50% of the selected age- and sex-specific reference distribution. This does not exclude autonomic dysfunction or another medical condition.";
+  if (rmssdCentral && sdnnCentral) {
+    return "RMSSD and SDNN are within the central 50% of the selected reference distribution. This does not exclude autonomic dysfunction or another medical condition.";
   }
-  if (anyHigh) {
-    return "One or more HRV measures are unusually high within the selected reference distribution. High values may occur in healthy individuals but can also be influenced by slow heart rate, ectopic beats, rhythm irregularity, breathing or artefact. Higher is not automatically better.";
+  if (rmssdCategory !== undefined && sdnnCategory !== undefined) {
+    return "RMSSD and SDNN fall in different parts of the selected reference distribution. RMSSD and SDNN do not show generally reduced short-term variability.";
   }
-
-  return "HRV measurements have been contextualized against the selected reference distribution. Interpretation is limited by the available data and recording conditions.";
+  return "Only one reference metric was entered, so a combined RMSSD\u2013SDNN pattern cannot be determined.";
 }
 
-function buildLimitations(input: MeasurementInput): string[] {
-  const limitations: string[] = [];
-
-  limitations.push("Age");
-  if (input.referenceSex !== "none") {
-    limitations.push("Reference sex");
+function buildSummary(
+  input: MeasurementInput,
+  rmssdCategory: PercentileCategory | undefined,
+  sdnnCategory: PercentileCategory | undefined,
+  referenceAvailable: boolean
+): string {
+  if (!referenceAvailable) {
+    return "The entered values are described below, but they cannot be placed within an age- and sex-specific reference distribution. Interpretation is limited to the recording conditions and the descriptive behaviour of each metric.";
   }
-  if (input.meanHeartRate !== undefined) {
-    limitations.push("Mean heart rate");
-  }
-  limitations.push("Body position");
-  limitations.push("Respiratory rate and depth");
-  limitations.push("Time of day");
-  limitations.push("Recent exercise");
-  limitations.push("Acute illness");
-  limitations.push("Sleep");
-  limitations.push("Psychological stress");
-  limitations.push("Caffeine");
-  limitations.push("Nicotine");
-  limitations.push("Alcohol");
-  limitations.push("Medication");
-  limitations.push("Hydration");
-  limitations.push("Ectopic beats");
-  limitations.push("Artefact correction");
-  limitations.push("Device and sampling method");
 
-  return limitations;
+  const sentences: string[] = [];
+
+  const summaryPhrases: Record<PercentileCategory, string> = {
+    below_p5: "below the fifth percentile",
+    p5_to_p25: "in the lower part of the reference distribution",
+    p25_to_p75: "within the central 50% of the reference distribution",
+    p75_to_p95: "in the upper part of the reference distribution",
+    above_p95: "unusually high within the reference distribution",
+  };
+
+  const parts: string[] = [];
+  if (input.rmssd !== undefined && rmssdCategory !== undefined) {
+    parts.push(`RMSSD is ${summaryPhrases[rmssdCategory]}`);
+  }
+  if (input.sdnn !== undefined && sdnnCategory !== undefined) {
+    parts.push(`SDNN is ${summaryPhrases[sdnnCategory]}`);
+  }
+
+  if (parts.length > 0) {
+    sentences.push(
+      `${parts.join(" and ")} for the selected age and reference-sex group.`
+    );
+  }
+
+  sentences.push(combinedPattern(rmssdCategory, sdnnCategory));
+
+  const anyLow =
+    rmssdCategory === "below_p5" ||
+    rmssdCategory === "p5_to_p25" ||
+    sdnnCategory === "below_p5" ||
+    sdnnCategory === "p5_to_p25";
+  if (anyLow) {
+    sentences.push(
+      "The finding is nonspecific and does not by itself diagnose autonomic dysfunction or another medical condition."
+    );
+  }
+
+  return sentences.join(" ");
 }
 
 export function interpretHrv(input: MeasurementInput): HrvInterpretation {
-  const { confidence, reasons: confidenceReasons, notInterpretableReason } =
-    assessConfidence(input);
-
-  if (confidence === "not-interpretable") {
-    return {
-      confidence: "not-interpretable",
-      confidenceReasons,
-      summary: notInterpretableReason || "",
-      limitations: buildLimitations(input),
-      safetyMessage:
-        "Seek medical assessment for concerning symptoms such as syncope, chest pain, severe breathlessness, a sustained irregular heartbeat or new neurological symptoms. HRV interpretation must not delay urgent care.",
-      notInterpretableReason,
-    };
-  }
+  const { confidence, reasons } = assessConfidence(input);
+  const notValid = confidence === "not-valid";
 
   const ageBand = getAgeBand(input.age);
-  const hasReference =
-    input.referenceSex !== "none" && ageBand !== null && input.age <= 72;
+  const referenceAvailable =
+    !notValid && input.referenceSex !== "none" && ageBand !== null;
+
+  let referenceNote: string | undefined;
+  if (!notValid) {
+    if (input.age > 72) {
+      referenceNote =
+        "No matching age-specific reference percentile is available above 72 years. The values can still be described, but they cannot be placed accurately within this reference distribution.";
+    } else if (input.referenceSex === "none") {
+      referenceNote =
+        "No sex-specific reference distribution was selected. The values are described without reference-percentile placement.";
+    }
+  }
 
   let rmssdCategory: PercentileCategory | undefined;
   let sdnnCategory: PercentileCategory | undefined;
+  let rmssdPercentiles: readonly number[] | undefined;
+  let sdnnPercentiles: readonly number[] | undefined;
 
-  if (hasReference && input.rmssd !== undefined) {
-    const refData =
-      hrvReferenceData[input.referenceSex as "male" | "female"][ageBand!];
-    const rmssdResult = classifyPercentile(input.rmssd, refData.rmssd);
-    rmssdCategory = rmssdResult.category;
+  if (referenceAvailable && ageBand) {
+    const ref =
+      hrvReferenceData[input.referenceSex as "male" | "female"][ageBand];
+    rmssdPercentiles = ref.rmssd;
+    sdnnPercentiles = ref.sdnn;
+    if (input.rmssd !== undefined) {
+      rmssdCategory = classifyPercentile(input.rmssd, rmssdPercentiles);
+    }
+    if (input.sdnn !== undefined) {
+      sdnnCategory = classifyPercentile(input.sdnn, sdnnPercentiles);
+    }
   }
 
-  if (hasReference && input.sdnn !== undefined) {
-    const refData =
-      hrvReferenceData[input.referenceSex as "male" | "female"][ageBand!];
-    const sdnnResult = classifyPercentile(input.sdnn, refData.sdnn);
-    sdnnCategory = sdnnResult.category;
-  }
-
-  const summary = buildSummary(input, rmssdCategory, sdnnCategory);
-
-  const interpretation: HrvInterpretation = {
-    confidence,
-    confidenceReasons,
-    summary,
-    limitations: buildLimitations(input),
-    safetyMessage:
-      "Seek medical assessment for concerning symptoms such as syncope, chest pain, severe breathlessness, a sustained irregular heartbeat or new neurological symptoms. HRV interpretation must not delay urgent care.",
-  };
-
-  const noRefNote = !hasReference
-    ? " No matched reference percentile is available for this age or reference-sex selection. Personal trends are more informative than single reference comparisons."
-    : "";
+  const metrics: MetricResult[] = [];
 
   if (input.rmssd !== undefined) {
-    const rmssdDesc = "A measure of short-term beat-to-beat variability that is strongly influenced by cardiac vagal modulation.";
-    let rmssdExtra = rmssdDesc;
-    if (!hasReference) {
-      rmssdExtra += noRefNote;
-    }
-    interpretation.rmssdInterpretation = buildMetricInterpretation(
-      "RMSSD",
-      input.rmssd,
-      "ms",
-      rmssdCategory,
-      rmssdDesc
-    );
+    metrics.push({
+      key: "rmssd",
+      name: "RMSSD",
+      value: input.rmssd,
+      unit: "ms",
+      category: rmssdCategory,
+      categoryLabel: rmssdCategory
+        ? percentileLabels[rmssdCategory]
+        : undefined,
+      interpretation:
+        "RMSSD reflects short-term beat-to-beat variability and is strongly influenced by cardiac vagal modulation." +
+        (rmssdCategory ? " " + percentileExplanations[rmssdCategory] : ""),
+      limitation:
+        "RMSSD does not directly measure vagal nerve activity; it is a statistical marker influenced by it.",
+    });
   }
 
   if (input.sdnn !== undefined) {
-    const sdnnDesc = "The standard deviation of normal-to-normal intervals, reflecting overall variability during the recording. For a five-minute recording, do not compare with 24-hour SDNN reference values.";
-    let sdnnExtra = sdnnDesc;
-    if (!hasReference) {
-      sdnnExtra += noRefNote;
-    }
-    interpretation.sdnnInterpretation = buildMetricInterpretation(
-      "SDNN",
-      input.sdnn,
-      "ms",
-      sdnnCategory,
-      sdnnDesc
-    );
+    metrics.push({
+      key: "sdnn",
+      name: "SDNN",
+      value: input.sdnn,
+      unit: "ms",
+      category: sdnnCategory,
+      categoryLabel: sdnnCategory ? percentileLabels[sdnnCategory] : undefined,
+      interpretation:
+        "SDNN reflects overall variability during this five-minute recording." +
+        (sdnnCategory ? " " + percentileExplanations[sdnnCategory] : ""),
+      limitation:
+        "Five-minute SDNN must not be compared with 24-hour Holter SDNN reference values.",
+    });
   }
 
   if (input.pnn50 !== undefined) {
-    interpretation.pnn50Interpretation = {
+    metrics.push({
+      key: "pnn50",
+      name: "pNN50",
       value: input.pnn50,
       unit: "%",
-      label: "Limited interpretation",
-      explanation:
-        "The percentage of successive normal-to-normal intervals differing by more than 50 ms. It is related to short-term vagal modulation but is strongly age dependent.",
+      interpretation:
+        "pNN50 is the percentage of successive normal intervals differing by more than 50 ms and is related to short-term vagal modulation.",
       limitation:
-        "A validated reference-percentile table for pNN50 has not been implemented.",
-    };
+        "No validated age- and sex-specific percentile dataset is implemented for pNN50, so no reference category is assigned.",
+    });
   }
 
   if (input.hfPower !== undefined) {
-    let hfExtra = "Respiratory-frequency variability strongly influenced by cardiac vagal modulation, breathing rate, breathing depth and spectral-analysis method.";
-
-    if (input.rmssd !== undefined && rmssdCategory) {
-      const hfReduced = input.hfPower < 200;
-      const rmssdReduced =
-        rmssdCategory === "below_p5" || rmssdCategory === "p5_to_p25";
-      if (hfReduced && rmssdReduced) {
-        hfExtra +=
-          " RMSSD and HF are directionally concordant, supporting reduced respiratory and beat-to-beat vagal-related variability under these recording conditions.";
-      } else if (hfReduced !== rmssdReduced) {
-        hfExtra +=
-          " RMSSD and HF are discordant. Breathing pattern, spectral method, artefacts or other recording conditions may explain the difference.";
-      }
-    }
-
-    interpretation.hfInterpretation = {
+    metrics.push({
+      key: "hf",
+      name: "HF power",
       value: input.hfPower,
       unit: "ms\u00B2",
-      label: "Limited interpretation",
-      explanation: hfExtra,
+      interpretation:
+        "HF power reflects respiratory-frequency variability and is influenced by vagal modulation, breathing pattern and the spectral-analysis method.",
       limitation:
-        "HF power is strongly affected by breathing and spectral-analysis method. No universal normal range is provided.",
-    };
+        "No universal reference range is applied to HF power; values depend strongly on breathing and analysis settings.",
+    });
   }
 
   if (input.lfPower !== undefined) {
-    interpretation.lfInterpretation = {
+    metrics.push({
+      key: "lf",
+      name: "LF power",
       value: input.lfPower,
       unit: "ms\u00B2",
-      label: "Limited interpretation",
-      explanation:
-        "Low-frequency variability reflecting mixed autonomic and baroreflex-related influences. LF power reflects mixed autonomic and baroreflex-related influences and must not be treated as a pure sympathetic measurement.",
+      interpretation:
+        "LF power reflects mixed autonomic and baroreflex-related influences.",
       limitation:
-        "LF power reflects mixed influences and must not be treated as a pure sympathetic measurement.",
-    };
+        "LF power does not directly measure sympathetic activity and must not be interpreted as a pure sympathetic marker.",
+    });
   }
 
-  if (input.lfhfRatio !== undefined || (input.lfPower !== undefined && input.hfPower !== undefined)) {
-    let ratio = input.lfhfRatio;
-    let ratioWarning: string | undefined;
-
-    if (input.lfPower !== undefined && input.hfPower !== undefined && input.hfPower !== 0) {
-      const calculatedRatio = input.lfPower / input.hfPower;
-      if (ratio === undefined) {
-        ratio = calculatedRatio;
-      } else {
-        const diff = Math.abs(ratio - calculatedRatio) / calculatedRatio;
-        if (diff > 0.1) {
-          ratioWarning =
-            "The entered LF/HF ratio differs by more than 10% from the calculated value (LF \u00F7 HF). Please verify both values.";
-        }
-      }
-    }
-
-    if (ratio !== undefined) {
-      interpretation.lfhfInterpretation = {
-        value: Math.round(ratio * 100) / 100,
-        unit: "",
-        label: "Limited interpretation",
-        explanation:
-          "A mathematical description of the relative distribution of LF and HF spectral power.",
-        limitation: ratioWarning
-          ? ratioWarning +
-            " LF/HF is not a direct measurement of sympathetic" +
-            "\u2013parasympathetic balance and must be interpreted cautiously."
-          : "LF/HF is not a direct measurement of sympathetic\u2013parasympathetic balance and must be interpreted cautiously.",
-      };
-
-      const spectralInterpretation = getSpectralInterpretation({
-        ...input,
-        lfhfRatio: ratio,
-      });
-      if (spectralInterpretation) {
-        interpretation.spectralInterpretation = spectralInterpretation;
-      }
+  let lfhfWarning: string | undefined;
+  let ratio = input.lfhfRatio;
+  let ratioCalculated = false;
+  if (
+    input.lfPower !== undefined &&
+    input.hfPower !== undefined &&
+    input.hfPower > 0
+  ) {
+    const calculated = input.lfPower / input.hfPower;
+    if (ratio === undefined) {
+      ratio = calculated;
+      ratioCalculated = true;
+    } else if (hasLfhfDiscrepancy(ratio, input.lfPower, input.hfPower)) {
+      lfhfWarning =
+        "The entered LF/HF ratio differs by more than 10% from LF \u00F7 HF. Verify the entered LF, HF and LF/HF values.";
     }
   }
 
-  return interpretation;
-}
+  if (ratio !== undefined) {
+    metrics.push({
+      key: "lfhf",
+      name: "LF/HF ratio",
+      value: Math.round(ratio * 100) / 100,
+      unit: "",
+      interpretation:
+        describeLfhf(ratio) +
+        "." +
+        (ratioCalculated ? " Calculated from the entered LF and HF values." : ""),
+      limitation: lfhfWarning ? `${lfhfWarning} ${LFHF_CAUTION}` : LFHF_CAUTION,
+    });
+  }
 
-export function computeLfhfRatio(lfPower: number, hfPower: number): number {
-  if (hfPower === 0) return 0;
-  return lfPower / hfPower;
-}
+  const summary = notValid
+    ? "Standard sinus-rhythm HRV interpretation is not valid for this recording because of the reported rhythm. The entered values are displayed for reference, but reference-percentile conclusions are suppressed."
+    : buildSummary(input, rmssdCategory, sdnnCategory, referenceAvailable);
 
-export function checkLfhfDiscrepancy(
-  enteredRatio: number,
-  lfPower: number,
-  hfPower: number
-): boolean {
-  if (hfPower === 0) return false;
-  const calculated = lfPower / hfPower;
-  return Math.abs(enteredRatio - calculated) / calculated > 0.1;
+  const overall = notValid
+    ? "A combined RMSSD\u2013SDNN interpretation is not provided for recordings with atrial fibrillation or flutter, paced rhythm, or frequent ectopic beats. Review the underlying ECG or device rhythm strip instead."
+    : referenceAvailable
+      ? combinedPattern(rmssdCategory, sdnnCategory)
+      : "Without a matching reference distribution, only descriptive statements can be made. Compare this recording with previous measurements obtained under identical conditions rather than with population percentiles.";
+
+  return {
+    confidence,
+    confidenceLabel: confidenceLabels[confidence],
+    confidenceReasons: reasons,
+    summary,
+    metrics,
+    overall,
+    limitations: STANDING_LIMITATIONS,
+    clinicalNote: CLINICAL_NOTE,
+    referenceAvailable,
+    referenceNote,
+    lfhfWarning,
+    safetyMessage: SAFETY_MESSAGE,
+  };
 }
 
 export const prohibitedPhrases = [
@@ -464,35 +435,22 @@ export const prohibitedPhrases = [
   "treatment should",
   "start medication",
   "normal autonomic nervous system",
-  "excellent HRV",
+  "sympathetic overactivity",
+  "sympathovagal balance",
+  "good HRV",
   "bad HRV",
+  "excellent HRV",
   "autonomic age",
   "nervous system score",
   "stress score",
   "sympathetic score",
   "recovery score",
-  "sympathovagal balance",
-  "sympathetic overactivation",
-  "LF equals sympathetic",
-  "increased LF proves",
-  "sympathetic overactivity",
-  "proven sympathetic",
-  "parasympathetic failure proven",
-  "Dysautonomia",
-  "Autonomic neuropathy",
-  "ME/CFS",
-  "Long COVID",
-  "Cardiac autonomic failure",
-  "sympathetic dominance",
+  "readiness score",
 ];
 
-export function containsProhibitedPhrases(text: string): string[] {
-  const found: string[] = [];
+export function findProhibitedPhrases(text: string): string[] {
   const lower = text.toLowerCase();
-  for (const phrase of prohibitedPhrases) {
-    if (lower.includes(phrase.toLowerCase())) {
-      found.push(phrase);
-    }
-  }
-  return found;
+  return prohibitedPhrases.filter((phrase) =>
+    lower.includes(phrase.toLowerCase())
+  );
 }
