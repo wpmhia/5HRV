@@ -19,7 +19,6 @@ type FormState = {
   pnn50: string;
   hfPower: string;
   lfPower: string;
-  vlfPower: string;
   lfhfRatio: string;
 };
 
@@ -31,7 +30,6 @@ const initialState: FormState = {
   pnn50: "",
   hfPower: "",
   lfPower: "",
-  vlfPower: "",
   lfhfRatio: "",
 };
 
@@ -172,13 +170,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       nextErrors.lfhfRatio = "LF/HF cannot be negative.";
     }
 
-    const vlfPower = normalizeNumber(form.vlfPower);
-    if (form.vlfPower.trim() !== "" && vlfPower === null) {
-      nextErrors.vlfPower = "Enter a valid number.";
-    } else if (vlfPower !== null && vlfPower < 0) {
-      nextErrors.vlfPower = "VLF power cannot be negative.";
-    }
-
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
@@ -191,7 +182,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       hfPower: hfPower ?? undefined,
       lfPower: lfPower ?? undefined,
       lfhfRatio: lfhfRatio ?? undefined,
-      vlfPower: vlfPower ?? undefined,
     };
   };
 
@@ -216,7 +206,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       pnn50: "",
       hfPower: "",
       lfPower: "",
-      vlfPower: "",
       lfhfRatio: "",
     }));
     setErrors({});
@@ -231,7 +220,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     if (values.hfPower !== undefined) updates.hfPower = String(values.hfPower);
     if (values.lfPower !== undefined) updates.lfPower = String(values.lfPower);
     if (values.lfhfRatio !== undefined) updates.lfhfRatio = String(values.lfhfRatio);
-    if (values.vlfPower !== undefined) updates.vlfPower = String(values.vlfPower);
     setForm((prev) => ({ ...prev, ...updates }));
     setErrors({});
     setImportedFromReport(true);
@@ -351,15 +339,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             onChange={(v) => set("lfhfRatio", v)}
             error={errors.lfhfRatio}
             helper="Calculated automatically when LF and HF are entered."
-          />
-          <NumberField
-            id="vlfPower"
-            label="VLF power"
-            unit="ms²"
-            value={form.vlfPower}
-            onChange={(v) => set("vlfPower", v)}
-            error={errors.vlfPower}
-            helper="Slow oscillations (0.003–0.04 Hz). Auto-filled from report upload."
           />
         </div>
         {lfhfLiveWarning && (

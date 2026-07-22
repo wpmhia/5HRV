@@ -174,7 +174,6 @@ export function buildClinicalParagraph(
   const pnn50 = byKey.get("pnn50");
   const hf = byKey.get("hf");
   const lf = byKey.get("lf");
-  const vlf = byKey.get("vlf");
   const lfhf = byKey.get("lfhf");
 
   const tdValues: string[] = [];
@@ -185,7 +184,6 @@ export function buildClinicalParagraph(
   const fdValues: string[] = [];
   if (hf) fdValues.push(`HF ${hf.value} ms\u00B2`);
   if (lf) fdValues.push(`LF ${lf.value} ms\u00B2`);
-  if (vlf) fdValues.push(`VLF ${vlf.value} ms\u00B2`);
   if (lfhf) fdValues.push(`LF/HF ${lfhf.value}`);
 
   let preface = "";
@@ -366,19 +364,6 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
         "LF power reflects mixed autonomic and baroreflex-related influences.",
       limitation:
         "LF power does not directly measure sympathetic activity and must not be interpreted as a pure sympathetic marker.",
-    });
-  }
-
-  if (input.vlfPower !== undefined) {
-    metrics.push({
-      key: "vlf",
-      name: "VLF power",
-      value: input.vlfPower,
-      unit: "ms\u00B2",
-      interpretation:
-        "Slow oscillations (0.003\u20130.04 Hz) linked to thermoregulation, the renin\u2013angiotensin system and sympathetic influence.",
-      limitation:
-        "No universal reference range is applied to VLF power; values depend strongly on recording duration and filtering.",
     });
   }
 

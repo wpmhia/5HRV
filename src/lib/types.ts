@@ -10,12 +10,11 @@ export type MeasurementInput = {
   pnn50?: number;
   hfPower?: number;
   lfPower?: number;
-  vlfPower?: number;
   lfhfRatio?: number;
 };
 
 export type MetricResult = {
-  key: "rmssd" | "sdnn" | "pnn50" | "hf" | "lf" | "vlf" | "lfhf";
+  key: "rmssd" | "sdnn" | "pnn50" | "hf" | "lf" | "lfhf";
   name: string;
   value: number;
   unit: string;
