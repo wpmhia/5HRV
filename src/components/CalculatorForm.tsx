@@ -19,7 +19,6 @@ type FormState = {
   recordingQuality: string;
   quietRest: string;
   breathing: string;
-  meanHeartRate: string;
   rmssd: string;
   sdnn: string;
   pnn50: string;
@@ -36,7 +35,6 @@ const initialState: FormState = {
   recordingQuality: "",
   quietRest: "",
   breathing: "",
-  meanHeartRate: "",
   rmssd: "",
   sdnn: "",
   pnn50: "",
@@ -176,7 +174,6 @@ function Collapsible({ title, children }: { title: string; children: React.React
 export function CalculatorForm({ onInterpret, onClear }: Props) {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [hrWarning, setHrWarning] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [uploadPanelOpen, setUploadPanelOpen] = useState(false);
   const [importedFromReport, setImportedFromReport] = useState(false);
@@ -198,7 +195,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
 
   const validate = (): MeasurementInput | null => {
     const nextErrors: Record<string, string> = {};
-    setHrWarning(null);
 
     const age = normalizeNumber(form.age);
     if (age === null) {
@@ -233,18 +229,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       nextErrors.pnn50 = "Enter a valid number.";
     } else if (pnn50 !== null && (pnn50 < 0 || pnn50 > 100)) {
       nextErrors.pnn50 = "pNN50 must be between 0 and 100.";
-    }
-
-    const meanHeartRate = normalizeNumber(form.meanHeartRate);
-    if (form.meanHeartRate.trim() !== "" && meanHeartRate === null) {
-      nextErrors.meanHeartRate = "Enter a valid number.";
-    } else if (
-      meanHeartRate !== null &&
-      (meanHeartRate < 30 || meanHeartRate > 220)
-    ) {
-      setHrWarning(
-        "The entered mean heart rate is outside the usual plausibility range (30\u2013220 bpm). Please verify the value."
-      );
     }
 
     const hfPower = normalizeNumber(form.hfPower);
@@ -317,7 +301,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       quietRest: form.quietRest === "" ? "unknown" : quietRestMap[form.quietRest] || "unknown",
       breathing: form.breathing === "" ? "unknown" : breathingMap[form.breathing] || "unknown",
       recordingConfirmed: confirmed,
-      meanHeartRate: meanHeartRate ?? undefined,
       rmssd: rmssd ?? undefined,
       sdnn: sdnn ?? undefined,
       pnn50: pnn50 ?? undefined,
@@ -336,7 +319,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   const handlePrefill = (values: ParsedReportValues) => {
     const updates: Partial<FormState> = {};
     if (values.durationMinutes !== undefined) updates.recordingDuration = String(values.durationMinutes);
-    if (values.meanHeartRate !== undefined) updates.meanHeartRate = String(values.meanHeartRate);
     if (values.rmssd !== undefined) updates.rmssd = String(values.rmssd);
     if (values.sdnn !== undefined) updates.sdnn = String(values.sdnn);
     if (values.pnn50 !== undefined) updates.pnn50 = String(values.pnn50);
@@ -345,14 +327,12 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     if (values.lfhfRatio !== undefined) updates.lfhfRatio = String(values.lfhfRatio);
     setForm((prev) => ({ ...prev, ...updates }));
     setErrors({});
-    setHrWarning(null);
     setImportedFromReport(true);
   };
 
   const handleClear = () => {
     setForm(initialState);
     setErrors({});
-    setHrWarning(null);
     setConfirmed(false);
     setImportedFromReport(false);
     setUploadPanelOpen(false);
@@ -410,9 +390,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           Select the actual recording conditions. Leave a field unselected if the detail is not known.
         </p>
         <div className="mt-4 space-y-5">
-          <div className="rounded-md bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-            Method: ECG &middot; Position: Supine
-          </div>
           <div className="max-w-xs">
             <NumberField
               id="recordingDuration"
@@ -560,14 +537,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
         </p>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <NumberField
-            id="meanHeartRate"
-            label="Mean heart rate"
-            unit="bpm"
-            value={form.meanHeartRate}
-            onChange={(v) => set("meanHeartRate", v)}
-            error={errors.meanHeartRate}
-          />
-          <NumberField
             id="rmssd"
             label="RMSSD"
             unit="ms"
@@ -623,11 +592,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
         {lfhfLiveWarning && (
           <p role="alert" className="mt-3 rounded-md border border-destructive/40 bg-muted px-3 py-2 text-xs text-foreground">
             {lfhfLiveWarning}
-          </p>
-        )}
-        {hrWarning && (
-          <p role="alert" className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-xs text-foreground">
-            {hrWarning}
           </p>
         )}
       </section>
