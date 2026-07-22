@@ -217,7 +217,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     <form onSubmit={handleSubmit} noValidate className="space-y-8">
       <section aria-labelledby="section-person">
         <div className="space-y-5">
-          <div className="max-w-xs">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <NumberField
               id="age"
               label="Age"
@@ -228,24 +228,24 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
               error={errors.age}
               helper="Age-specific reference percentiles cover 18–72 years."
             />
-          </div>
-          <div className="max-w-xs">
-            <label htmlFor="gender" className="text-sm font-medium text-foreground">
-              Gender
-            </label>
-            <select
-              id="gender"
-              value={form.referenceSex}
-              onChange={(e) => set("referenceSex", e.target.value)}
-              className={`mt-1 ${inputClass}`}
-            >
-              <option value="unselected" disabled>Select gender</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-            </select>
-            {errors.referenceSex && (
-              <p role="alert" className="mt-1 text-xs text-destructive">{errors.referenceSex}</p>
-            )}
+            <div>
+              <label htmlFor="gender" className="text-sm font-medium text-foreground">
+                Gender
+              </label>
+              <select
+                id="gender"
+                value={form.referenceSex}
+                onChange={(e) => set("referenceSex", e.target.value)}
+                className={`mt-1 ${inputClass}`}
+              >
+                <option value="unselected" disabled>Select gender</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+              </select>
+              {errors.referenceSex && (
+                <p role="alert" className="mt-1 text-xs text-destructive">{errors.referenceSex}</p>
+              )}
+            </div>
           </div>
         </div>
       </section>
