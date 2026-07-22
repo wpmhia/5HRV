@@ -2,42 +2,9 @@ import type { PercentileCategory } from "@/data/hrvReferenceData";
 
 export type ReferenceSex = "female" | "male" | "none";
 
-export type MeasurementSource =
-  | "ecg"
-  | "ecg_chest_strap"
-  | "ppg"
-  | "smartwatch"
-  | "unknown";
-
-export type Position = "supine" | "seated" | "standing" | "unknown";
-
-export type Rhythm =
-  | "sinus"
-  | "frequent_ectopy"
-  | "af_flutter"
-  | "paced"
-  | "unknown";
-
-export type ArtefactCorrection = "completed" | "not_completed" | "unknown";
-
-export type QuietRest = "completed" | "not_completed" | "unknown";
-
-export type Breathing = "quiet_spontaneous" | "paced" | "irregular_talking" | "unknown";
-
-export type Confidence = "high" | "moderate" | "low" | "not-valid";
-
 export type MeasurementInput = {
   age: number;
   referenceSex: ReferenceSex;
-  measurementSource: MeasurementSource;
-  durationMinutes: number;
-  position: Position;
-  rhythm: Rhythm;
-  artefactCorrection: ArtefactCorrection;
-  recordingConfirmed: boolean;
-  quietRest?: QuietRest;
-  breathing?: Breathing;
-  meanHeartRate?: number;
   rmssd?: number;
   sdnn?: number;
   pnn50?: number;
@@ -59,9 +26,6 @@ export type MetricResult = {
 };
 
 export type HrvInterpretation = {
-  confidence: Confidence;
-  confidenceLabel: string;
-  confidenceReasons: string[];
   summary: string;
   metrics: MetricResult[];
   overall: string;

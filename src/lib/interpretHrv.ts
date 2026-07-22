@@ -9,7 +9,6 @@ import type {
   MeasurementInput,
   HrvInterpretation,
   MetricResult,
-  Confidence,
   PercentileCategory,
 } from "@/lib/types";
 
@@ -70,109 +69,6 @@ const STANDING_LIMITATIONS = [
   "Ectopic beats",
   "Recording device and analysis method",
 ];
-
-function assessConfidence(input: MeasurementInput): {
-  confidence: Confidence;
-  reasons: string[];
-} {
-  if (input.rhythm === "af_flutter") {
-    return {
-      confidence: "not-valid",
-      reasons: [
-        "Atrial fibrillation or atrial flutter was present. Standard sinus-rhythm HRV interpretation is not valid for this recording.",
-      ],
-    };
-  }
-  if (input.rhythm === "paced") {
-    return {
-      confidence: "not-valid",
-      reasons: [
-        "A paced rhythm was present. Standard sinus-rhythm HRV interpretation is not valid for this recording.",
-      ],
-    };
-  }
-  if (input.rhythm === "frequent_ectopy") {
-    return {
-      confidence: "not-valid",
-      reasons: [
-        "Frequent ectopic beats substantially affect the recording. Standard sinus-rhythm HRV interpretation is not valid.",
-      ],
-    };
-  }
-
-  const reasons: string[] = [];
-
-  if (!input.recordingConfirmed) {
-    reasons.push(
-      "The recording conditions have not been confirmed by the user. The interpretation is provided with methodological reservations."
-    );
-  }
-
-  if (input.durationMinutes < 4.5 || input.durationMinutes > 5.5) {
-    reasons.push(
-      "The recording duration differs from the approximately five-minute reference protocol."
-    );
-  }
-
-  if (input.artefactCorrection === "not_completed") {
-    reasons.push("Artefact correction was not completed.");
-  } else if (input.artefactCorrection === "unknown") {
-    reasons.push("The artefact-correction status is unknown.");
-  }
-
-  if (input.rhythm === "unknown") {
-    reasons.push("The rhythm during the recording is unknown.");
-  }
-
-  if (input.quietRest === "not_completed") {
-    reasons.push("Quiet rest before the recording was not completed.");
-  } else if (input.quietRest === "unknown" || input.quietRest === undefined) {
-    reasons.push("Whether quiet rest was completed before the recording is unknown.");
-  }
-
-  if (input.breathing === "paced") {
-    reasons.push("Paced breathing during the recording differs from the spontaneous-breathing reference condition.");
-  } else if (input.breathing === "irregular_talking") {
-    reasons.push("Irregular breathing or talking during the recording differs materially from the quiet-spontaneous-breathing reference condition.");
-  } else if (input.breathing === "unknown" || input.breathing === undefined) {
-    reasons.push("The breathing pattern during the recording is unknown.");
-  }
-
-  const protocolCompatible =
-    input.recordingConfirmed &&
-    input.durationMinutes >= 4.5 &&
-    input.durationMinutes <= 5.5 &&
-    input.rhythm === "sinus" &&
-    input.artefactCorrection === "completed" &&
-    input.quietRest === "completed" &&
-    input.breathing === "quiet_spontaneous";
-
-  if (protocolCompatible) {
-    return {
-      confidence: "high",
-      reasons: reasons.length > 0
-        ? reasons
-        : [
-            "Recording conditions confirmed by the user as consistent with the five-minute supine reference protocol.",
-          ],
-    };
-  }
-
-  if (input.recordingConfirmed) {
-    reasons.unshift(
-      "Recording conditions have been confirmed, but one or more details differ from the reference protocol."
-    );
-  }
-
-  return { confidence: "moderate", reasons };
-}
-
-const confidenceLabels: Record<Confidence, string> = {
-  high: "Protocol compatible",
-  moderate: "Interpretation with methodological limitations",
-  low: "Interpretation with methodological limitations",
-  "not-valid": "Standard interpretation not valid",
-};
 
 function combinedPattern(
   rmssdCategory: PercentileCategory | undefined,
@@ -259,22 +155,17 @@ function buildSummary(
 }
 
 export function interpretHrv(input: MeasurementInput): HrvInterpretation {
-  const { confidence, reasons } = assessConfidence(input);
-  const notValid = confidence === "not-valid";
-
   const ageBand = getAgeBand(input.age);
   const referenceAvailable =
-    !notValid && input.referenceSex !== "none" && ageBand !== null;
+    input.referenceSex !== "none" && ageBand !== null;
 
   let referenceNote: string | undefined;
-  if (!notValid) {
-    if (input.age > 72) {
-      referenceNote =
-        "No matching age-specific reference percentile is available above 72 years. The values can still be described, but they cannot be placed accurately within this reference distribution.";
-    } else if (input.referenceSex === "none") {
-      referenceNote =
-        "No sex-specific reference distribution was selected. The values are described without reference-percentile placement.";
-    }
+  if (input.age > 72) {
+    referenceNote =
+      "No matching age-specific reference percentile is available above 72 years. The values can still be described, but they cannot be placed accurately within this reference distribution.";
+  } else if (input.referenceSex === "none") {
+    referenceNote =
+      "No sex-specific reference distribution was selected. The values are described without reference-percentile placement.";
   }
 
   let rmssdCategory: PercentileCategory | undefined;
@@ -350,11 +241,6 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     });
   }
 
-  const breathingLimitation =
-    input.breathing !== undefined && input.breathing !== "quiet_spontaneous"
-      ? " Breathing pattern during this recording introduces methodological limitations for frequency-domain interpretation."
-      : "";
-
   if (input.hfPower !== undefined) {
     metrics.push({
       key: "hf",
@@ -362,11 +248,9 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
       value: input.hfPower,
       unit: "ms\u00B2",
       interpretation:
-        "Respiratory-frequency variability influenced by cardiac vagal modulation and breathing." +
-        (breathingLimitation ? "" : ""),
+        "Respiratory-frequency variability influenced by cardiac vagal modulation and breathing.",
       limitation:
-        "No universal reference range is applied to HF power; values depend strongly on breathing and analysis settings." +
-        breathingLimitation,
+        "No universal reference range is applied to HF power; values depend strongly on breathing and analysis settings.",
     });
   }
 
@@ -379,8 +263,7 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
       interpretation:
         "LF power reflects mixed autonomic and baroreflex-related influences.",
       limitation:
-        "LF power does not directly measure sympathetic activity and must not be interpreted as a pure sympathetic marker." +
-        breathingLimitation,
+        "LF power does not directly measure sympathetic activity and must not be interpreted as a pure sympathetic marker.",
     });
   }
 
@@ -412,24 +295,17 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
         describeLfhf(ratio) +
         "." +
         (ratioCalculated ? " Calculated from the entered LF and HF values." : ""),
-      limitation: (lfhfWarning ? `${lfhfWarning} ${LFHF_CAUTION}` : LFHF_CAUTION) + breathingLimitation,
+      limitation: (lfhfWarning ? `${lfhfWarning} ${LFHF_CAUTION}` : LFHF_CAUTION),
     });
   }
 
-  const summary = notValid
-    ? "Standard sinus-rhythm HRV interpretation is not valid for this recording because of the reported rhythm. The entered values are displayed for reference, but reference-percentile conclusions are suppressed."
-    : buildSummary(input, rmssdCategory, sdnnCategory, referenceAvailable);
+  const summary = buildSummary(input, rmssdCategory, sdnnCategory, referenceAvailable);
 
-  const overall = notValid
-    ? "A combined RMSSD\u2013SDNN interpretation is not provided for recordings with atrial fibrillation or flutter, paced rhythm, or frequent ectopic beats. Review the underlying ECG or device rhythm strip instead."
-    : referenceAvailable
-      ? combinedPattern(rmssdCategory, sdnnCategory)
-      : "Without a matching reference distribution, only descriptive statements can be made. Interpret the values descriptively and together with the recording conditions and clinical context.";
+  const overall = referenceAvailable
+    ? combinedPattern(rmssdCategory, sdnnCategory)
+    : "Without a matching reference distribution, only descriptive statements can be made. Interpret the values descriptively and together with the recording conditions and clinical context.";
 
   return {
-    confidence,
-    confidenceLabel: confidenceLabels[confidence],
-    confidenceReasons: reasons,
     summary,
     metrics,
     overall,

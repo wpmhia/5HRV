@@ -62,20 +62,6 @@ export default function CalculatorPage() {
         )}
       </div>
 
-      <div className="mt-8 rounded-lg border border-border bg-card p-4 text-xs text-muted-foreground">
-        <p>
-          Results are labelled Protocol compatible only when the recording
-          conditions have been explicitly confirmed. Without confirmation, the
-          result is labelled Interpretation with methodological limitations.
-          All results must be integrated with rhythm review, symptoms and other
-          clinical findings. &nbsp;
-          <Link href="/method" className="text-primary underline-offset-4 hover:underline">
-            Learn more about the standardized method
-          </Link>
-          .
-        </p>
-      </div>
-
       <div className="mt-6 rounded-lg border border-border bg-muted/40 p-4 text-xs text-muted-foreground">
         <p>
           <span className="font-semibold text-foreground">Primary normative reference:</span> The

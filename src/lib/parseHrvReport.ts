@@ -1,9 +1,7 @@
 export type ParsedReportValues = {
   recordingDate?: string;
-  durationMinutes?: number;
   samplingFrequency?: number;
   totalBeats?: number;
-  meanHeartRate?: number;
   sdnn?: number;
   rmssd?: number;
   pnn50?: number;
@@ -11,8 +9,6 @@ export type ParsedReportValues = {
   lfPower?: number;
   lfhfRatio?: number;
   vlfPower?: number;
-  rhythm?: string;
-  artefactInfo?: string;
 };
 
 export type ExtractedField = {
@@ -69,12 +65,6 @@ export function parseHrvReport(text: string): ParsedReportValues {
       if (dateMatch) values.recordingDate = dateMatch[1];
     }
 
-    // Duration
-    if (values.durationMinutes === undefined) {
-      const dur = parseDurationSeconds(trimmed);
-      if (dur !== null) values.durationMinutes = Math.round(dur * 100) / 100;
-    }
-
     // Sampling frequency
     if (values.samplingFrequency === undefined) {
       const freqMatch = trimmed.match(
@@ -94,25 +84,6 @@ export function parseHrvReport(text: string): ParsedReportValues {
       if (beatsMatch) {
         const num = Number(beatsMatch[1]);
         if (Number.isFinite(num) && num > 0) values.totalBeats = num;
-      }
-    }
-
-    // Mean / Average heart rate
-    if (values.meanHeartRate === undefined) {
-      const hrPatterns = [
-        /(?:average|mean)\s*hr\b\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /(?:average|mean)\s*heart\s*rate\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /hr\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*bpm/i,
-      ];
-      for (const pat of hrPatterns) {
-        const m = trimmed.match(pat);
-        if (m) {
-          const num = normalizeNum(m[1]);
-          if (num !== null && num > 0) {
-            values.meanHeartRate = num;
-            break;
-          }
-        }
       }
     }
 
@@ -245,43 +216,25 @@ export function parseHrvReport(text: string): ParsedReportValues {
         }
       }
     }
-
-    // Rhythm information
-    if (!values.rhythm) {
-      const rhythmMatch = trimmed.match(
-        /(?:rhythm|rhythm\s*analysis)\s*[:=]?\s*(sinus|af|atrial\s*fibrillation|paced|ectop)/i
-      );
-      if (rhythmMatch) values.rhythm = rhythmMatch[1];
-    }
-
-    // Artefact information
-    if (!values.artefactInfo) {
-      const artefactMatch = trimmed.match(
-        /(?:artefact|artifact|ectopic)\s*(?:correction|removal|beats?)?\s*[:=]?\s*(completed|yes|no|not\s*completed|unknown|\d+)/i
-      );
-      if (artefactMatch) values.artefactInfo = artefactMatch[1];
-    }
   }
 
   return values;
 }
 
+export function hasHrvContent(text: string): boolean {
+  const markers = [
+    /\brmssd\s*[:=]?\s*\d/i,
+    /\bsdnn\s*[:=]?\s*\d/i,
+    /\bpnn50\s*[:=]?\s*\d/i,
+    /\blf\s*\/\s*hf\s*[:=]?\s*\d/i,
+    /(?<!\/)\bhf(?:\s+power)?\s*[:=]?\s*\d/i,
+    /(?<!\/)\blf(?:\s+power)?\s*[:=]?\s*\d/i,
+  ];
+  return markers.filter((p) => p.test(text)).length >= 2;
+}
+
 export function buildExtractedFields(values: ParsedReportValues): ExtractedField[] {
   const fields: ExtractedField[] = [
-    {
-      key: "durationMinutes",
-      label: "Recording duration",
-      value: values.durationMinutes,
-      unit: "min",
-      status: values.durationMinutes !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "meanHeartRate",
-      label: "Mean heart rate",
-      value: values.meanHeartRate,
-      unit: "bpm",
-      status: values.meanHeartRate !== undefined ? "found" : "not_found",
-    },
     {
       key: "rmssd",
       label: "RMSSD",
@@ -351,20 +304,6 @@ export function buildExtractedFields(values: ParsedReportValues): ExtractedField
       value: values.recordingDate,
       unit: "",
       status: values.recordingDate !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "rhythm",
-      label: "Rhythm",
-      value: values.rhythm,
-      unit: "",
-      status: values.rhythm !== undefined ? "found" : "not_found",
-    },
-    {
-      key: "artefactInfo",
-      label: "Artefact correction",
-      value: values.artefactInfo,
-      unit: "",
-      status: values.artefactInfo !== undefined ? "found" : "not_found",
     },
   ];
   return fields;

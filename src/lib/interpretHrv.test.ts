@@ -17,14 +17,6 @@ import type { MeasurementInput, HrvInterpretation } from "@/lib/types";
 const baseInput: MeasurementInput = {
   age: 40,
   referenceSex: "male",
-  measurementSource: "ecg",
-  durationMinutes: 5,
-  position: "supine",
-  rhythm: "sinus",
-  artefactCorrection: "completed",
-  recordingConfirmed: true,
-  quietRest: "completed",
-  breathing: "quiet_spontaneous",
   rmssd: 30,
   sdnn: 35,
 };
@@ -35,8 +27,6 @@ function allText(result: HrvInterpretation): string {
     result.overall,
     result.clinicalNote,
     result.safetyMessage,
-    result.confidenceLabel,
-    ...result.confidenceReasons,
     ...result.limitations,
   ];
   if (result.referenceNote) parts.push(result.referenceNote);
@@ -84,7 +74,7 @@ describe("getAgeBand", () => {
 });
 
 describe("classifyPercentile", () => {
-  const ref = hrvReferenceData.male["40-49"].rmssd; // [11.64, 19.92, 29.95, 43.84, 81.32]
+  const ref = hrvReferenceData.male["40-49"].rmssd;
   it("classifies below p5", () => {
     expect(classifyPercentile(10, ref)).toBe("below_p5");
   });
@@ -148,153 +138,6 @@ describe("LF/HF calculation", () => {
     expect(lfhf!.limitation).toContain(
       "not a direct measurement of sympathetic"
     );
-  });
-});
-
-describe("recording confidence", () => {
-  it("high confidence for protocol-matching ECG recording", () => {
-    expect(interpretHrv(baseInput).confidence).toBe("high");
-  });
-  it("moderate confidence when not confirmed", () => {
-    const result = interpretHrv({ ...baseInput, recordingConfirmed: false });
-    expect(result.confidence).toBe("moderate");
-  });
-  it("moderate when confirmed but unknown rhythm", () => {
-    const result = interpretHrv({ ...baseInput, rhythm: "unknown" });
-    expect(result.confidence).toBe("moderate");
-  });
-  it("moderate when confirmed but artefacts not completed", () => {
-    const result = interpretHrv({ ...baseInput, artefactCorrection: "not_completed" });
-    expect(result.confidence).toBe("moderate");
-  });
-  it("moderate when confirmed but duration outside 4.5-5.5", () => {
-    const result = interpretHrv({ ...baseInput, durationMinutes: 3 });
-    expect(result.confidence).toBe("moderate");
-  });
-  it("not valid for atrial fibrillation or flutter", () => {
-    const result = interpretHrv({ ...baseInput, rhythm: "af_flutter" });
-    expect(result.confidence).toBe("not-valid");
-  });
-  it("not valid for paced rhythm", () => {
-    const result = interpretHrv({ ...baseInput, rhythm: "paced" });
-    expect(result.confidence).toBe("not-valid");
-  });
-  it("not valid for frequent ectopic beats", () => {
-    const result = interpretHrv({ ...baseInput, rhythm: "frequent_ectopy" });
-    expect(result.confidence).toBe("not-valid");
-  });
-  it("suppresses percentile categories when not valid", () => {
-    const result = interpretHrv({ ...baseInput, rhythm: "af_flutter" });
-    const rmssd = result.metrics.find((m) => m.key === "rmssd");
-    expect(rmssd!.category).toBeUndefined();
-    expect(result.referenceAvailable).toBe(false);
-  });
-});
-
-describe("duration validation boundaries", () => {
-  it("high confidence at exactly 4.5 minutes with protocol conditions", () => {
-    const result = interpretHrv({ ...baseInput, durationMinutes: 4.5 });
-    expect(result.confidence).toBe("high");
-  });
-  it("high confidence at exactly 5.5 minutes with protocol conditions", () => {
-    const result = interpretHrv({ ...baseInput, durationMinutes: 5.5 });
-    expect(result.confidence).toBe("high");
-  });
-  it("moderate confidence at 4.4 minutes (below 4.5 threshold)", () => {
-    const result = interpretHrv({ ...baseInput, durationMinutes: 4.4 });
-    expect(result.confidence).toBe("moderate");
-  });
-  it("moderate confidence at 5.6 minutes (above 5.5 threshold)", () => {
-    const result = interpretHrv({ ...baseInput, durationMinutes: 5.6 });
-    expect(result.confidence).toBe("moderate");
-  });
-});
-
-describe("quiet rest", () => {
-  it("protocol compatible when quiet rest completed", () => {
-    const result = interpretHrv({ ...baseInput, quietRest: "completed" });
-    expect(result.confidence).toBe("high");
-  });
-  it("moderate when quiet rest not completed", () => {
-    const result = interpretHrv({ ...baseInput, quietRest: "not_completed" });
-    expect(result.confidence).toBe("moderate");
-    expect(result.confidenceReasons.some(r => r.includes("Quiet rest before the recording was not completed"))).toBe(true);
-  });
-  it("moderate when quiet rest unknown", () => {
-    const result = interpretHrv({ ...baseInput, quietRest: "unknown" });
-    expect(result.confidence).toBe("moderate");
-    expect(result.confidenceReasons.some(r => r.includes("Whether quiet rest was completed"))).toBe(true);
-  });
-});
-
-describe("breathing", () => {
-  it("protocol compatible with quiet spontaneous breathing", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "quiet_spontaneous" });
-    expect(result.confidence).toBe("high");
-  });
-  it("moderate with paced breathing", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "paced" });
-    expect(result.confidence).toBe("moderate");
-    expect(result.confidenceReasons.some(r => r.includes("Paced breathing"))).toBe(true);
-  });
-  it("moderate with irregular breathing or talking", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "irregular_talking" });
-    expect(result.confidence).toBe("moderate");
-    expect(result.confidenceReasons.some(r => r.includes("Irregular breathing or talking"))).toBe(true);
-  });
-  it("moderate with unknown breathing", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "unknown" });
-    expect(result.confidence).toBe("moderate");
-    expect(result.confidenceReasons.some(r => r.includes("breathing pattern"))).toBe(true);
-  });
-  it("adds breathing limitation to HF when breathing is not quiet spontaneous", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "paced", hfPower: 200 });
-    const hf = result.metrics.find(m => m.key === "hf");
-    expect(hf!.limitation).toContain("Breathing pattern");
-  });
-  it("adds breathing limitation to LF when breathing is not quiet spontaneous", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "irregular_talking", lfPower: 300 });
-    const lf = result.metrics.find(m => m.key === "lf");
-    expect(lf!.limitation).toContain("Breathing pattern");
-  });
-  it("adds breathing limitation to LF/HF when breathing is not quiet spontaneous", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "paced", lfPower: 300, hfPower: 150 });
-    const lfhf = result.metrics.find(m => m.key === "lfhf");
-    expect(lfhf!.limitation).toContain("Breathing pattern");
-  });
-  it("does not add breathing limitation to RMSSD when breathing is not quiet spontaneous", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "paced" });
-    const rmssd = result.metrics.find(m => m.key === "rmssd");
-    expect(rmssd!.limitation).not.toContain("Breathing pattern");
-  });
-  it("does not add breathing limitation to SDNN when breathing is not quiet spontaneous", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "paced" });
-    const sdnn = result.metrics.find(m => m.key === "sdnn");
-    expect(sdnn!.limitation).not.toContain("Breathing pattern");
-  });
-  it("does not add limitation when breathing is quiet spontaneous", () => {
-    const result = interpretHrv({ ...baseInput, breathing: "quiet_spontaneous", hfPower: 200 });
-    const hf = result.metrics.find(m => m.key === "hf");
-    expect(hf!.limitation).not.toContain("Breathing pattern");
-  });
-});
-
-describe("protocol compatibility with quiet rest and breathing", () => {
-  it("requires quiet rest completed for high confidence", () => {
-    const result = interpretHrv({
-      ...baseInput,
-      quietRest: "not_completed",
-      breathing: "quiet_spontaneous",
-    });
-    expect(result.confidence).toBe("moderate");
-  });
-  it("requires quiet spontaneous breathing for high confidence", () => {
-    const result = interpretHrv({
-      ...baseInput,
-      quietRest: "completed",
-      breathing: "paced",
-    });
-    expect(result.confidence).toBe("moderate");
   });
 });
 
@@ -383,14 +226,6 @@ describe("seed example 1", () => {
   const example1: MeasurementInput = {
     age: 20,
     referenceSex: "female",
-    measurementSource: "ecg",
-    durationMinutes: 5,
-    position: "supine",
-    rhythm: "sinus",
-    artefactCorrection: "completed",
-    recordingConfirmed: true,
-    quietRest: "completed",
-    breathing: "quiet_spontaneous",
     rmssd: 18,
     sdnn: 23,
     hfPower: 213,
@@ -418,9 +253,6 @@ describe("seed example 1", () => {
       "Relative LF predominance"
     );
   });
-  it("has high confidence", () => {
-    expect(interpretHrv(example1).confidence).toBe("high");
-  });
   it("states the finding cannot diagnose an autonomic condition", () => {
     const result = interpretHrv(example1);
     expect(result.summary).toContain("does not by itself diagnose");
@@ -431,14 +263,6 @@ describe("seed example 2", () => {
   const example2: MeasurementInput = {
     age: 45,
     referenceSex: "male",
-    measurementSource: "ecg",
-    durationMinutes: 5,
-    position: "supine",
-    rhythm: "sinus",
-    artefactCorrection: "completed",
-    recordingConfirmed: true,
-    quietRest: "completed",
-    breathing: "quiet_spontaneous",
     rmssd: 30.4,
     sdnn: 47.63,
     hfPower: 125.95,
@@ -487,7 +311,6 @@ describe("prohibited terminology", () => {
     baseInput,
     { ...baseInput, rmssd: 5, sdnn: 8 },
     { ...baseInput, rmssd: 150, sdnn: 120 },
-    { ...baseInput, rhythm: "af_flutter" },
     { ...baseInput, age: 85 },
     { ...baseInput, referenceSex: "none" },
     { ...baseInput, lfPower: 900, hfPower: 100, lfhfRatio: 9 },
@@ -495,14 +318,6 @@ describe("prohibited terminology", () => {
     {
       age: 20,
       referenceSex: "female",
-      measurementSource: "ecg",
-      durationMinutes: 5,
-      position: "supine",
-      rhythm: "sinus",
-      artefactCorrection: "completed",
-      recordingConfirmed: true,
-      quietRest: "completed",
-      breathing: "quiet_spontaneous",
       rmssd: 18,
       sdnn: 23,
       hfPower: 213,

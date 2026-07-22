@@ -1,24 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseHrvReport, parseDurationSeconds, buildExtractedFields } from "@/lib/parseHrvReport";
-import { hasHrvContent } from "@/components/ReportUpload";
-
-describe("parseDurationSeconds", () => {
-  it("converts Sample Length 322s", () => {
-    expect(parseDurationSeconds("Sample Length 322s")).toBeCloseTo(5.37, 1);
-  });
-  it("converts Duration: 300 seconds", () => {
-    expect(parseDurationSeconds("Duration: 300 seconds")).toBe(5);
-  });
-  it("converts recording duration 180s", () => {
-    expect(parseDurationSeconds("recording duration 180s")).toBe(3);
-  });
-  it("handles decimal comma in duration", () => {
-    expect(parseDurationSeconds("Duration: 5,5 min")).toBe(5.5);
-  });
-  it("returns null for missing duration", () => {
-    expect(parseDurationSeconds("no duration here")).toBeNull();
-  });
-});
+import { parseHrvReport, buildExtractedFields, hasHrvContent } from "@/lib/parseHrvReport";
 
 describe("parseHrvReport", () => {
   it("extracts all values from example report", () => {
@@ -33,9 +14,7 @@ LF/HF: 5.90
 pNN50 3.28%`;
 
     const result = parseHrvReport(text);
-    expect(result.durationMinutes).toBeCloseTo(5.37, 1);
     expect(result.samplingFrequency).toBe(1000);
-    expect(result.meanHeartRate).toBe(74);
     expect(result.sdnn).toBeCloseTo(39.33, 1);
     expect(result.rmssd).toBeCloseTo(23.14, 1);
     expect(result.lfPower).toBeCloseTo(416.47, 1);
@@ -69,11 +48,6 @@ pNN50 3.28%`;
     expect(result.sdnn).toBeCloseTo(39.33, 1);
   });
 
-  it("handles duration with seconds suffix", () => {
-    const result = parseHrvReport("Duration: 322s");
-    expect(result.durationMinutes).toBeCloseTo(5.37, 1);
-  });
-
   it("handles SD NN label", () => {
     const result = parseHrvReport("SD NN: 39.33");
     expect(result.sdnn).toBeCloseTo(39.33, 1);
@@ -81,29 +55,13 @@ pNN50 3.28%`;
 
   it("detects missing values when report has minimal data", () => {
     const result = parseHrvReport("Some random text without HRV values");
-    expect(result.durationMinutes).toBeUndefined();
     expect(result.rmssd).toBeUndefined();
     expect(result.sdnn).toBeUndefined();
-  });
-
-  it("extracts mean heart rate with Average heart rate label", () => {
-    const result = parseHrvReport("Average heart rate: 72");
-    expect(result.meanHeartRate).toBe(72);
   });
 
   it("does not extract patient name", () => {
     const result = parseHrvReport("Patient: John Doe\nSDNN: 39.33");
     expect(result.sdnn).toBeCloseTo(39.33, 1);
-  });
-
-  it("extracts rhythm information", () => {
-    const result = parseHrvReport("Rhythm: Sinus");
-    expect(result.rhythm).toMatch(/sinus/i);
-  });
-
-  it("extracts artefact information", () => {
-    const result = parseHrvReport("Artefact correction: completed");
-    expect(result.artefactInfo).toMatch(/completed/i);
   });
 
   it("extracts recording date", () => {
@@ -189,14 +147,12 @@ LF: 416.47
 HF: 70.55
 LF/HF: 5.90`;
     const result = parseHrvReport(simulatedPdfText);
-    expect(result.durationMinutes).toBeCloseTo(5.37, 1);
     expect(result.sdnn).toBeCloseTo(39.33, 1);
     expect(result.rmssd).toBeCloseTo(23.14, 1);
     expect(result.pnn50).toBeCloseTo(3.28, 1);
     expect(result.lfPower).toBeCloseTo(416.47, 1);
     expect(result.hfPower).toBeCloseTo(70.55, 1);
     expect(result.lfhfRatio).toBeCloseTo(5.90, 1);
-    expect(result.meanHeartRate).toBe(74);
     expect(result.samplingFrequency).toBe(1000);
   });
 });
@@ -220,7 +176,6 @@ SDNN 39.33
 rMSSD 23.14`;
     expect(hasHrvContent(ocrText)).toBe(true);
     const result = parseHrvReport(ocrText);
-    expect(result.durationMinutes).toBeCloseTo(5.37, 1);
     expect(result.sdnn).toBeCloseTo(39.33, 1);
     expect(result.rmssd).toBeCloseTo(23.14, 1);
   });
@@ -228,8 +183,6 @@ rMSSD 23.14`;
 
 describe("worker termination preservation", () => {
   it("parser works correctly after simulated OCR extraction", () => {
-    // Verify the parser works correctly, which is the contract
-    // the worker termination would protect
     const result = parseHrvReport("SDNN: 39.33\nRMSSD: 23.14");
     expect(result.sdnn).toBeCloseTo(39.33, 1);
     expect(result.rmssd).toBeCloseTo(23.14, 1);

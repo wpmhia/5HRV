@@ -14,11 +14,6 @@ type Props = {
 type FormState = {
   age: string;
   referenceSex: string;
-  recordingDuration: string;
-  rhythm: string;
-  recordingQuality: string;
-  quietRest: string;
-  breathing: string;
   rmssd: string;
   sdnn: string;
   pnn50: string;
@@ -30,11 +25,6 @@ type FormState = {
 const initialState: FormState = {
   age: "",
   referenceSex: "unselected",
-  recordingDuration: "",
-  rhythm: "",
-  recordingQuality: "",
-  quietRest: "",
-  breathing: "",
   rmssd: "",
   sdnn: "",
   pnn50: "",
@@ -158,23 +148,9 @@ function NumberField({
   );
 }
 
-function Collapsible({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <details className="rounded-lg border border-border bg-card">
-      <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-        {title}
-      </summary>
-      <div className="border-t border-border px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-        {children}
-      </div>
-    </details>
-  );
-}
-
 export function CalculatorForm({ onInterpret, onClear }: Props) {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [confirmed, setConfirmed] = useState(false);
   const [uploadPanelOpen, setUploadPanelOpen] = useState(false);
   const [importedFromReport, setImportedFromReport] = useState(false);
 
@@ -250,57 +226,12 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       nextErrors.lfhfRatio = "LF/HF cannot be negative.";
     }
 
-    const recordingDuration = normalizeNumber(form.recordingDuration);
-    if (recordingDuration === null) {
-      nextErrors.recordingDuration = "Analysable recording duration is required.";
-    } else if (recordingDuration <= 0) {
-      nextErrors.recordingDuration = "Recording duration must be greater than zero.";
-    }
-
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
-
-    const rhythmMap: Record<string, MeasurementInput["rhythm"]> = {
-      sinus: "sinus",
-      af_flutter: "af_flutter",
-      paced: "paced",
-      frequent_ectopy: "frequent_ectopy",
-      unknown: "unknown",
-    };
-
-    const qualityMap: Record<string, MeasurementInput["artefactCorrection"]> = {
-      corrected: "completed",
-      not_corrected: "not_completed",
-      unknown: "unknown",
-    };
-
-    const durationMinutes = recordingDuration ?? 0;
-    const rhythm = form.rhythm === "" ? "unknown" : rhythmMap[form.rhythm] || "unknown";
-    const artefactCorrection = form.recordingQuality === "" ? "unknown" : qualityMap[form.recordingQuality] || "unknown";
-
-    const quietRestMap: Record<string, MeasurementInput["quietRest"]> = {
-      completed: "completed",
-      not_completed: "not_completed",
-      unknown: "unknown",
-    };
-    const breathingMap: Record<string, MeasurementInput["breathing"]> = {
-      quiet_spontaneous: "quiet_spontaneous",
-      paced: "paced",
-      irregular_talking: "irregular_talking",
-      unknown: "unknown",
-    };
 
     return {
       age: age!,
       referenceSex: form.referenceSex as MeasurementInput["referenceSex"],
-      measurementSource: "ecg",
-      durationMinutes,
-      position: "supine",
-      rhythm,
-      artefactCorrection,
-      quietRest: form.quietRest === "" ? "unknown" : quietRestMap[form.quietRest] || "unknown",
-      breathing: form.breathing === "" ? "unknown" : breathingMap[form.breathing] || "unknown",
-      recordingConfirmed: confirmed,
       rmssd: rmssd ?? undefined,
       sdnn: sdnn ?? undefined,
       pnn50: pnn50 ?? undefined,
@@ -318,7 +249,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
 
   const handlePrefill = (values: ParsedReportValues) => {
     const updates: Partial<FormState> = {};
-    if (values.durationMinutes !== undefined) updates.recordingDuration = String(values.durationMinutes);
     if (values.rmssd !== undefined) updates.rmssd = String(values.rmssd);
     if (values.sdnn !== undefined) updates.sdnn = String(values.sdnn);
     if (values.pnn50 !== undefined) updates.pnn50 = String(values.pnn50);
@@ -333,7 +263,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   const handleClear = () => {
     setForm(initialState);
     setErrors({});
-    setConfirmed(false);
     setImportedFromReport(false);
     setUploadPanelOpen(false);
     onClear();
@@ -346,7 +275,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           id="section-person"
           className="border-b border-border pb-2 text-base font-semibold text-foreground"
         >
-          1. Reference information
+          Reference
         </h2>
         <div className="mt-4 space-y-5">
           <div className="max-w-xs">
@@ -379,113 +308,13 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
         </div>
       </section>
 
-      <section aria-labelledby="section-recording">
-        <h2
-          id="section-recording"
-          className="border-b border-border pb-2 text-base font-semibold text-foreground"
-        >
-          2. Recording conditions
-        </h2>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Select the actual recording conditions. Leave a field unselected if the detail is not known.
-        </p>
-        <div className="mt-4 space-y-5">
-          <div className="max-w-xs">
-            <NumberField
-              id="recordingDuration"
-              label="Analysable recording duration"
-              unit="min"
-              required
-              value={form.recordingDuration}
-              onChange={(v) => set("recordingDuration", v)}
-              error={errors.recordingDuration}
-              helper="Decimal points and decimal commas are accepted. The reference protocol uses approximately five minutes."
-            />
-          </div>
-          <RadioGroup
-            legend="Rhythm"
-            name="rhythm"
-            value={form.rhythm}
-            onChange={(v) => set("rhythm", v)}
-            options={[
-              { value: "sinus", label: "Sinus rhythm without significant ectopy" },
-              { value: "af_flutter", label: "Atrial fibrillation or flutter" },
-              { value: "paced", label: "Paced rhythm" },
-              { value: "frequent_ectopy", label: "Frequent ectopic beats" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-          />
-          <RadioGroup
-            legend="Recording quality"
-            name="recordingQuality"
-            value={form.recordingQuality}
-            onChange={(v) => set("recordingQuality", v)}
-            options={[
-              { value: "corrected", label: "Artefacts and ectopic beats reviewed and corrected" },
-              { value: "not_corrected", label: "Artefact correction not completed" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-          />
-          <RadioGroup
-            legend="Quiet rest before recording"
-            name="quietRest"
-            value={form.quietRest}
-            onChange={(v) => set("quietRest", v)}
-            options={[
-              { value: "completed", label: "Completed" },
-              { value: "not_completed", label: "Not completed" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-          />
-          <RadioGroup
-            legend="Breathing during recording"
-            name="breathing"
-            value={form.breathing}
-            onChange={(v) => set("breathing", v)}
-            options={[
-              { value: "quiet_spontaneous", label: "Quiet spontaneous breathing" },
-              { value: "paced", label: "Paced breathing" },
-              { value: "irregular_talking", label: "Irregular breathing or talking" },
-              { value: "unknown", label: "Unknown" },
-            ]}
-          />
-        </div>
-      </section>
-
-      <section aria-labelledby="section-confirmation">
-        <h2
-          id="section-confirmation"
-          className="border-b border-border pb-2 text-base font-semibold text-foreground"
-        >
-          3. Recording confirmation
-        </h2>
-        <div className="mt-4">
-          <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-            <input
-              type="checkbox"
-              checked={confirmed}
-              onChange={(e) => setConfirmed(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-[#286d6d]"
-            />
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                I confirm that the recording information entered above is accurate.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                The status Protocol compatible is shown only when confirmed conditions match the reference protocol (ECG, supine, approx. five minutes, sinus rhythm, artefacts corrected, quiet rest completed, quiet spontaneous breathing). Otherwise the result shows Interpretation with methodological limitations.
-              </p>
-            </div>
-          </label>
-        </div>
-      </section>
-
       <section aria-labelledby="section-values">
         <div className="flex items-center justify-between border-b border-border pb-2">
           <h2
             id="section-values"
             className="text-base font-semibold text-foreground"
           >
-            4. HRV values
+            HRV values
           </h2>
           <button
             type="button"
@@ -610,26 +439,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
         >
           Clear values
         </button>
-      </div>
-
-      <div className="space-y-3">
-        <Collapsible title="How to obtain a comparable five-minute HRV measurement">
-          <p>
-            5HRV is designed for approximately five minutes of analysable ECG
-            data obtained after quiet rest in the supine position, with quiet
-            spontaneous breathing and no talking. Confirm sinus rhythm and
-            correct artefacts and ectopic beats where possible.
-          </p>
-        </Collapsible>
-        <Collapsible title="Why five minutes?">
-          <p>
-            Five-minute recordings provide practical short-term RMSSD, SDNN
-            and frequency-domain measurements. However, five-minute HRV must
-            not be compared directly with 24-hour Holter HRV reference
-            values, which reflect circadian and behavioural influences that a
-            short recording cannot capture.
-          </p>
-        </Collapsible>
       </div>
     </form>
   );

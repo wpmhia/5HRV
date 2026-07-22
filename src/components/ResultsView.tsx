@@ -3,7 +3,6 @@
 import { useState } from "react";
 import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
 import { MetricCard } from "@/components/MetricCard";
-import { ConfidenceCard } from "@/components/ConfidenceCard";
 
 type Props = {
   interpretation: HrvInterpretation;
@@ -30,30 +29,12 @@ function buildPlainText(
           : "Male"
     }`
   );
-  lines.push("Method: ECG");
-  lines.push("Position: Supine");
-  lines.push(`Recording duration: ${input.durationMinutes} min`);
-  if (input.rhythm !== "unknown")
-    lines.push(`Rhythm: ${input.rhythm.replace(/_/g, " ")}`);
-  if (input.artefactCorrection !== "unknown")
-    lines.push(`Artefact correction: ${input.artefactCorrection.replace(/_/g, " ")}`);
-  if (input.quietRest !== undefined && input.quietRest !== "unknown")
-    lines.push(`Quiet rest: ${input.quietRest.replace(/_/g, " ")}`);
-  if (input.breathing !== undefined && input.breathing !== "unknown")
-    lines.push(`Breathing: ${input.breathing.replace(/_/g, " ")}`);
-  if (input.meanHeartRate !== undefined)
-    lines.push(`Mean heart rate: ${input.meanHeartRate} bpm`);
   if (input.rmssd !== undefined) lines.push(`RMSSD: ${input.rmssd} ms`);
   if (input.sdnn !== undefined) lines.push(`SDNN: ${input.sdnn} ms`);
   if (input.pnn50 !== undefined) lines.push(`pNN50: ${input.pnn50} %`);
   if (input.hfPower !== undefined) lines.push(`HF power: ${input.hfPower} ms\u00B2`);
   if (input.lfPower !== undefined) lines.push(`LF power: ${input.lfPower} ms\u00B2`);
   if (input.lfhfRatio !== undefined) lines.push(`LF/HF: ${input.lfhfRatio}`);
-  lines.push("");
-  lines.push(`RECORDING CONFIDENCE: ${interpretation.confidenceLabel}`);
-  for (const reason of interpretation.confidenceReasons) {
-    lines.push(`- ${reason}`);
-  }
   lines.push("");
   lines.push("SUMMARY");
   lines.push(interpretation.summary);
@@ -124,12 +105,6 @@ export function ResultsView({ interpretation, input, onClear }: Props) {
           </p>
         )}
       </section>
-
-      <ConfidenceCard
-        confidence={interpretation.confidence}
-        label={interpretation.confidenceLabel}
-        reasons={interpretation.confidenceReasons}
-      />
 
       {interpretation.metrics.length > 0 && (
         <section aria-labelledby="metrics-heading">

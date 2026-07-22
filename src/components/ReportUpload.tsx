@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { parseHrvReport, buildExtractedFields, type ParsedReportValues, type ExtractedField } from "@/lib/parseHrvReport";
+import { parseHrvReport, buildExtractedFields, hasHrvContent, type ParsedReportValues, type ExtractedField } from "@/lib/parseHrvReport";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
@@ -9,18 +9,6 @@ type Props = {
   onPrefill: (values: ParsedReportValues) => void;
   onClose: () => void;
 };
-
-export function hasHrvContent(text: string): boolean {
-  const markers = [
-    /\brmssd\s*[:=]?\s*\d/i,
-    /\bsdnn\s*[:=]?\s*\d/i,
-    /\bpnn50\s*[:=]?\s*\d/i,
-    /\blf\s*\/\s*hf\s*[:=]?\s*\d/i,
-    /(?<!\/)\bhf(?:\s+power)?\s*[:=]?\s*\d/i,
-    /(?<!\/)\blf(?:\s+power)?\s*[:=]?\s*\d/i,
-  ];
-  return markers.filter((p) => p.test(text)).length >= 2;
-}
 
 async function loadPdfJs() {
   const pdfjsLib = await import("pdfjs-dist");
@@ -172,7 +160,7 @@ export function ReportUpload({ onPrefill, onClose }: Props) {
     for (const f of fields) {
       const raw = editedValues[f.key]?.trim();
       if (raw === "") continue;
-      if (f.key === "durationMinutes" || f.key === "meanHeartRate" || f.key === "sdnn" || f.key === "rmssd" || f.key === "pnn50" || f.key === "hfPower" || f.key === "lfPower" || f.key === "lfhfRatio" || f.key === "vlfPower" || f.key === "samplingFrequency" || f.key === "totalBeats") {
+      if (f.key === "sdnn" || f.key === "rmssd" || f.key === "pnn50" || f.key === "hfPower" || f.key === "lfPower" || f.key === "lfhfRatio" || f.key === "vlfPower" || f.key === "samplingFrequency" || f.key === "totalBeats") {
         const num = parseFloat(raw.replace(",", "."));
         if (Number.isFinite(num)) (values as any)[f.key] = num;
       } else {
