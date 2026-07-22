@@ -309,6 +309,158 @@ describe("seed example 2", () => {
   });
 });
 
+describe("buildClinicalParagraph", () => {
+  const baseRmssd: MetricResult = {
+    key: "rmssd", name: "RMSSD", value: 30, unit: "ms",
+    category: "p25_to_p75", categoryLabel: "Typical",
+    referencePercentiles: [10, 20, 40, 60, 80],
+    interpretation: "Parasympathetic activity is preserved.",
+  };
+  const baseSdnn: MetricResult = {
+    key: "sdnn", name: "SDNN", value: 35, unit: "ms",
+    category: "p25_to_p75", categoryLabel: "Typical",
+    referencePercentiles: [15, 25, 45, 65, 85],
+    interpretation: "Overall short-term HRV is within the expected range.",
+  };
+  const basePnn50: MetricResult = {
+    key: "pnn50", name: "pNN50", value: 5, unit: "%",
+    interpretation: "A vagal-related measure.",
+  };
+  const baseHf: MetricResult = {
+    key: "hf", name: "HF power", value: 200, unit: "ms²",
+    interpretation: "Respiratory-frequency variability.",
+  };
+  const baseLf: MetricResult = {
+    key: "lf", name: "LF power", value: 400, unit: "ms²",
+    interpretation: "Mixed autonomic and baroreflex-related influences.",
+  };
+  const baseLfhf: MetricResult = {
+    key: "lfhf", name: "LF/HF ratio", value: 2, unit: "",
+    interpretation: "LF and HF are of broadly comparable magnitude.",
+  };
+
+  it("empty metrics returns empty string", () => {
+    expect(buildClinicalParagraph([])).toBe("");
+  });
+
+  it("reduced RMSSD → reduced parasympathetic activity", () => {
+    const rmssd: MetricResult = {
+      ...baseRmssd, value: 15, category: "p5_to_p25", categoryLabel: "Low",
+    };
+    const result = buildClinicalParagraph([rmssd, baseSdnn]);
+    expect(result).toContain("reduced parasympathetic activity");
+    expect(result).not.toContain("mixed parasympathetic");
+  });
+
+  it("reduced RMSSD with pNN50<1% → still reduced parasympathetic (RMSSD takes precedence)", () => {
+    const rmssd: MetricResult = {
+      ...baseRmssd, value: 15, category: "p5_to_p25", categoryLabel: "Low",
+    };
+    const pnn50: MetricResult = { ...basePnn50, value: 0.5 };
+    const result = buildClinicalParagraph([rmssd, baseSdnn, pnn50]);
+    expect(result).toContain("reduced parasympathetic activity");
+    expect(result).not.toContain("mixed parasympathetic");
+  });
+
+  it("preserved RMSSD with pNN50<1% → mixed parasympathetic findings", () => {
+    const pnn50: MetricResult = { ...basePnn50, value: 0.5 };
+    const result = buildClinicalParagraph([baseRmssd, baseSdnn, pnn50]);
+    expect(result).toContain("mixed parasympathetic findings");
+    expect(result).not.toContain("reduced parasympathetic activity");
+    expect(result).not.toContain("preserved parasympathetic activity");
+  });
+
+  it("preserved RMSSD with HF<50 ms² → mixed parasympathetic findings", () => {
+    const hf: MetricResult = { ...baseHf, value: 30 };
+    const result = buildClinicalParagraph([baseRmssd, baseSdnn, hf]);
+    expect(result).toContain("mixed parasympathetic findings");
+  });
+
+  it("preserved RMSSD with both pNN50≥1% and HF≥50 ms² → preserved parasympathetic", () => {
+    const result = buildClinicalParagraph([baseRmssd, baseSdnn, basePnn50, baseHf]);
+    expect(result).toContain("preserved parasympathetic activity");
+    expect(result).not.toContain("mixed parasympathetic");
+  });
+
+  it("RMSSD absent → no parasympathetic statement at all", () => {
+    const result = buildClinicalParagraph([baseSdnn]);
+    expect(result).not.toContain("parasympathetic");
+    expect(result).toContain("preserved total variability");
+  });
+
+  it("RMSSD present but unclassified → could not be classified", () => {
+    const rmssd: MetricResult = {
+      ...baseRmssd, category: undefined, categoryLabel: undefined,
+    };
+    const sdnn: MetricResult = {
+      ...baseSdnn, category: undefined, categoryLabel: undefined,
+    };
+    const result = buildClinicalParagraph([rmssd, sdnn]);
+    expect(result).toContain("could not be classified");
+  });
+
+  it("includes autonomic score direction when available", () => {
+    const result = buildClinicalParagraph(
+      [baseRmssd, baseSdnn, baseLfhf],
+      { value: 10, label: "Balanced or mixed pattern" }
+    );
+    expect(result).toContain("balanced autonomic activity");
+  });
+
+  it("builds from autonomic score when score is available over LF/HF", () => {
+    const result = buildClinicalParagraph(
+      [baseRmssd, baseSdnn, baseLfhf],
+      { value: 60, label: "Mild sympathetic shift" }
+    );
+    expect(result).toContain("marked sympathetic predominance");
+  });
+
+  it("uses LF/HF direction when no autonomic score", () => {
+    const lfhf: MetricResult = { ...baseLfhf, value: 3.5 };
+    const result = buildClinicalParagraph([baseRmssd, baseSdnn, lfhf]);
+    expect(result).toContain("relative sympathetic predominance");
+  });
+
+  it("appends chronic stress sentence for abnormal patterns", () => {
+    const rmssd: MetricResult = {
+      ...baseRmssd, value: 15, category: "p5_to_p25", categoryLabel: "Low",
+    };
+    const result = buildClinicalParagraph([rmssd, baseSdnn]);
+    expect(result).toMatch(/chronic physiological stress/i);
+  });
+
+  it("omits chronic stress sentence for preserved patterns", () => {
+    const result = buildClinicalParagraph([baseRmssd, baseSdnn]);
+    expect(result).not.toMatch(/chronic physiological stress/i);
+  });
+
+  it("includes preface with all metrics present", () => {
+    const result = buildClinicalParagraph([
+      baseRmssd, baseSdnn, basePnn50, baseHf, baseLf, baseLfhf,
+    ]);
+    expect(result).toContain("Time domain:");
+    expect(result).toContain("frequency domain:");
+    expect(result).toContain("SDNN 35 ms");
+    expect(result).toContain("RMSSD 30 ms");
+    expect(result).toContain("pNN50 5%");
+    expect(result).toContain("HF 200 ms²");
+    expect(result).toContain("LF 400 ms²");
+    expect(result).toContain("LF/HF 2");
+  });
+
+  it("handles only frequency-domain metrics", () => {
+    const result = buildClinicalParagraph([baseHf, baseLf, baseLfhf]);
+    expect(result).toContain("frequency domain:");
+    expect(result).not.toContain("Time domain:");
+  });
+
+  it("handles only time-domain metrics", () => {
+    const result = buildClinicalParagraph([baseRmssd, baseSdnn]);
+    expect(result).toContain("Time domain:");
+    expect(result).not.toContain("frequency domain:");
+  });
+});
+
 describe("prohibited terminology", () => {
   const scenarios: MeasurementInput[] = [
     baseInput,

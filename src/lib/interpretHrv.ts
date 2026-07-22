@@ -196,6 +196,10 @@ export function buildClinicalParagraph(
 
   const sdnnCat = sdnn?.category;
   const rmssdCat = rmssd?.category;
+  const rmssdLow = rmssdCat === "below_p5" || rmssdCat === "p5_to_p25";
+  const pnn50Low = pnn50 !== undefined && pnn50.value < 1;
+  const hfLow = hf !== undefined && hf.value < 50;
+  const parasympConflict = rmssd !== undefined && !rmssdLow && (pnn50Low || hfLow);
 
   const overallVar =
     !sdnn
@@ -211,9 +215,11 @@ export function buildClinicalParagraph(
       ? undefined
       : !rmssdCat
         ? "parasympathetic activity could not be classified"
-        : rmssdCat === "below_p5" || rmssdCat === "p5_to_p25"
+        : rmssdLow
           ? "reduced parasympathetic activity"
-          : "preserved parasympathetic activity";
+          : parasympConflict
+            ? "mixed parasympathetic findings"
+            : "preserved parasympathetic activity";
 
   let sympDir: string | undefined;
   if (autonomicScore) {
@@ -248,7 +254,8 @@ export function buildClinicalParagraph(
 
   const isAbnormal =
     (sdnnCat === "below_p5" || sdnnCat === "p5_to_p25") ||
-    (rmssdCat === "below_p5" || rmssdCat === "p5_to_p25") ||
+    rmssdLow ||
+    parasympConflict ||
     (sympDir !== undefined && (sympDir.includes("sympathetic") || sympDir.includes("parasympathetic predominance")));
 
   if (isAbnormal) {

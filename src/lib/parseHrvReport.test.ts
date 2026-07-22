@@ -69,11 +69,6 @@ pNN50 3.28%`;
     expect(result.recordingDate).toBe("2024-03-15");
   });
 
-  it("extracts VLF power", () => {
-    const result = parseHrvReport("VLF power: 150.5");
-    expect(result.vlfPower).toBeCloseTo(150.5, 1);
-  });
-
   it("extracts total beats", () => {
     const result = parseHrvReport("Total beats: 400");
     expect(result.totalBeats).toBe(400);
@@ -193,10 +188,9 @@ describe("worker termination preservation", () => {
   });
 });
 
-describe("VLF / LF edge cases", () => {
+describe("LF parsing edge cases", () => {
   it("does not match LF inside VLF when VLF and LF are on the same line", () => {
     const result = parseHrvReport("VLF : 201.54 LF : 416.47 HF : 70.55");
-    expect(result.vlfPower).toBeCloseTo(201.54, 1);
     expect(result.lfPower).toBeCloseTo(416.47, 1);
     expect(result.hfPower).toBeCloseTo(70.55, 1);
   });
@@ -211,7 +205,6 @@ VLF : 201.54 LF : 416.47 HF : 70.55
 LF/HF: 5.90
 pNN50 3.28%`;
     const result = parseHrvReport(text);
-    expect(result.vlfPower).toBeCloseTo(201.54, 1);
     expect(result.lfPower).toBeCloseTo(416.47, 1);
     expect(result.hfPower).toBeCloseTo(70.55, 1);
     expect(result.lfhfRatio).toBeCloseTo(5.90, 1);

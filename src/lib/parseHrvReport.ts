@@ -8,7 +8,6 @@ export type ParsedReportValues = {
   hfPower?: number;
   lfPower?: number;
   lfhfRatio?: number;
-  vlfPower?: number;
 };
 
 function normalizeNum(value: string): number | null {
@@ -191,23 +190,6 @@ export function parseHrvReport(text: string): ParsedReportValues {
       }
     }
 
-    // VLF power
-    if (values.vlfPower === undefined) {
-      const vlfPatterns = [
-        /vlf\s*power\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /vlf\b\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-      ];
-      for (const pat of vlfPatterns) {
-        const m = trimmed.match(pat);
-        if (m) {
-          const num = normalizeNum(m[1]);
-          if (num !== null && num >= 0) {
-            values.vlfPower = num;
-            break;
-          }
-        }
-      }
-    }
   }
 
   return values;
@@ -224,5 +206,3 @@ export function hasHrvContent(text: string): boolean {
   ];
   return markers.filter((p) => p.test(text)).length >= 2;
 }
-
-
