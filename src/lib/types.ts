@@ -30,6 +30,7 @@ export type MeasurementInput = {
   position: Position;
   rhythm: Rhythm;
   artefactCorrection: ArtefactCorrection;
+  recordingConfirmed: boolean;
   meanHeartRate?: number;
   rmssd?: number;
   sdnn?: number;

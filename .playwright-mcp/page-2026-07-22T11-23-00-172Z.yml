@@ -1,0 +1,129 @@
+- generic [active] [ref=f5e1]:
+  - banner [ref=f5e2]:
+    - generic [ref=f5e3]:
+      - link "5HRV" [ref=f5e4] [cursor=pointer]:
+        - /url: /
+      - navigation "Main" [ref=f5e5]:
+        - link "Overview" [ref=f5e6] [cursor=pointer]:
+          - /url: /
+        - link "The 5-Min. Method" [ref=f5e7] [cursor=pointer]:
+          - /url: /method
+        - link "HRV Parameters" [ref=f5e8] [cursor=pointer]:
+          - /url: /parameters
+        - link "Interpretation" [ref=f5e9] [cursor=pointer]:
+          - /url: /interpretation
+        - link "Applications" [ref=f5e10] [cursor=pointer]:
+          - /url: /applications
+        - link "Calculator" [ref=f5e11] [cursor=pointer]:
+          - /url: /calculator
+        - link "Evidence" [ref=f5e12] [cursor=pointer]:
+          - /url: /evidence
+        - link "About" [ref=f5e13] [cursor=pointer]:
+          - /url: /about
+  - main [ref=f5e14]:
+    - generic [ref=f5e15]:
+      - heading "Evidence" [level=1] [ref=f5e16]
+      - paragraph [ref=f5e17]: Peer-reviewed references supporting the measurement, interpretation and clinical application of five-minute HRV.
+      - generic [ref=f5e18]:
+        - generic [ref=f5e19]:
+          - heading "Standards of measurement and physiological interpretation" [level=2] [ref=f5e20]
+          - paragraph [ref=f5e21]:
+            - text: "Task Force of the European Society of Cardiology and the North American Society of Pacing and Electrophysiology. Heart rate variability: standards of measurement, physiological interpretation and clinical use."
+            - emphasis [ref=f5e22]: Circulation
+            - text: . 1996;93:1043–1065.
+          - paragraph [ref=f5e23]: The foundational consensus document defining HRV measurement standards, time-domain and frequency-domain parameters, and clinical applications.
+        - generic [ref=f5e24]:
+          - heading "Normative short-term HRV values in a Danish population" [level=2] [ref=f5e25]
+          - paragraph [ref=f5e26]:
+            - text: "Brinth LS, Jørgensen T, Mehlsen J, et al. Normative values of short-term heart rate variability in a cross-sectional study of a Danish population: the DanFunD study."
+            - emphasis [ref=f5e27]: Scandinavian Journal of Public Health
+            - text: ". 2024;52:48–57. DOI: 10.1177/14034948221124020."
+          - paragraph [ref=f5e28]: Provides the age- and sex-stratified RMSSD and SDNN reference percentiles used in the 5HRV calculator.
+        - generic [ref=f5e29]:
+          - heading "The LF/HF ratio and sympathovagal balance" [level=2] [ref=f5e30]
+          - paragraph [ref=f5e31]:
+            - text: Billman GE. The LF/HF ratio does not accurately measure cardiac sympatho-vagal balance.
+            - emphasis [ref=f5e32]: Frontiers in Physiology
+            - text: ". 2013;4:26. DOI: 10.3389/fphys.2013.00026."
+          - paragraph [ref=f5e33]: Critical review demonstrating that LF/HF does not provide a direct quantitative measurement of sympathetic–parasympathetic balance.
+        - generic [ref=f5e34]:
+          - heading "Short-term HRV methodology" [level=2] [ref=f5e35]
+          - paragraph [ref=f5e36]:
+            - text: Shaffer F, Ginsberg JP. An overview of heart rate variability metrics and norms.
+            - emphasis [ref=f5e37]: Frontiers in Public Health
+            - text: ". 2017;5:258. DOI: 10.3389/fpubh.2017.00258."
+          - paragraph [ref=f5e38]: Comprehensive overview of time-domain and frequency-domain HRV metrics, measurement conditions, and considerations for clinical interpretation.
+        - generic [ref=f5e39]:
+          - heading "Respiratory effects on HRV" [level=2] [ref=f5e40]
+          - paragraph [ref=f5e41]:
+            - text: "Hirsch JA, Bishop B. Respiratory sinus arrhythmia in humans: how breathing pattern modulates heart rate variability."
+            - emphasis [ref=f5e42]: American Journal of Physiology
+            - text: ". 1981;241:H620–H629. DOI: 10.1152/ajpheart.1981.241.4.H620."
+          - paragraph [ref=f5e43]: Demonstrates that respiratory rate and depth significantly influence HF power and related HRV metrics, a key consideration for frequency-domain interpretation.
+        - generic [ref=f5e44]:
+          - heading "HRV in ME/CFS" [level=2] [ref=f5e45]
+          - paragraph [ref=f5e46]:
+            - text: "Nelson MJ, Bahl JS, Buckley JD, et al. Evidence of altered cardiac autonomic regulation in myalgic encephalomyelitis/chronic fatigue syndrome: a systematic review and meta-analysis."
+            - emphasis [ref=f5e47]: Journal of Translational Medicine
+            - text: ". 2024;22:413. DOI: 10.1186/s12967-024-05208-3."
+          - paragraph [ref=f5e48]: Systematic review documenting reduced HRV in ME/CFS populations and supporting the use of short-term HRV as a research outcome measure.
+        - generic [ref=f5e49]:
+          - heading "HRV in postural orthostatic tachycardia syndrome (POTS)" [level=2] [ref=f5e50]
+          - paragraph [ref=f5e51]:
+            - text: "Benarroch EE. Postural tachycardia syndrome: a heterogeneous and multifactorial disorder."
+            - emphasis [ref=f5e52]: Mayo Clinic Proceedings
+            - text: ". 2012;87:1214–1225. DOI: 10.1016/j.mayocp.2012.08.013."
+          - paragraph [ref=f5e53]: Reviews the pathophysiology of POTS including autonomic, cardiovascular and neural mechanisms relevant to short-term HRV assessment.
+        - generic [ref=f5e54]:
+          - heading "HRV in Long COVID and post-acute infection syndromes" [level=2] [ref=f5e55]
+          - paragraph [ref=f5e56]:
+            - text: Barizien N, Le Guen M, Russel S, et al. Clinical characterization of dysautonomia in long COVID-19 patients.
+            - emphasis [ref=f5e57]: Scientific Reports
+            - text: ". 2021;11:14042. DOI: 10.1038/s41598-021-93546-5."
+          - paragraph [ref=f5e58]: Documents autonomic dysfunction including reduced HRV in post-COVID patients, supporting the use of short-term HRV as an objective autonomic measure.
+        - generic [ref=f5e59]:
+          - heading "ECG versus PPG validity for HRV" [level=2] [ref=f5e60]
+          - paragraph [ref=f5e61]:
+            - text: Plews DJ, Scott B, Altini M, et al. Comparison of HRV metrics obtained from ECG and photoplethysmography.
+            - emphasis [ref=f5e62]: European Journal of Applied Physiology
+            - text: ". 2023. DOI: 10.1007/s00421-023-05253-4."
+          - paragraph [ref=f5e63]: Compares HRV metrics derived from ECG and PPG, highlighting the methodological considerations required when using non-ECG recording devices.
+      - paragraph [ref=f5e65]: Reference implementation and explanatory framework adapted from the five-minute HRV teaching material of Willem Gielen, Cardiologist and Internist. This reference list is not exhaustive; additional peer-reviewed literature should be consulted for specific clinical populations and research questions.
+  - contentinfo [ref=f5e66]:
+    - generic [ref=f5e67]:
+      - generic [ref=f5e68]:
+        - generic [ref=f5e69]:
+          - heading "5HRV" [level=3] [ref=f5e70]
+          - paragraph [ref=f5e71]: A practical clinical and research framework for assessing autonomic function from a standardized five-minute HRV recording.
+        - generic [ref=f5e72]:
+          - heading "Pages" [level=3] [ref=f5e73]
+          - list [ref=f5e74]:
+            - listitem [ref=f5e75]:
+              - link "Overview" [ref=f5e76] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=f5e77]:
+              - link "The 5-Minute Method" [ref=f5e78] [cursor=pointer]:
+                - /url: /method
+            - listitem [ref=f5e79]:
+              - link "HRV Parameters" [ref=f5e80] [cursor=pointer]:
+                - /url: /parameters
+            - listitem [ref=f5e81]:
+              - link "Clinical Interpretation" [ref=f5e82] [cursor=pointer]:
+                - /url: /interpretation
+            - listitem [ref=f5e83]:
+              - link "Clinical Applications" [ref=f5e84] [cursor=pointer]:
+                - /url: /applications
+            - listitem [ref=f5e85]:
+              - link "Calculator" [ref=f5e86] [cursor=pointer]:
+                - /url: /calculator
+            - listitem [ref=f5e87]:
+              - link "Evidence" [ref=f5e88] [cursor=pointer]:
+                - /url: /evidence
+            - listitem [ref=f5e89]:
+              - link "About" [ref=f5e90] [cursor=pointer]:
+                - /url: /about
+        - generic [ref=f5e91]:
+          - heading "Clinical framework" [level=3] [ref=f5e92]
+          - paragraph [ref=f5e93]: Developed by Willem Gielen, Cardiologist and Internist, as a practical approach to standardized five-minute HRV assessment in clinical practice and research.
+          - paragraph [ref=f5e94]: 5HRV provides contextual interpretation of HRV measurements for educational and professional reference. It does not diagnose disease, replace ECG review or substitute for clinical assessment.
+      - generic [ref=f5e95]: © 2026 5HRV. All rights reserved.

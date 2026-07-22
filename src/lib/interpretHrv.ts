@@ -102,6 +102,12 @@ function assessConfidence(input: MeasurementInput): {
 
   const reasons: string[] = [];
 
+  if (!input.recordingConfirmed) {
+    reasons.push(
+      "The recording conditions have not been confirmed by the user. The interpretation is provided with methodological reservations."
+    );
+  }
+
   if (input.measurementSource === "ppg") {
     reasons.push(
       "PPG measurement has lower precision than ECG, particularly for frequency-domain metrics."
@@ -142,34 +148,24 @@ function assessConfidence(input: MeasurementInput): {
     reasons.push("The rhythm during the recording is unknown.");
   }
 
-  const isHigh =
-    (input.measurementSource === "ecg" ||
-      input.measurementSource === "ecg_chest_strap") &&
-    input.durationMinutes >= 4.5 &&
-    input.durationMinutes <= 5.5 &&
-    input.position === "supine" &&
-    input.rhythm === "sinus" &&
-    input.artefactCorrection === "completed";
-
-  if (isHigh) {
+  if (input.recordingConfirmed) {
     return {
       confidence: "high",
-      reasons: [
-        "Recording conditions match the five-minute supine ECG reference protocol.",
-      ],
+      reasons: reasons.length > 0
+        ? reasons
+        : [
+            "Recording conditions confirmed by the user as consistent with the five-minute supine reference protocol.",
+          ],
     };
   }
 
-  if (reasons.length >= 2) {
-    return { confidence: "low", reasons };
-  }
   return { confidence: "moderate", reasons };
 }
 
 const confidenceLabels: Record<Confidence, string> = {
-  high: "High confidence",
-  moderate: "Moderate confidence",
-  low: "Low confidence",
+  high: "Protocol compatible",
+  moderate: "Interpretation with methodological limitations",
+  low: "Interpretation with methodological limitations",
   "not-valid": "Standard interpretation not valid",
 };
 

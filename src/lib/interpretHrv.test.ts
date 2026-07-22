@@ -22,6 +22,7 @@ const baseInput: MeasurementInput = {
   position: "supine",
   rhythm: "sinus",
   artefactCorrection: "completed",
+  recordingConfirmed: true,
   rmssd: 30,
   sdnn: 35,
 };
@@ -152,18 +153,13 @@ describe("recording confidence", () => {
   it("high confidence for protocol-matching ECG recording", () => {
     expect(interpretHrv(baseInput).confidence).toBe("high");
   });
-  it("moderate confidence with one limitation", () => {
-    const result = interpretHrv({ ...baseInput, position: "seated" });
+  it("moderate confidence when not confirmed", () => {
+    const result = interpretHrv({ ...baseInput, recordingConfirmed: false });
     expect(result.confidence).toBe("moderate");
   });
-  it("low confidence with several limitations", () => {
-    const result = interpretHrv({
-      ...baseInput,
-      measurementSource: "smartwatch",
-      position: "standing",
-      artefactCorrection: "not_completed",
-    });
-    expect(result.confidence).toBe("low");
+  it("high confidence when confirmed with ideal conditions", () => {
+    const result = interpretHrv({ ...baseInput, recordingConfirmed: true });
+    expect(result.confidence).toBe("high");
   });
   it("not valid for atrial fibrillation or flutter", () => {
     const result = interpretHrv({ ...baseInput, rhythm: "af_flutter" });
@@ -275,6 +271,7 @@ describe("seed example 1", () => {
     position: "supine",
     rhythm: "sinus",
     artefactCorrection: "completed",
+    recordingConfirmed: true,
     rmssd: 18,
     sdnn: 23,
     hfPower: 213,
@@ -320,6 +317,7 @@ describe("seed example 2", () => {
     position: "supine",
     rhythm: "sinus",
     artefactCorrection: "completed",
+    recordingConfirmed: true,
     rmssd: 30.4,
     sdnn: 47.63,
     hfPower: 125.95,
@@ -382,6 +380,7 @@ describe("prohibited terminology", () => {
       position: "supine",
       rhythm: "sinus",
       artefactCorrection: "completed",
+      recordingConfirmed: true,
       rmssd: 18,
       sdnn: 23,
       hfPower: 213,

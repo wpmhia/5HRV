@@ -79,6 +79,40 @@ export default function EvidencePage() {
 
         <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="text-lg font-semibold text-foreground">
+            Respiratory effects on HRV
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Hirsch JA, Bishop B. Respiratory sinus arrhythmia in humans: how
+            breathing pattern modulates heart rate variability. <em>American
+            Journal of Physiology</em>. 1981;241:H620&ndash;H629. DOI:
+            10.1152/ajpheart.1981.241.4.H620.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Demonstrates that respiratory rate and depth significantly influence
+            HF power and related HRV metrics, a key consideration for
+            frequency-domain interpretation.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground">
+            HRV in ME/CFS
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Nelson MJ, Bahl JS, Buckley JD, et al. Evidence of altered cardiac
+            autonomic regulation in myalgic encephalomyelitis/chronic fatigue
+            syndrome: a systematic review and meta-analysis. <em>Journal of
+            Translational Medicine</em>. 2024;22:413. DOI:
+            10.1186/s12967-024-05208-3.
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Systematic review documenting reduced HRV in ME/CFS populations and
+            supporting the use of short-term HRV as a research outcome measure.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground">
             HRV in postural orthostatic tachycardia syndrome (POTS)
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

@@ -67,6 +67,49 @@ export default function MethodPage() {
 
       <section className="mt-12">
         <h2 className="text-2xl font-bold text-foreground">
+          RR and NN interval analysis
+        </h2>
+        <div className="mt-4 space-y-4 text-base leading-relaxed text-muted-foreground">
+          <p>
+            HRV analysis begins with the detection of each heart beat from the
+            ECG signal. The time between consecutive R peaks is the RR interval.
+            However, not every RR interval represents normal sinus-node
+            activation. Ectopic beats, atrial or ventricular premature
+            complexes, and artefact from motion or electrode disturbance produce
+            spurious intervals that must be identified and handled.
+          </p>
+          <p>
+            After removing non-sinus beats and correcting artefacts, the
+            remaining intervals are called NN intervals (normal-to-normal). All
+            standard HRV metrics&mdash;RMSSD, SDNN, pNN50, HF and LF
+            power&mdash;are computed from the NN-interval time series, not from
+            raw RR intervals.
+          </p>
+          <div className="rounded-lg bg-accent p-4 text-sm text-accent-foreground">
+            <p className="font-medium">Key distinction:</p>
+            <ul className="mt-2 list-disc pl-5 space-y-1">
+              <li><strong>RR interval:</strong> the time between any two consecutive R peaks</li>
+              <li><strong>NN interval:</strong> an RR interval that follows a normal sinus beat</li>
+            </ul>
+            <p className="mt-2">
+              Failing to distinguish RR from NN intervals is a common source of
+              error in HRV interpretation. Devices and software differ in how
+              they label their output, and the user must verify whether ectopic
+              and artefact filtering has been applied.
+            </p>
+          </div>
+          <p>
+            For short-term five-minute analysis, the NN-interval time series is
+            also the basis for spectral analysis. After resampling and
+            detrending, the power spectrum is computed using fast Fourier
+            transformation or autoregressive modelling, from which HF, LF, VLF
+            and the LF/HF ratio are derived.
+          </p>
+        </div>
+      </section>
+
+      <section className="mt-12">
+        <h2 className="text-2xl font-bold text-foreground">
           Standardized recording protocol
         </h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">

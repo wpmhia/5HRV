@@ -27,9 +27,9 @@ type FormState = {
 const initialState: FormState = {
   age: "",
   referenceSex: "unselected",
-  recordingPosition: "supine",
-  rhythm: "sinus",
-  recordingQuality: "corrected",
+  recordingPosition: "",
+  rhythm: "",
+  recordingQuality: "",
   meanHeartRate: "",
   rmssd: "",
   sdnn: "",
@@ -171,6 +171,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hrWarning, setHrWarning] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -271,14 +272,22 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       not_corrected: "unknown",
     };
 
+    const positionMap: Record<string, MeasurementInput["position"]> = {
+      supine: "supine",
+      seated: "seated",
+      other_or_unknown: "unknown",
+    };
+    const position = form.recordingPosition === "" ? "unknown" : positionMap[form.recordingPosition] || "unknown";
+
     return {
       age: age!,
       referenceSex: form.referenceSex as MeasurementInput["referenceSex"],
       measurementSource: "ecg",
       durationMinutes: 5,
-      position: form.recordingPosition as MeasurementInput["position"],
-      rhythm: rhythmMap[form.rhythm] || "unknown",
-      artefactCorrection: qualityMap[form.recordingQuality] || "unknown",
+      position,
+      rhythm: form.rhythm === "" ? "unknown" : rhythmMap[form.rhythm] || "unknown",
+      artefactCorrection: form.recordingQuality === "" ? "unknown" : qualityMap[form.recordingQuality] || "unknown",
+      recordingConfirmed: confirmed,
       meanHeartRate: meanHeartRate ?? undefined,
       rmssd: rmssd ?? undefined,
       sdnn: sdnn ?? undefined,
@@ -299,6 +308,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     setForm(initialState);
     setErrors({});
     setHrWarning(null);
+    setConfirmed(false);
     onClear();
   };
 
@@ -347,11 +357,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           id="section-recording"
           className="border-b border-border pb-2 text-base font-semibold text-foreground"
         >
-          2. Recording validity
+          2. Recording conditions
         </h2>
         <p className="mt-2 text-xs text-muted-foreground">
-          These optional details help the calculator assess how closely the
-          recording matches the reference protocol.
+          Select the recording conditions. If a detail is not known, leave it unselected.
         </p>
         <div className="mt-4 space-y-5">
           <RadioGroup
@@ -389,12 +398,39 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
         </div>
       </section>
 
+      <section aria-labelledby="section-confirmation">
+        <h2
+          id="section-confirmation"
+          className="border-b border-border pb-2 text-base font-semibold text-foreground"
+        >
+          3. Recording confirmation
+        </h2>
+        <div className="mt-4">
+          <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-[#286d6d]"
+            />
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                I confirm that this was an approximately five-minute supine recording in sinus rhythm, with artefacts and ectopic beats appropriately reviewed.
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Checking this box applies the Protocol compatible status. Without this confirmation, the result will be labelled Interpretation with methodological limitations.
+              </p>
+            </div>
+          </label>
+        </div>
+      </section>
+
       <section aria-labelledby="section-values">
         <h2
           id="section-values"
           className="border-b border-border pb-2 text-base font-semibold text-foreground"
         >
-          3. HRV values
+          4. HRV values
         </h2>
         <p className="mt-2 text-xs text-muted-foreground">
           Decimal points and decimal commas are both accepted. At least RMSSD

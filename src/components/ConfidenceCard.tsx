@@ -7,16 +7,16 @@ type Props = {
 };
 
 const styles: Record<Confidence, string> = {
-  high: "border-primary/40 bg-accent",
-  moderate: "border-border bg-muted",
-  low: "border-border bg-muted",
+  high: "border-[#286d6d]/40 bg-[#e8f4f4] dark:bg-[#1a3a3a]",
+  moderate: "border-amber-500/40 bg-amber-50 dark:bg-amber-950/20",
+  low: "border-amber-500/40 bg-amber-50 dark:bg-amber-950/20",
   "not-valid": "border-destructive/40 bg-muted",
 };
 
 const badgeStyles: Record<Confidence, string> = {
-  high: "bg-primary text-primary-foreground",
-  moderate: "bg-foreground/80 text-background",
-  low: "bg-foreground/80 text-background",
+  high: "bg-[#286d6d] text-white",
+  moderate: "bg-amber-600 text-white",
+  low: "bg-amber-600 text-white",
   "not-valid": "bg-destructive text-primary-foreground",
 };
 
@@ -28,7 +28,7 @@ export function ConfidenceCard({ confidence, label, reasons }: Props) {
     >
       <div className="flex flex-wrap items-center gap-3">
         <h2 id="confidence-heading" className="text-base font-semibold text-foreground">
-          Recording confidence
+          Methodological assessment
         </h2>
         <span
           className={`rounded-md px-2.5 py-1 text-xs font-semibold ${badgeStyles[confidence]}`}
