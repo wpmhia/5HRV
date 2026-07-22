@@ -7,6 +7,7 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 type Props = {
   onPrefill: (values: ParsedReportValues) => void;
+  onClose: () => void;
 };
 
 export function hasHrvContent(text: string): boolean {
@@ -99,14 +100,13 @@ async function extractTextFromFile(file: File): Promise<string> {
   throw new Error("Unsupported file type. Please upload a PDF, JPG, JPEG or PNG file.");
 }
 
-export function ReportUpload({ onPrefill }: Props) {
+export function ReportUpload({ onPrefill, onClose }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [fields, setFields] = useState<ExtractedField[] | null>(null);
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [privacyWarning, setPrivacyWarning] = useState(true);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -127,7 +127,6 @@ export function ReportUpload({ onPrefill }: Props) {
     setError(null);
     setFields(null);
     setReviewed(false);
-    setPrivacyWarning(false);
 
     try {
       const text = await extractTextFromFile(file);
@@ -177,17 +176,13 @@ export function ReportUpload({ onPrefill }: Props) {
       }
     }
     onPrefill(values);
+    onClose();
   };
 
-  const handleCancel = () => {
-    setFields(null);
-    setEditedValues({});
-    setReviewed(false);
-    setError(null);
-  };
+  const inputClass = "w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring";
 
   return (
-    <div className="space-y-4">
+    <div className="mt-3 rounded-lg border border-border bg-card p-4">
       <input
         ref={fileInputRef}
         type="file"
@@ -197,124 +192,83 @@ export function ReportUpload({ onPrefill }: Props) {
         aria-label="Upload HRV report"
       />
 
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={uploading}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-6 py-4 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-      >
-        {uploading ? (
-          "Extracting values..."
-        ) : (
-          <>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="shrink-0"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            Upload HRV report
-          </>
-        )}
-      </button>
-
-      <p className="text-xs text-muted-foreground">
-        Accepted formats: PDF, JPG, JPEG, PNG
-      </p>
-
-      {error && (
-        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          {error}
-        </p>
+      {!fields && !uploading && !error && (
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Upload a PDF or image of an HRV report. Accepted formats: PDF, JPG, JPEG, PNG.
+            Reports are processed locally and are not retained.
+          </p>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            Select file
+          </button>
+        </div>
       )}
 
-      {privacyWarning && (
-        <p className="rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-          Uploaded reports are used only to extract HRV values and are not retained.
-          Uploaded reports may contain patient names, dates of birth, identification
-          numbers or clinical identifiers. Review and remove any identifying
-          information before interpretation.
-        </p>
+      {uploading && (
+        <p className="text-xs text-muted-foreground">Extracting values…</p>
+      )}
+
+      {error && (
+        <div className="space-y-2">
+          <p role="alert" className="text-xs text-destructive">{error}</p>
+          <button
+            type="button"
+            onClick={() => { setError(null); fileInputRef.current?.click(); }}
+            className="text-xs text-primary underline-offset-4 hover:underline"
+          >
+            Try another file
+          </button>
+        </div>
       )}
 
       {fields && (
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="text-sm font-semibold text-foreground">Values found in the report</h3>
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {fields.map((f) => (
-              <div key={f.key} className="flex items-center gap-2">
-                <label className="w-36 shrink-0 text-xs font-medium text-muted-foreground">
-                  {f.label}
-                </label>
+        <div>
+          <h4 className="text-xs font-semibold text-foreground">Values found in the report</h4>
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {fields.filter(f => f.status === "found" || f.value !== undefined).map((f) => (
+              <div key={f.key} className="flex items-center gap-1.5">
+                <span className="w-28 shrink-0 text-xs text-muted-foreground">{f.label}</span>
                 <input
                   type="text"
-                  inputMode={f.unit === "min" || f.unit === "bpm" || f.unit === "ms" || f.unit === "%" || f.unit === "ms²" || f.unit === "Hz" ? "decimal" : "text"}
+                  inputMode="decimal"
                   value={editedValues[f.key] ?? ""}
                   onChange={(e) => handleFieldEdit(f.key, e.target.value)}
-                  className="w-24 rounded border border-border bg-background px-2 py-1 text-xs text-foreground"
+                  className="w-20 rounded border border-border bg-background px-1.5 py-0.5 text-xs text-foreground"
                 />
-                {f.unit && (
-                  <span className="text-xs text-muted-foreground">{f.unit}</span>
-                )}
-                <span
-                  className={`ml-auto text-xs font-medium ${
-                    f.status === "found"
-                      ? "text-green-600"
-                      : f.status === "verify"
-                        ? "text-amber-600"
-                        : "text-muted-foreground"
-                  }`}
-                >
-                  {f.status === "found"
-                    ? "Found"
-                    : f.status === "verify"
-                      ? "Please verify"
-                      : "Not found"}
-                </span>
+                {f.unit && <span className="text-xs text-muted-foreground">{f.unit}</span>}
               </div>
             ))}
           </div>
 
-          <label className="mt-4 flex items-start gap-3 rounded-md border border-border bg-muted/30 p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+          <label className="mt-3 flex items-start gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={reviewed}
               onChange={(e) => setReviewed(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-[#286d6d]"
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-border accent-[#286d6d]"
             />
-            <div>
-              <p className="text-xs font-medium text-foreground">
-                I have reviewed the extracted values against the original ECG report.
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Text extraction can be imperfect. Verify all values before use.
-              </p>
-            </div>
+            <span className="text-xs text-muted-foreground">
+              I have reviewed the extracted values against the original report.
+            </span>
           </label>
 
-          <div className="mt-4 flex gap-3">
+          <div className="mt-3 flex gap-2">
             <button
               type="button"
               onClick={handleUseValues}
               disabled={!reviewed}
-              className="rounded-md bg-[#286d6d] px-4 py-2 text-xs font-semibold text-white hover:bg-[#1f5555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-md bg-[#286d6d] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1f5555] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Use these values
             </button>
             <button
               type="button"
-              onClick={handleCancel}
-              className="rounded-md border border-border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              onClick={onClose}
+              className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
             >
               Cancel
             </button>

@@ -178,6 +178,8 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hrWarning, setHrWarning] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [uploadPanelOpen, setUploadPanelOpen] = useState(false);
+  const [importedFromReport, setImportedFromReport] = useState(false);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -341,12 +343,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     if (values.hfPower !== undefined) updates.hfPower = String(values.hfPower);
     if (values.lfPower !== undefined) updates.lfPower = String(values.lfPower);
     if (values.lfhfRatio !== undefined) updates.lfhfRatio = String(values.lfhfRatio);
-    if (values.samplingFrequency !== undefined) {
-      (document.getElementById("samplingFrequencyDisplay") as HTMLElement | null)?.remove();
-    }
     setForm((prev) => ({ ...prev, ...updates }));
     setErrors({});
     setHrWarning(null);
+    setImportedFromReport(true);
   };
 
   const handleClear = () => {
@@ -354,22 +354,13 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     setErrors({});
     setHrWarning(null);
     setConfirmed(false);
+    setImportedFromReport(false);
+    setUploadPanelOpen(false);
     onClear();
   };
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-8">
-      <ReportUpload onPrefill={handlePrefill} />
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">or enter the values manually</span>
-        </div>
-      </div>
-
       <section aria-labelledby="section-person">
         <h2
           id="section-person"
@@ -512,12 +503,57 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       </section>
 
       <section aria-labelledby="section-values">
-        <h2
-          id="section-values"
-          className="border-b border-border pb-2 text-base font-semibold text-foreground"
-        >
-          4. HRV values
-        </h2>
+        <div className="flex items-center justify-between border-b border-border pb-2">
+          <h2
+            id="section-values"
+            className="text-base font-semibold text-foreground"
+          >
+            4. HRV values
+          </h2>
+          <button
+            type="button"
+            onClick={() => setUploadPanelOpen(!uploadPanelOpen)}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Upload HRV report
+          </button>
+        </div>
+
+        {uploadPanelOpen && (
+          <ReportUpload
+            onPrefill={handlePrefill}
+            onClose={() => setUploadPanelOpen(false)}
+          />
+        )}
+
+        {importedFromReport && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Values imported from HRV report — review before calculating.
+            <button
+              type="button"
+              onClick={() => { setUploadPanelOpen(true); }}
+              className="ml-2 text-primary underline-offset-4 hover:underline"
+            >
+              Change file
+            </button>
+          </p>
+        )}
+
         <p className="mt-2 text-xs text-muted-foreground">
           Decimal points and decimal commas are both accepted. At least RMSSD
           or SDNN is required.
