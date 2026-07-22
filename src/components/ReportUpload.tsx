@@ -144,11 +144,7 @@ export function ReportUpload({ onPrefill, onClearImport, imported }: Props) {
   };
 
   const handleUploadClick = () => {
-    setError(null);
-    fileInputRef.current?.click();
-  };
-
-  const handleTryAgain = () => {
+    if (uploading) return;
     setError(null);
     fileInputRef.current?.click();
   };
@@ -184,30 +180,30 @@ export function ReportUpload({ onPrefill, onClearImport, imported }: Props) {
           </button>
         </div>
       ) : (
-        <>
+        <div className="flex flex-col items-end gap-1.5">
           <button
             type="button"
             onClick={handleUploadClick}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+            disabled={uploading}
+            aria-busy={uploading}
+            className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-wait disabled:opacity-70"
           >
-            Upload report
+            {uploading ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"
+                />
+                Extracting…
+              </>
+            ) : (
+              "Upload report"
+            )}
           </button>
-          {uploading && (
-            <p className="mt-2 text-xs text-muted-foreground">Extracting values…</p>
-          )}
           {error && (
-            <div className="mt-2 space-y-2">
-              <p role="alert" className="text-xs text-destructive">{error}</p>
-              <button
-                type="button"
-                onClick={handleTryAgain}
-                className="text-xs text-primary underline-offset-4 hover:underline"
-              >
-                Try again
-              </button>
-            </div>
+            <p role="alert" className="text-xs text-destructive">{error}</p>
           )}
-        </>
+        </div>
       )}
     </>
   );
