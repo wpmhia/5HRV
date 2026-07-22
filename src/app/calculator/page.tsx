@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Link from "next/link";
 import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
 import { interpretHrv } from "@/lib/interpretHrv";
 import { CalculatorForm } from "@/components/CalculatorForm";
@@ -52,20 +51,6 @@ export default function CalculatorPage() {
             onClear={handleClear}
           />
         )}
-      </div>
-
-      <div className="mt-6 rounded-lg border border-border bg-muted/40 p-4 text-xs text-muted-foreground">
-        <p>
-          <span className="font-semibold text-foreground">Primary normative reference:</span> The
-          DanFunD study, based on 6,891 Danish adults aged 18–72 years, provides the age- and
-          sex-specific RMSSD and SDNN percentiles used by 5HRV. For HF, LF and LF/HF, cautious
-          descriptive interpretation is recommended because spectral values are especially sensitive
-          to breathing and analysis methodology. See the{" "}
-          <Link href="/evidence" className="text-primary underline-offset-4 hover:underline">
-            Evidence page
-          </Link>{" "}
-          for the full citation.
-        </p>
       </div>
     </div>
   );
