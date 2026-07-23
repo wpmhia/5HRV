@@ -8,4 +8,10 @@ export default defineConfig({
     baseURL: "http://localhost:4000",
     headless: true,
   },
+  webServer: {
+    command: "bun run dev --port 4000",
+    url: "http://localhost:4000",
+    reuseExistingServer: !process.env.CI,
+    timeout: 30000,
+  },
 });

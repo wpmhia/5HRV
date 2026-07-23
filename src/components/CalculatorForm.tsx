@@ -101,6 +101,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [importedFromReport, setImportedFromReport] = useState(false);
+  const [importedCount, setImportedCount] = useState(0);
   const [extracting, setExtracting] = useState(false);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
@@ -115,8 +116,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     });
   };
 
-  const validate = (): MeasurementInput | null => {
-    const nextErrors: Record<string, string> = {};
+  const collectErrors = (nextErrors: Record<string, string>): MeasurementInput | null => {
 
     const age = normalizeNumber(form.age);
     if (age === null) {
@@ -195,7 +195,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       nextErrors.lfhfRatio = "LF/HF cannot be negative.";
     }
 
-    setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return null;
 
     const result: MeasurementInput = {
@@ -228,14 +227,17 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    const input = validate();
+    const localErrors: Record<string, string> = {};
+    const input = collectErrors(localErrors);
+    setErrors(localErrors);
     if (input) {
       onInterpret(input);
     } else {
-      const firstError = Object.keys(errors)[0];
-      if (firstError) {
-        const el = formRef.current?.querySelector<HTMLElement>(`#${firstError}`);
-        el?.focus();
+      const firstKey = Object.keys(localErrors)[0];
+      if (firstKey) {
+        requestAnimationFrame(() => {
+          document.getElementById(firstKey)?.focus();
+        });
       }
     }
   };
@@ -296,9 +298,18 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       base.freqMode = "ratio";
       base.lfhfRatio = String(values.lfhfRatio);
       base.lfhfSource = "imported";
+    } else if (values.lfPower !== undefined) {
+      base.lfPower = String(values.lfPower);
+      base.freqMode = "powers";
+    } else if (values.hfPower !== undefined) {
+      base.hfPower = String(values.hfPower);
+      base.freqMode = "powers";
     }
     setForm(base);
     setErrors({});
+    const fieldKeys: (keyof FormState)[] = ["rmssd", "sdnn", "pnn50", "hfPower", "lfPower", "lfhfRatio"];
+    const actualCount = fieldKeys.filter((k) => base[k] !== "").length;
+    setImportedCount(actualCount);
     setImportedFromReport(true);
   };
 
@@ -363,6 +374,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             onPrefill={handlePrefill}
             onClearImport={handleClearImport}
             imported={importedFromReport}
+            importedCount={importedCount}
             onBusyChange={setExtracting}
           />
         </div>

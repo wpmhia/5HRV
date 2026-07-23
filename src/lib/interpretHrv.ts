@@ -251,8 +251,7 @@ export function buildClinicalParagraph(
   const isAbnormal =
     (sdnnCat === "below_p5" || sdnnCat === "p5_to_p25") ||
     rmssdLow ||
-    (autonomicScore !== undefined && autonomicScore.value >= 25) ||
-    (autonomicScore === undefined && lfhf !== undefined && (lfhf.value < 1 || lfhf.value > 2));
+    (autonomicScore !== undefined && autonomicScore.value >= 25);
 
   if (isAbnormal) {
     text += " This pattern may indicate chronic physiological stress or autonomic imbalance in the appropriate clinical context.";

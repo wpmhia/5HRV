@@ -9,6 +9,7 @@ type Props = {
   onPrefill: (values: ParsedReportValues) => void;
   onClearImport: () => void;
   imported: boolean;
+  importedCount: number;
   onBusyChange?: (busy: boolean) => void;
 };
 
@@ -86,11 +87,10 @@ async function extractTextFromFile(file: File): Promise<string> {
   throw new Error("Unsupported file type.");
 }
 
-export function ReportUpload({ onPrefill, onClearImport, imported, onBusyChange }: Props) {
+export function ReportUpload({ onPrefill, onClearImport, imported, importedCount, onBusyChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [importedCount, setImportedCount] = useState(0);
   const opCounter = useRef(0);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,7 +129,6 @@ export function ReportUpload({ onPrefill, onClearImport, imported, onBusyChange 
         setError("Could not extract values. Try again or enter manually.");
         return;
       }
-      setImportedCount(count);
       onPrefill(values);
     } catch {
       if (opId === opCounter.current) {
@@ -147,14 +146,12 @@ export function ReportUpload({ onPrefill, onClearImport, imported, onBusyChange 
   const handleChangeFile = () => {
     opCounter.current += 1;
     onClearImport();
-    setImportedCount(0);
     setError(null);
     fileInputRef.current?.click();
   };
 
   const handleUndo = () => {
     onClearImport();
-    setImportedCount(0);
   };
 
   const handleUploadClick = () => {
