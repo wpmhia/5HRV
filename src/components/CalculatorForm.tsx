@@ -189,10 +189,18 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     }
 
     const ratio = normalizeNumber(form.lfhfRatio);
-    if (form.lfhfRatio.trim() !== "" && ratio === null) {
-      nextErrors.lfhfRatio = "Enter a valid number.";
-    } else if (ratio !== null && ratio < 0) {
-      nextErrors.lfhfRatio = "LF/HF cannot be negative.";
+    if (form.freqMode === "ratio") {
+      if (ratio === null) {
+        nextErrors.lfhfRatio = "LF/HF ratio is required in ratio-only mode.";
+      } else if (ratio < 0) {
+        nextErrors.lfhfRatio = "LF/HF cannot be negative.";
+      }
+    } else {
+      if (form.lfhfRatio.trim() !== "" && ratio === null) {
+        nextErrors.lfhfRatio = "Enter a valid number.";
+      } else if (ratio !== null && ratio < 0) {
+        nextErrors.lfhfRatio = "LF/HF cannot be negative.";
+      }
     }
 
     if (Object.keys(nextErrors).length > 0) return null;
@@ -235,8 +243,12 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     } else {
       const firstKey = Object.keys(localErrors)[0];
       if (firstKey) {
+        const errorFieldIds: Record<string, string> = {
+          referenceSex: "reference-sex",
+        };
+        const fieldId = errorFieldIds[firstKey] ?? firstKey;
         requestAnimationFrame(() => {
-          document.getElementById(firstKey)?.focus();
+          document.getElementById(fieldId)?.focus();
         });
       }
     }
