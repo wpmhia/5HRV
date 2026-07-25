@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 
 const navItems = [
-  { href: "/method", label: "Method" },
+  { href: "/method", label: "Protocol" },
   { href: "/methodology", label: "Methodology" },
   { href: "/applications", label: "Clinical Use" },
   { href: "/evidence", label: "Evidence" },
