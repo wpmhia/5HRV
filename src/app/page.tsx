@@ -37,7 +37,7 @@ export default function Home() {
                 Five-minute HRV for clinicians and researchers
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Analyse five-minute HRV against published reference data.
+                Interpret five-minute HRV with a scientific interpretation.
               </h1>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
                 5HRV converts standardized short-term HRV measurements into a
