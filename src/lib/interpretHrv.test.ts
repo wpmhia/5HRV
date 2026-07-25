@@ -10,7 +10,7 @@ import {
   findProhibitedPhrases,
   deriveHrvFindings,
   renderMetricDescriptions,
-  renderScientificSummary,
+  renderAnalysis,
   estimatePercentile,
   interpolateLogPercentile,
   percentileToZ,
@@ -463,7 +463,7 @@ describe("seed example 2", () => {
   });
 });
 
-describe("renderScientificSummary", () => {
+describe("renderAnalysis", () => {
   it("renders for the patient example", () => {
     const input: MeasurementInput = {
       age: 33,
@@ -475,7 +475,7 @@ describe("renderScientificSummary", () => {
       lfPower: 416.47,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderScientificSummary(findings);
+    const text = renderAnalysis(findings);
     expect(text).toContain("SDNN 39.33");
     expect(text).toContain("RMSSD 23.14");
     expect(text).toContain("LF/HF");
@@ -486,7 +486,7 @@ describe("renderScientificSummary", () => {
   it("empty metrics returns empty-ish string (no crash)", () => {
     const input: MeasurementInput = { age: 40, referenceSex: "none" };
     const findings = deriveHrvFindings(input);
-    expect(() => renderScientificSummary(findings)).not.toThrow();
+    expect(() => renderAnalysis(findings)).not.toThrow();
   });
 
   it("reduced RMSSD -> reduced parasympathetic activity", () => {
@@ -498,7 +498,7 @@ describe("renderScientificSummary", () => {
       sdnn: 35,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderScientificSummary(findings);
+    const text = renderAnalysis(findings);
     expect(text).toContain("reduced");
   });
 
@@ -512,7 +512,7 @@ describe("renderScientificSummary", () => {
       pnn50: 0.5,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderScientificSummary(findings);
+    const text = renderAnalysis(findings);
     expect(text).toContain("preserved");
   });
 
@@ -527,7 +527,7 @@ describe("renderScientificSummary", () => {
       lfPower: 400,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderScientificSummary(findings);
+    const text = renderAnalysis(findings);
     expect(text).toContain("preserved");
   });
 
@@ -538,7 +538,7 @@ describe("renderScientificSummary", () => {
       sdnn: 35,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderScientificSummary(findings);
+    const text = renderAnalysis(findings);
     expect(text).not.toContain("RMSSD");
   });
 
@@ -547,7 +547,7 @@ describe("renderScientificSummary", () => {
       ...baseInput, lfhfRatio: 2.0,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderScientificSummary(findings);
+    const text = renderAnalysis(findings);
     expect(text).toContain("central autonomic pattern");
   });
 
@@ -556,7 +556,7 @@ describe("renderScientificSummary", () => {
       ...baseInput, lfhfRatio: 9.49, rmssd: 14.53,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderScientificSummary(findings);
+    const text = renderAnalysis(findings);
     expect(text).toContain("Serial measurements");
   });
 
@@ -569,14 +569,14 @@ describe("renderScientificSummary", () => {
       sdnn: 35,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderScientificSummary(findings);
+    const text = renderAnalysis(findings);
     expect(text).not.toMatch(/chronic physiological stress/i);
   });
 
   it("always includes serial measurements sentence", () => {
     const input: MeasurementInput = { age: 40, referenceSex: "none", rmssd: 30, sdnn: 35 };
     const findings = deriveHrvFindings(input);
-    const text = renderScientificSummary(findings);
+    const text = renderAnalysis(findings);
     expect(text).toContain("Serial measurements");
   });
 });

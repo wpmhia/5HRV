@@ -181,7 +181,7 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-help w-fit">
-            5HRV Autonomic Pattern Score
+            5HRV Scientific Autonomic Pattern Score
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-72">

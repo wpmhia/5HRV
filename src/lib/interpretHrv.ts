@@ -72,7 +72,7 @@ const LFHF_CAUTION =
   "LF/HF is not a direct measurement of sympathetic\u2013parasympathetic balance.";
 
 const CLINICAL_NOTE =
-  "5HRV is a scientific HRV calculator that analyses five-minute HRV recordings using peer-reviewed physiological research and large published reference populations. The calculator provides a research-based interpretation of the recorded HRV data and autonomic pattern. Clinical interpretation remains the responsibility of the healthcare professional, who integrates these findings with the patient\u2019s history, symptoms, examination and other investigations.";
+  "5HRV is a scientific HRV calculator that analyses five-minute HRV recordings using peer-reviewed physiological research and published age- and sex-specific reference populations. The calculator provides a research-based interpretation of the recorded HRV data and autonomic pattern. Clinical interpretation remains the responsibility of the healthcare professional, who integrates these findings with the patient\u2019s history, symptoms, examination, medications, recording conditions and other relevant clinical information.";
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -390,9 +390,9 @@ export function renderMetricDescriptions(findings: HrvFindings): MetricResult[] 
       referencePercentiles: v.referencePercentiles,
       interpretation: describeBand(
         v.band,
-        "Parasympathetic activity is high.",
-        "Parasympathetic activity is reduced.",
-        "Parasympathetic activity is preserved.",
+        "RMSSD is high relative to the selected reference population, consistent with enhanced cardiac vagal modulation.",
+        "RMSSD is low relative to the selected reference population, consistent with reduced cardiac vagal modulation.",
+        "RMSSD is within the typical range for the selected reference population.",
         "Short-term beat-to-beat variability strongly influenced by cardiac vagal modulation."
       ),
     });
@@ -411,9 +411,9 @@ export function renderMetricDescriptions(findings: HrvFindings): MetricResult[] 
       referencePercentiles: v.referencePercentiles,
       interpretation: describeBand(
         v.band,
-        "Overall short-term HRV is high.",
-        "Overall short-term HRV is reduced.",
-        "Overall short-term HRV is within the expected range.",
+        "SDNN is high relative to the selected reference population.",
+        "SDNN is low relative to the selected reference population.",
+        "SDNN is within the typical range for the selected reference population.",
         "SDNN reflects overall variability during this five-minute recording."
       ),
     });
@@ -479,7 +479,7 @@ export function renderMetricDescriptions(findings: HrvFindings): MetricResult[] 
   return metrics;
 }
 
-export function renderScientificSummary(findings: HrvFindings): string {
+export function renderAnalysis(findings: HrvFindings): string {
   const sdnn = findings.sdnn;
   const rmssd = findings.rmssd;
   const fd = findings.frequencyDomain;
@@ -543,13 +543,13 @@ function ordinal(value: number): string {
 }
 
 function buildConclusion(findings: HrvFindings): string {
-  return renderScientificSummary(findings);
+  return renderAnalysis(findings);
 }
 
-export function buildAnalysisParagraph(
+export function buildSummary(
   findings: HrvFindings
 ): string {
-  return renderScientificSummary(findings);
+  return renderAnalysis(findings);
 }
 
 export function interpretHrv(input: MeasurementInput): HrvInterpretation {
