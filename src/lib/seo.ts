@@ -40,12 +40,12 @@ export const pages = {
   calculator: {
     title: "HRV Calculator – 5HRV",
     description:
-      "Enter RMSSD, SDNN, pNN50, HF and LF values to receive a structured clinical interpretation based on age- and sex-specific DanFunD reference percentiles.",
+      "Enter RMSSD, SDNN, pNN50, HF and LF values to receive a structured scientific analysis based on age- and sex-specific DanFunD reference percentiles.",
   },
   calculatorResult: {
     title: "HRV Interpretation Result – 5HRV",
     description:
-      "Structured clinical interpretation of five-minute HRV measurements with autonomic score, percentile-based metric placement, and clinical summary.",
+      "Structured scientific analysis of five-minute HRV measurements with autonomic score, percentile-based metric placement, and scientific summary.",
   },
   evidence: {
     title: "Evidence – 5HRV",
@@ -53,7 +53,7 @@ export const pages = {
       "Peer-reviewed references supporting the measurement, interpretation and clinical application of five-minute heart rate variability analysis.",
   },
   interpretation: {
-    title: "Clinical Interpretation Framework – 5HRV",
+    title: "Scientific Analysis Framework – 5HRV",
     description:
       "A structured framework for interpreting short-term HRV measurements using age- and sex-specific reference percentiles from the DanFunD population study.",
   },

@@ -108,7 +108,7 @@ export default function Home() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <ValueItem>Five-minute standardized protocol</ValueItem>
             <ValueItem>Age- and sex-specific reference percentiles</ValueItem>
-            <ValueItem>Structured clinical interpretation</ValueItem>
+            <ValueItem>Structured research-based analysis</ValueItem>
             <ValueItem>Runs locally in the browser &mdash; no data transmitted</ValueItem>
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function Home() {
               distributions from the DanFunD population study.
             </FeatureCard>
             <FeatureCard title="Summarizes">
-              Produces a concise clinical paragraph and structured report that
+              Produces a concise scientific summary and structured report that
               can be copied or printed.
             </FeatureCard>
           </div>
@@ -173,7 +173,7 @@ export default function Home() {
               {
                 step: "3",
                 title: "Interpret",
-                text: "Review the autonomic score, reference-based metric placement and clinical summary.",
+                text: "Review the autonomic score, reference-based metric placement and scientific analysis.",
               },
             ].map((item) => (
               <div key={item.step} className="flex gap-4">

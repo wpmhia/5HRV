@@ -581,7 +581,7 @@ export function ResultsView({ interpretation, input }: Props) {
           </p>
         </div>
 
-        {/* Clinical note */}
+        {/* Important information */}
         <div className="border-t border-border px-6 py-4">
           <p className="text-sm text-muted-foreground">
             {interpretation.clinicalNote}
