@@ -237,7 +237,7 @@ export default function EvidencePage() {
           <li>
             Gielen W. 5HRV Autonomic Score: a single numerical index for
             five-minute heart rate variability interpretation.{" "}
-            <em>Zenodo</em>. 2025.{" "}
+            <em>Zenodo</em>. 2026.{" "}
             <a
               href="https://zenodo.org/records/21558647"
               className="text-primary underline underline-offset-2"
