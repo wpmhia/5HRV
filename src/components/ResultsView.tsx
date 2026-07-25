@@ -591,9 +591,6 @@ export function ResultsView({ interpretation, input }: Props) {
               {interpretation.referenceNote}
             </p>
           )}
-          <p className="mt-3 text-xs italic text-muted-foreground/60">
-            Interpretation assumes that the supplied values originate from a technically valid five-minute HRV analysis.
-          </p>
         </div>
       </div>
     </div>

@@ -72,7 +72,7 @@ const LFHF_CAUTION =
   "LF/HF is not a direct measurement of sympathetic\u2013parasympathetic balance.";
 
 const CLINICAL_NOTE =
-  "5HRV is a scientific HRV calculator that analyses five-minute HRV recordings using peer-reviewed physiological research and published age- and sex-specific reference populations. The calculator provides a research-based interpretation of the recorded HRV data and autonomic pattern. Clinical interpretation remains the responsibility of the healthcare professional, who integrates these findings with the patient\u2019s history, symptoms, examination, medications, recording conditions and other relevant clinical information.";
+  "5HRV is a scientific HRV calculator that analyses five-minute HRV recordings using peer-reviewed physiological research and published age- and sex-specific reference populations. Clinical interpretation remains the responsibility of the healthcare professional, who integrates these findings with the patient\u2019s history, symptoms, examination, medications, recording conditions and other relevant clinical information. Interpretation assumes that the supplied values originate from a technically valid five-minute HRV analysis.";
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
