@@ -72,7 +72,7 @@ const LFHF_CAUTION =
   "LF/HF is not a direct measurement of sympathetic\u2013parasympathetic balance.";
 
 const CLINICAL_NOTE =
-  "HRV results should be interpreted together with symptoms, examination findings, rhythm assessment and other clinical information.";
+  "This analysis describes the HRV measurements in relation to published reference data and established physiological associations. Clinical interpretation requires symptoms, medical history, medication, rhythm assessment, measurement conditions and other patient-specific information.";
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -479,7 +479,7 @@ export function renderMetricDescriptions(findings: HrvFindings): MetricResult[] 
   return metrics;
 }
 
-export function renderClinicalSummary(findings: HrvFindings): string {
+export function renderScientificSummary(findings: HrvFindings): string {
   const sdnn = findings.sdnn;
   const rmssd = findings.rmssd;
   const fd = findings.frequencyDomain;
@@ -543,13 +543,13 @@ function ordinal(value: number): string {
 }
 
 function buildConclusion(findings: HrvFindings): string {
-  return renderClinicalSummary(findings);
+  return renderScientificSummary(findings);
 }
 
-export function buildClinicalParagraph(
+export function buildAnalysisParagraph(
   findings: HrvFindings
 ): string {
-  return renderClinicalSummary(findings);
+  return renderScientificSummary(findings);
 }
 
 export function interpretHrv(input: MeasurementInput): HrvInterpretation {

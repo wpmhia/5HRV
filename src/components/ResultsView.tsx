@@ -323,7 +323,7 @@ function buildPlainText(
   input: MeasurementInput
 ): string {
   const lines: string[] = [];
-  lines.push("5HRV Interpretation");
+  lines.push("5HRV Scientific Analysis");
   lines.push("");
   const ageBand = getAgeBand(input.age);
   const rec = input.recording;
@@ -460,7 +460,7 @@ export function ResultsView({ interpretation, input }: Props) {
         {/* Header */}
         <div className="flex flex-col gap-3 border-b border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-foreground">5HRV Interpretation</h2>
+            <h2 className="text-lg font-bold text-foreground">5HRV Scientific Analysis</h2>
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               <span>Age: {input.age} years</span>
               <span>
@@ -574,7 +574,7 @@ export function ResultsView({ interpretation, input }: Props) {
           </div>
         )}
 
-        {/* Clinical summary paragraph */}
+        {/* Scientific analysis paragraph */}
         <div className="border-t border-border px-6 py-6">
           <p className="text-base leading-relaxed text-foreground">
             {interpretation.overall}

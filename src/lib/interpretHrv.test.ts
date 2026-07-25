@@ -10,7 +10,7 @@ import {
   findProhibitedPhrases,
   deriveHrvFindings,
   renderMetricDescriptions,
-  renderClinicalSummary,
+  renderScientificSummary,
   estimatePercentile,
   interpolateLogPercentile,
   percentileToZ,
@@ -208,7 +208,7 @@ describe("LF/HF calculation", () => {
     expect(result.autonomicProfile).toBeDefined();
     expect(result.autonomicProfile!.score).toBeGreaterThan(0);
   });
-  it("reported-only LF/HF produces clinical paragraph with frequency domain LF/HF only", () => {
+  it("reported-only LF/HF produces analysis paragraph with frequency domain LF/HF only", () => {
     const result = interpretHrv({
       ...baseInput, rmssd: 14.53, sdnn: 34.19, pnn50: 0.21,
       lfhfRatio: 9.49, lfhfSource: "manual",
@@ -463,7 +463,7 @@ describe("seed example 2", () => {
   });
 });
 
-describe("renderClinicalSummary", () => {
+describe("renderScientificSummary", () => {
   it("renders for the patient example", () => {
     const input: MeasurementInput = {
       age: 33,
@@ -475,7 +475,7 @@ describe("renderClinicalSummary", () => {
       lfPower: 416.47,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
+    const text = renderScientificSummary(findings);
     expect(text).toContain("SDNN 39.33");
     expect(text).toContain("RMSSD 23.14");
     expect(text).toContain("LF/HF");
@@ -486,7 +486,7 @@ describe("renderClinicalSummary", () => {
   it("empty metrics returns empty-ish string (no crash)", () => {
     const input: MeasurementInput = { age: 40, referenceSex: "none" };
     const findings = deriveHrvFindings(input);
-    expect(() => renderClinicalSummary(findings)).not.toThrow();
+    expect(() => renderScientificSummary(findings)).not.toThrow();
   });
 
   it("reduced RMSSD -> reduced parasympathetic activity", () => {
@@ -498,7 +498,7 @@ describe("renderClinicalSummary", () => {
       sdnn: 35,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
+    const text = renderScientificSummary(findings);
     expect(text).toContain("reduced");
   });
 
@@ -512,7 +512,7 @@ describe("renderClinicalSummary", () => {
       pnn50: 0.5,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
+    const text = renderScientificSummary(findings);
     expect(text).toContain("preserved");
   });
 
@@ -527,7 +527,7 @@ describe("renderClinicalSummary", () => {
       lfPower: 400,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
+    const text = renderScientificSummary(findings);
     expect(text).toContain("preserved");
   });
 
@@ -538,7 +538,7 @@ describe("renderClinicalSummary", () => {
       sdnn: 35,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
+    const text = renderScientificSummary(findings);
     expect(text).not.toContain("RMSSD");
   });
 
@@ -547,7 +547,7 @@ describe("renderClinicalSummary", () => {
       ...baseInput, lfhfRatio: 2.0,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
+    const text = renderScientificSummary(findings);
     expect(text).toContain("central autonomic pattern");
   });
 
@@ -556,7 +556,7 @@ describe("renderClinicalSummary", () => {
       ...baseInput, lfhfRatio: 9.49, rmssd: 14.53,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
+    const text = renderScientificSummary(findings);
     expect(text).toContain("Serial measurements");
   });
 
@@ -569,14 +569,14 @@ describe("renderClinicalSummary", () => {
       sdnn: 35,
     };
     const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
+    const text = renderScientificSummary(findings);
     expect(text).not.toMatch(/chronic physiological stress/i);
   });
 
   it("always includes serial measurements sentence", () => {
     const input: MeasurementInput = { age: 40, referenceSex: "none", rmssd: 30, sdnn: 35 };
     const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
+    const text = renderScientificSummary(findings);
     expect(text).toContain("Serial measurements");
   });
 });
