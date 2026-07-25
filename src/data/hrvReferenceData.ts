@@ -105,7 +105,7 @@ export const percentileExplanations: Record<PercentileCategory, string> = {
   p5_to_p25:
     "The value falls between the 5th and 25th percentiles of the selected age- and sex-specific reference distribution.",
   p25_to_p75:
-    "The value falls within the central 50% of the selected age- and sex-specific reference distribution.",
+    "The value lies within the central 50% of the selected age- and sex-specific reference distribution.",
   p75_to_p95:
     "The value falls between the 75th and 95th percentiles of the selected age- and sex-specific reference distribution.",
   above_p95:

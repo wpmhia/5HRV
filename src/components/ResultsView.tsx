@@ -142,7 +142,7 @@ function ConcordanceBadge({ concordance }: { concordance: AutonomicConcordance }
   };
   const tooltips: Record<string, string> = {
     concordant_sympathetic_shift:
-      "Both RMSSD and LF/HF point toward a sympathetic-direction pattern relative to the reference population. This is a directional composite and not a direct measurement of sympathetic activity.",
+      "RMSSD and LF/HF both point in the sympathetic direction relative to the reference population. This is a directional pattern and not a direct measurement of sympathetic activity.",
     concordant_parasympathetic_shift:
       "Both RMSSD and LF/HF point toward a parasympathetic-direction pattern relative to the reference population. This is a directional composite and not a direct measurement of parasympathetic activity.",
     single_axis_sympathetic_shift:
@@ -178,9 +178,16 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
 
   return (
     <div className="rounded-lg border border-border bg-background p-5">
-      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        5HRV Autonomic Pattern Score
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-help w-fit">
+            5HRV Autonomic Pattern Score
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-72">
+          A directional composite derived from RMSSD and LF/HF percentiles. Positive values indicate a shift toward the sympathetic side; negative values indicate a shift toward the parasympathetic side.
+        </TooltipContent>
+      </Tooltip>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <ConcordanceBadge concordance={profile.concordance} />
@@ -192,7 +199,7 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
               </span>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-80">
-              The Autonomic Pattern Score is a 5HRV interpretive model. The underlying reference percentiles are published data; the composite score itself is currently provisional and intended to support interpretation.
+              The published reference percentiles underpin the individual metrics, but the combined 5HRV Autonomic Pattern Score is an interpretive model that has not yet been independently validated as a diagnostic scale.
             </TooltipContent>
           </Tooltip>
         )}
@@ -228,8 +235,8 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
 
       {Math.abs(profile.score) >= 95 && (
         <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          <span className="font-semibold">Score &ge;{Math.abs(profile.score)}: </span>
-          Upper limit reached; this does not represent a direct measurement or percentage of {profile.score > 0 ? "sympathetic" : "parasympathetic"} activity.
+          <span className="font-semibold">Upper range of the score. </span>
+          This is a directional composite score and does not represent a percentage or direct measurement of {profile.score > 0 ? "sympathetic" : "parasympathetic"} activity.
         </div>
       )}
 
