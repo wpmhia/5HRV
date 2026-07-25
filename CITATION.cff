@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use 5HRV in your research, please cite it as below."
+title: 5HRV
+authors:
+  - family-names: Gielen
+    given-names: Willem
+url: "https://5hrv.com"
+repository-code: "https://github.com/wgielen/5hrv"
+license: MIT
+keywords:
+  - heart rate variability
+  - HRV
+  - autonomic nervous system
+  - RMSSD
+  - reference percentiles
