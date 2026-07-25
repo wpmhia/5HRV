@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
 import { estimatePercentile, VAGAL_WEIGHT, SPECTRAL_WEIGHT, AUTONOMIC_SCORE_DENOMINATOR } from "@/lib/interpretHrv";
-import { getAgeBand } from "@/data/hrvReferenceData";
-import type { AutonomicProfile, AutonomicConcordance } from "@/lib/types";
+import { getAgeBand, percentileExplanations } from "@/data/hrvReferenceData";
+import type { AutonomicProfile, AutonomicConcordance, PercentileCategory } from "@/lib/types";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 type Props = {
   interpretation: HrvInterpretation;
@@ -53,6 +54,7 @@ function MetricCard({
   label,
   value,
   unit,
+  category,
   categoryLabel,
   approxPct,
   description,
@@ -61,6 +63,7 @@ function MetricCard({
   label: string;
   value: number;
   unit: string;
+  category?: PercentileCategory;
   categoryLabel?: string;
   approxPct: number | null;
   description: string;
@@ -78,14 +81,26 @@ function MetricCard({
         <span className="text-sm text-muted-foreground">{unit}</span>
       </div>
       <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
-        {categoryLabel && (
+        {categoryLabel && category && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground cursor-help">
+                {categoryLabel}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-72">
+              {percentileExplanations[category]}
+            </TooltipContent>
+          </Tooltip>
+        )}
+        {categoryLabel && !category && (
           <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
             {categoryLabel}
           </span>
         )}
         {approxPct !== null && (
           <span className="text-xs text-muted-foreground">
-            Approximately {ordinal(approxPct)} percentile
+            Approximately {ordinal(Math.round(approxPct))} percentile
           </span>
         )}
       </div>
@@ -125,10 +140,31 @@ function ConcordanceBadge({ concordance }: { concordance: AutonomicConcordance }
     mixed: "Mixed autonomic pattern",
     central: "Central autonomic pattern",
   };
+  const tooltips: Record<string, string> = {
+    concordant_sympathetic_shift:
+      "Both RMSSD and LF/HF point toward a sympathetic-direction pattern relative to the reference population. This is a directional composite and not a direct measurement of sympathetic activity.",
+    concordant_parasympathetic_shift:
+      "Both RMSSD and LF/HF point toward a parasympathetic-direction pattern relative to the reference population. This is a directional composite and not a direct measurement of parasympathetic activity.",
+    single_axis_sympathetic_shift:
+      "One of the two metrics indicates a sympathetic-direction pattern, while the other is within the central range.",
+    single_axis_parasympathetic_shift:
+      "One of the two metrics indicates a parasympathetic-direction pattern, while the other is within the central range.",
+    mixed:
+      "The two metrics point in opposite directions (e.g., both low or both high). This pattern does not have a clear directional interpretation.",
+    central:
+      "Both RMSSD and LF/HF are within the central 50% of the reference distribution.",
+  };
   return (
-    <span className={`inline-block rounded-md border px-2 py-0.5 text-xs font-medium ${colors[concordance] ?? ""}`}>
-      {labels[concordance] ?? concordance}
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={`inline-block rounded-md border px-2 py-0.5 text-xs font-medium cursor-help ${colors[concordance] ?? ""}`}>
+          {labels[concordance] ?? concordance}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-72">
+        {tooltips[concordance] ?? ""}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -149,9 +185,16 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <ConcordanceBadge concordance={profile.concordance} />
         {profile.provisional && (
-          <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-            Provisional
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 cursor-help">
+                Provisional
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-80">
+              The Autonomic Pattern Score is a 5HRV interpretive model. The underlying reference percentiles are published data; the composite score itself is currently provisional and intended to support interpretation.
+            </TooltipContent>
+          </Tooltip>
         )}
       </div>
 
@@ -490,16 +533,17 @@ export function ResultsView({ interpretation, input }: Props) {
           <div className="border-b border-border px-6 py-5">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {primaryMetrics.map((m) => (
-                <MetricCard
-                  key={m.key}
-                  label={m.name}
-                  value={m.value}
-                  unit={m.unit}
-                  categoryLabel={m.categoryLabel}
-                  approxPct={m.referencePercentiles ? estimatePercentile(m.value, m.referencePercentiles) : null}
-                  description={m.interpretation}
-                  percentiles={m.referencePercentiles}
-                />
+                  <MetricCard
+                    key={m.key}
+                    label={m.name}
+                    value={m.value}
+                    unit={m.unit}
+                    category={m.category}
+                    categoryLabel={m.categoryLabel}
+                    approxPct={m.referencePercentiles ? estimatePercentile(m.value, m.referencePercentiles) : null}
+                    description={m.interpretation}
+                    percentiles={m.referencePercentiles}
+                  />
               ))}
             </div>
           </div>
