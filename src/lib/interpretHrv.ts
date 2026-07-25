@@ -11,6 +11,8 @@ import type {
   MetricResult,
   PercentileCategory,
   AutonomicScore,
+  AutonomicConcordance,
+  AutonomicProfile,
   LfhfSource,
   ReferenceBand,
   VagalStatus,
@@ -89,6 +91,43 @@ export function estimatePercentile(
   return Math.round(Math.min(100, Math.max(0, percentile)));
 }
 
+export function estimatePercentileLog(
+  value: number,
+  reference: readonly [number, number, number, number, number],
+): number | null {
+  const [p5, p25, p50, p75, p95] = reference;
+  if (p5 <= 0 || value <= 0) return estimatePercentile(value, reference);
+  const logVal = Math.log(value);
+  const logP5 = Math.log(p5);
+  const logP25 = Math.log(p25);
+  const logP50 = Math.log(p50);
+  const logP75 = Math.log(p75);
+  const logP95 = Math.log(p95);
+
+  let percentile: number;
+  if (value <= p5) {
+    percentile = (logVal / logP5) * 5;
+  } else if (value <= p25) {
+    percentile = 5 + ((logVal - logP5) / (logP25 - logP5)) * 20;
+  } else if (value <= p50) {
+    percentile = 25 + ((logVal - logP25) / (logP50 - logP25)) * 25;
+  } else if (value <= p75) {
+    percentile = 50 + ((logVal - logP50) / (logP75 - logP50)) * 25;
+  } else if (value <= p95) {
+    percentile = 75 + ((logVal - logP75) / (logP95 - logP75)) * 20;
+  } else {
+    percentile = 95 + ((logVal - logP95) / logP95) * 5;
+  }
+  return Math.round(Math.min(100, Math.max(0, percentile)));
+}
+
+export function percentileToZ(percentile: number): number {
+  const p = clamp(percentile / 100, 0.001, 0.999);
+  const t = Math.sqrt(-2 * Math.log(p < 0.5 ? p : 1 - p));
+  const z0 = t - (2.515517 + 0.802853 * t + 0.010328 * t * t) / (1 + 1.432788 * t + 0.189269 * t * t + 0.001308 * t * t * t);
+  return p < 0.5 ? -z0 : z0;
+}
+
 function categorizeVagal(band: ReferenceBand): VagalStatus {
   switch (band) {
     case "below_p5": return "markedly_reduced";
@@ -111,37 +150,95 @@ function categorizeVariability(band: ReferenceBand): VariabilityStatus {
   }
 }
 
-function calculateScoreComponents(
-  rmssdBand: ReferenceBand,
-  lfhfRatio: number
-): { rmssdComponent: number; lfhfComponent: number } {
-  const rmssdComponent = (() => {
-    switch (rmssdBand) {
-      case "below_p5": return 50;
-      case "p5_to_p25": return 25;
-      case "p25_to_p75": return 0;
-      case "p75_to_p95": return -25;
-      case "above_p95": return -50;
-      default: return 0;
-    }
-  })();
+const VAGAL_WEIGHT = 0.7;
+const SPECTRAL_WEIGHT = 0.3;
 
-  const lfhfComponent =
-    lfhfRatio > 2
-      ? clamp((lfhfRatio - 2) / 6, 0, 1) * 50
-      : lfhfRatio < 1
-        ? -clamp(1 - lfhfRatio, 0, 1) * 50
-        : 0;
+function deriveConcordance(
+  rmssdPercentile: number,
+  lfhfPercentile: number,
+): AutonomicConcordance {
+  const rmssdLow = rmssdPercentile < 25;
+  const rmssdHigh = rmssdPercentile > 75;
+  const lfhfLow = lfhfPercentile < 25;
+  const lfhfHigh = lfhfPercentile > 75;
 
-  return { rmssdComponent, lfhfComponent };
+  if (rmssdLow && lfhfHigh) return "concordant_sympathetic_shift";
+  if (rmssdHigh && lfhfLow) return "concordant_parasympathetic_shift";
+  if ((rmssdLow && lfhfLow) || (rmssdHigh && lfhfHigh)) return "mixed";
+  return "central";
 }
 
-function scoreLabel(value: number): string {
-  if (value <= -25) return "Parasympathetic predominance";
-  if (value < 25) return "Balanced or mixed pattern";
-  if (value < 50) return "Mild sympathetic shift";
-  if (value < 75) return "Marked sympathetic predominance";
-  return "Pronounced sympathetic predominance";
+function computeAutonomicProfile(
+  rmssdPercentile: number,
+  lfhfPercentile: number,
+  sdnnPercentile?: number,
+): AutonomicProfile {
+  const vagalDeviation = -percentileToZ(rmssdPercentile);
+  const spectralDeviation = percentileToZ(lfhfPercentile);
+  const combined = 0.7 * vagalDeviation + 0.3 * spectralDeviation;
+  const score = Math.round(clamp(combined / 1.645, -1, 1) * 100);
+
+  const concordance = deriveConcordance(rmssdPercentile, lfhfPercentile);
+
+  const label = (() => {
+    if (concordance === "mixed") return "Mixed autonomic pattern";
+    if (score <= -75) return "Pronounced parasympathetic-direction shift";
+    if (score <= -50) return "Marked parasympathetic-direction shift";
+    if (score <= -25) return "Mild parasympathetic-direction shift";
+    if (score < 25) {
+      if (concordance === "central") return "Central autonomic pattern";
+      return "Mixed autonomic pattern";
+    }
+    if (score < 50) return "Mild sympathetic-direction shift";
+    if (score < 75) return "Marked sympathetic-direction shift";
+    return "Pronounced sympathetic-direction shift";
+  })();
+
+  const vagalCategory = classifyFromPercentile(rmssdPercentile);
+  const spectralCategory = classifyFromPercentile(lfhfPercentile);
+
+  return {
+    score,
+    label,
+    vagal: {
+      percentile: rmssdPercentile,
+      deviationZ: vagalDeviation,
+      category: vagalCategory,
+    },
+    spectral: {
+      percentile: lfhfPercentile,
+      deviationZ: spectralDeviation,
+      category: spectralCategory,
+    },
+    totalVariability: sdnnPercentile !== undefined ? {
+      percentile: sdnnPercentile,
+      category: classifyFromPercentile(sdnnPercentile),
+    } : undefined,
+    concordance,
+    provisional: true,
+  };
+}
+
+function classifyFromPercentile(pct: number): PercentileCategory {
+  if (pct < 5) return "below_p5";
+  if (pct < 25) return "p5_to_p25";
+  if (pct <= 75) return "p25_to_p75";
+  if (pct <= 95) return "p75_to_p95";
+  return "above_p95";
+}
+
+export function scoreLabel(value: number, concordance: AutonomicConcordance): string {
+  if (concordance === "mixed") return "Mixed autonomic pattern";
+  if (value <= -75) return "Pronounced parasympathetic-direction shift";
+  if (value <= -50) return "Marked parasympathetic-direction shift";
+  if (value <= -25) return "Mild parasympathetic-direction shift";
+  if (value < 25) {
+    if (concordance === "central") return "Central autonomic pattern";
+    return "Mixed autonomic pattern";
+  }
+  if (value < 50) return "Mild sympathetic-direction shift";
+  if (value < 75) return "Marked sympathetic-direction shift";
+  return "Pronounced sympathetic-direction shift";
 }
 
 export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
@@ -161,11 +258,13 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
   let sdnnBand: ReferenceBand = "unclassified";
   let rmssdPercentiles: readonly number[] | undefined;
   let sdnnPercentiles: readonly number[] | undefined;
+  let lfhfPercentiles: readonly number[] | undefined;
 
   if (referenceAvailable && ageBand) {
     const ref = hrvReferenceData[input.referenceSex as "male" | "female"][ageBand];
     rmssdPercentiles = ref.rmssd;
     sdnnPercentiles = ref.sdnn;
+    lfhfPercentiles = ref.lfhf;
     if (input.rmssd !== undefined) {
       rmssdBand = classifyPercentile(input.rmssd, rmssdPercentiles);
     }
@@ -190,13 +289,52 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
   const vagalStatus = categorizeVagal(rmssdBand);
   const variabilityStatus = categorizeVariability(sdnnBand);
 
+  const rmssdPct =
+    input.rmssd !== undefined && rmssdPercentiles
+      ? estimatePercentile(input.rmssd, rmssdPercentiles) ?? 50
+      : undefined;
+
+  const sdnnPct =
+    input.sdnn !== undefined && sdnnPercentiles
+      ? estimatePercentile(input.sdnn, sdnnPercentiles) ?? 50
+      : undefined;
+
+  const lfhfPct =
+    ratio !== undefined && lfhfPercentiles
+      ? estimatePercentileLog(ratio, lfhfPercentiles as readonly [number, number, number, number, number]) ?? 50
+      : undefined;
+
   let autonomicScore: HrvFindings["autonomicScore"] = undefined;
-  if (rmssdBand !== "unclassified" && ratio !== undefined) {
-    const { rmssdComponent, lfhfComponent } = calculateScoreComponents(rmssdBand, ratio);
-    const value = Math.round(clamp(rmssdComponent + lfhfComponent, -100, 100));
+  let autonomicProfile: HrvFindings["autonomicProfile"] = undefined;
+
+  if (rmssdPct !== undefined && lfhfPct !== undefined) {
+    const rmssdComponent = (() => {
+      switch (rmssdBand) {
+        case "below_p5": return 50;
+        case "p5_to_p25": return 25;
+        case "p25_to_p75": return 0;
+        case "p75_to_p95": return -25;
+        case "above_p95": return -50;
+        default: return 0;
+      }
+    })();
+
+    const lfhfComponent = ratio !== undefined
+      ? (ratio > 2
+          ? clamp((ratio - 2) / 6, 0, 1) * 50
+          : ratio < 1
+            ? -clamp(1 - ratio, 0, 1) * 50
+            : 0)
+      : 0;
+
+    const scoreValue = Math.round(clamp(rmssdComponent + lfhfComponent, -100, 100));
+    const concordance = deriveConcordance(rmssdPct, lfhfPct);
+
+    autonomicProfile = computeAutonomicProfile(rmssdPct, lfhfPct, sdnnPct);
+
     autonomicScore = {
-      value,
-      label: scoreLabel(value),
+      value: scoreValue,
+      label: scoreLabel(scoreValue, concordance),
       rmssdComponent,
       lfhfComponent,
     };
@@ -212,10 +350,7 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
     rmssd: {
       value: input.rmssd,
       band: rmssdBand,
-      estimatedPercentile:
-        input.rmssd !== undefined && rmssdPercentiles
-          ? estimatePercentile(input.rmssd, rmssdPercentiles) ?? undefined
-          : undefined,
+      estimatedPercentile: rmssdPct,
       referencePercentiles: rmssdPercentiles ? [...rmssdPercentiles] : undefined,
       vagalStatus,
     },
@@ -223,10 +358,7 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
     sdnn: {
       value: input.sdnn,
       band: sdnnBand,
-      estimatedPercentile:
-        input.sdnn !== undefined && sdnnPercentiles
-          ? estimatePercentile(input.sdnn, sdnnPercentiles) ?? undefined
-          : undefined,
+      estimatedPercentile: sdnnPct,
       referencePercentiles: sdnnPercentiles ? [...sdnnPercentiles] : undefined,
       variabilityStatus,
     },
@@ -242,6 +374,7 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
     },
 
     autonomicScore,
+    autonomicProfile,
   };
 }
 
@@ -467,6 +600,7 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     referenceNote: findings.referenceNote,
     safetyMessage: "",
     autonomicScore: findings.autonomicScore,
+    autonomicProfile: findings.autonomicProfile,
     findings,
   };
 }

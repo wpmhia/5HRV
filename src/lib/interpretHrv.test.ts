@@ -11,6 +11,7 @@ import {
   renderMetricDescriptions,
   renderClinicalSummary,
   estimatePercentile,
+  estimatePercentileLog,
 } from "@/lib/interpretHrv";
 import type {
   MeasurementInput,
@@ -304,7 +305,7 @@ describe("deriveHrvFindings", () => {
     expect(f.frequencyDomain.lfhfRatio).toBeCloseTo(5.9, 1);
     expect(f.frequencyDomain.pattern).toBe("marked_lf_predominance");
     expect(f.autonomicScore?.value).toBe(58);
-    expect(f.autonomicScore?.label).toBe("Marked sympathetic predominance");
+    expect(f.autonomicScore?.label).toBe("Marked sympathetic-direction shift");
   });
 
   it("estimates percentiles", () => {
@@ -505,7 +506,7 @@ describe("renderClinicalSummary", () => {
     };
     const findings = deriveHrvFindings(input);
     const text = renderClinicalSummary(findings);
-    expect(text).toContain("balanced or mixed");
+    expect(text).toContain("central autonomic pattern");
   });
 
   it("builds from autonomic score when score is available over LF/HF", () => {
@@ -689,7 +690,7 @@ describe("patient regression fixture", () => {
     expect(result.autonomicScore!.lfhfComponent).toBeCloseTo(32.53, 1);
     // Total = round(25 + 32.53) = 58 → "Marked sympathetic predominance"
     expect(result.autonomicScore!.value).toBe(58);
-    expect(result.autonomicScore!.label).toBe("Marked sympathetic predominance");
+    expect(result.autonomicScore!.label).toBe("Marked sympathetic-direction shift");
   });
 
   it("score components are exposed", () => {
@@ -722,5 +723,113 @@ describe("patient regression fixture", () => {
   it("summary mentions preserved total variability (typical SDNN)", () => {
     const result = interpretHrv(patientFixture);
     expect(result.overall).toMatch(/preserved/i);
+  });
+
+  it("RMSSD in P5-P25 for the patient fixture", () => {
+    const result = interpretHrv(patientFixture);
+    expect(result.findings.rmssd.band).toBe("p5_to_p25");
+  });
+
+  it("SDNN in P25-P75 for the patient fixture", () => {
+    const result = interpretHrv(patientFixture);
+    expect(result.findings.sdnn.band).toBe("p25_to_p75");
+  });
+
+  it("LF/HF above P95 for the patient fixture", () => {
+    const result = interpretHrv(patientFixture);
+    const lfhfPct = result.findings.autonomicProfile?.spectral.percentile;
+    expect(lfhfPct).toBeGreaterThanOrEqual(95);
+  });
+
+  it("reduced vagal modulation for the patient fixture", () => {
+    const result = interpretHrv(patientFixture);
+    expect(result.findings.rmssd.vagalStatus).toBe("reduced");
+  });
+
+  it("marked relative LF predominance for the patient fixture", () => {
+    const result = interpretHrv(patientFixture);
+    const lfhf = result.metrics.find((m) => m.key === "lfhf");
+    expect(lfhf?.interpretation).toContain("Marked relative LF predominance");
+  });
+
+  it("concordant sympathetic-direction shift for the patient fixture", () => {
+    const result = interpretHrv(patientFixture);
+    expect(result.findings.autonomicProfile?.concordance).toBe("concordant_sympathetic_shift");
+  });
+});
+
+describe("continuous percentile estimation", () => {
+  const maleRef = hrvReferenceData.male["30-39"].rmssd;
+  const p25 = maleRef[1];
+  const epsilon = 0.01;
+
+  it("P25 - epsilon and P25 + epsilon must not differ by 25 score points", () => {
+    const pctBelow = estimatePercentile(p25 - epsilon, maleRef)!;
+    const pctAbove = estimatePercentile(p25 + epsilon, maleRef)!;
+    expect(Math.abs(pctBelow - pctAbove)).toBeLessThan(25);
+  });
+});
+
+describe("age/sex normalisation", () => {
+  it("the same LF/HF value must produce different spectral percentiles when reference distributions differ", () => {
+    const sameRatio = 1.6;
+    const male18 = hrvReferenceData.male["18-29"].lfhf;
+    const female18 = hrvReferenceData.female["18-29"].lfhf;
+    const pctMale = estimatePercentileLog(sameRatio, male18 as readonly [number, number, number, number, number])!;
+    const pctFemale = estimatePercentileLog(sameRatio, female18 as readonly [number, number, number, number, number])!;
+    expect(pctMale).not.toBe(pctFemale);
+  });
+});
+
+describe("concordance", () => {
+  function makeInput(overrides: Partial<MeasurementInput>): MeasurementInput {
+    return {
+      age: 40,
+      referenceSex: "male",
+      rmssd: 30,
+      sdnn: 35,
+      lfhfRatio: 1.5,
+      ...overrides,
+    };
+  }
+
+  it("low RMSSD + high LF/HF => concordant sympathetic-direction shift", () => {
+    const result = interpretHrv(makeInput({ rmssd: 6, lfhfRatio: 9 }));
+    expect(result.findings.autonomicProfile?.concordance).toBe("concordant_sympathetic_shift");
+  });
+
+  it("high RMSSD + low LF/HF => concordant parasympathetic-direction shift", () => {
+    const result = interpretHrv(makeInput({ rmssd: 120, lfhfRatio: 0.2 }));
+    expect(result.findings.autonomicProfile?.concordance).toBe("concordant_parasympathetic_shift");
+  });
+
+  it("low RMSSD + low LF/HF => mixed", () => {
+    const result = interpretHrv(makeInput({ rmssd: 6, lfhfRatio: 0.2 }));
+    expect(result.findings.autonomicProfile?.concordance).toBe("mixed");
+  });
+
+  it("high RMSSD + high LF/HF => mixed", () => {
+    const result = interpretHrv(makeInput({ rmssd: 120, lfhfRatio: 9 }));
+    expect(result.findings.autonomicProfile?.concordance).toBe("mixed");
+  });
+
+  it("opposing extreme components must never produce label 'Central' or 'Balanced'", () => {
+    const result = interpretHrv(makeInput({ rmssd: 6, lfhfRatio: 9 }));
+    const label = result.autonomicScore?.label ?? "";
+    expect(label).not.toMatch(/central|balanced/i);
+  });
+});
+
+describe("no misleading cancellation", () => {
+  it("very low RMSSD + very high LF/HF still labels as mixed or sympathetic, never central", () => {
+    const result = interpretHrv({
+      age: 40,
+      referenceSex: "male",
+      rmssd: 5,
+      sdnn: 35,
+      lfhfRatio: 12,
+    });
+    expect(result.findings.autonomicProfile?.concordance).not.toBe("central");
+    expect(result.findings.autonomicProfile?.concordance).toBe("concordant_sympathetic_shift");
   });
 });

@@ -89,6 +89,8 @@ export type HrvFindings = {
     rmssdComponent: number;
     lfhfComponent: number;
   };
+
+  autonomicProfile?: AutonomicProfile;
 };
 
 export type MetricResult = {
@@ -111,6 +113,37 @@ export type AutonomicScore = {
   lfhfComponent: number;
 };
 
+export type AutonomicConcordance =
+  | "concordant_sympathetic_shift"
+  | "concordant_parasympathetic_shift"
+  | "mixed"
+  | "central";
+
+export type AutonomicProfile = {
+  score: number;
+  label: string;
+
+  vagal: {
+    percentile: number;
+    deviationZ: number;
+    category: PercentileCategory;
+  };
+
+  spectral: {
+    percentile: number;
+    deviationZ: number;
+    category: PercentileCategory;
+  };
+
+  totalVariability?: {
+    percentile: number;
+    category: PercentileCategory;
+  };
+
+  concordance: AutonomicConcordance;
+  provisional: true;
+};
+
 export type HrvInterpretation = {
   summary: string;
   metrics: MetricResult[];
@@ -121,6 +154,7 @@ export type HrvInterpretation = {
   referenceNote?: string;
   safetyMessage: string;
   autonomicScore?: AutonomicScore;
+  autonomicProfile?: AutonomicProfile;
   findings: HrvFindings;
 };
 
