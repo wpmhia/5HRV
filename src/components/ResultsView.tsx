@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
-import { buildClinicalParagraph } from "@/lib/interpretHrv";
+import { estimatePercentile } from "@/lib/interpretHrv";
 import { getAgeBand } from "@/data/hrvReferenceData";
 
 type Props = {
@@ -21,31 +21,37 @@ function ordinal(value: number): string {
   }
 }
 
-function approxPercentile(value: number, ref: number[]): number | null {
-  if (ref.length !== 5) return null;
-  const [p5, p25, p50, p75, p95] = ref;
-  let percentile: number;
-  if (value <= p5) {
-    percentile = (value / p5) * 5;
-  } else if (value <= p25) {
-    percentile = 5 + ((value - p5) / (p25 - p5)) * 20;
-  } else if (value <= p50) {
-    percentile = 25 + ((value - p25) / (p50 - p25)) * 25;
-  } else if (value <= p75) {
-    percentile = 50 + ((value - p50) / (p75 - p50)) * 25;
-  } else if (value <= p95) {
-    percentile = 75 + ((value - p75) / (p95 - p75)) * 20;
-  } else {
-    percentile = 95 + ((value - p95) / p95) * 5;
+function formatDuration(seconds?: number): string {
+  if (seconds === undefined) return "";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function formatDate(input?: string): string {
+  if (!input) {
+    return new Date().toLocaleDateString("en-GB", {
+      day: "numeric", month: "long", year: "numeric",
+    });
   }
-  return Math.round(Math.min(100, Math.max(0, percentile)));
+  const parts = input.split(/[/-]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      return new Date(+parts[0], +parts[1] - 1, +parts[2]).toLocaleDateString("en-GB", {
+        day: "numeric", month: "long", year: "numeric",
+      });
+    }
+    return new Date(+parts[2], +parts[1] - 1, +parts[0]).toLocaleDateString("en-GB", {
+      day: "numeric", month: "long", year: "numeric",
+    });
+  }
+  return input;
 }
 
 function MetricCard({
   label,
   value,
   unit,
-  category,
   categoryLabel,
   approxPct,
   description,
@@ -54,7 +60,6 @@ function MetricCard({
   label: string;
   value: number;
   unit: string;
-  category?: string;
   categoryLabel?: string;
   approxPct: number | null;
   description: string;
@@ -103,11 +108,11 @@ function MetricCard({
 }
 
 function AutonomicScoreDisplay({
-  score,
+  score: { value, label, rmssdComponent, lfhfComponent },
 }: {
-  score: { value: number; label: string };
+  score: { value: number; label: string; rmssdComponent: number; lfhfComponent: number };
 }) {
-  const rawPosition = ((score.value + 100) / 200) * 100;
+  const rawPosition = ((value + 100) / 200) * 100;
   const markerPosition = Math.min(98, Math.max(2, rawPosition));
 
   return (
@@ -134,15 +139,40 @@ function AutonomicScoreDisplay({
             className="absolute top-4 -translate-x-1/2 whitespace-nowrap text-xs font-semibold text-foreground tabular-nums"
             style={{ left: `${markerPosition}%` }}
           >
-            {score.value > 0 ? "+" : ""}
-            {score.value}
+            {value > 0 ? "+" : ""}
+            {value}
           </div>
         </div>
       </div>
 
       <p className="mt-2 text-sm font-semibold text-foreground">
-        {score.label}
+        {label}
       </p>
+
+      <details className="mt-3">
+        <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
+          How this score was calculated
+        </summary>
+        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <p>
+            The 5HRV Autonomic Score is a directional composite derived from RMSSD and LF/HF. Positive values indicate a shift toward the sympathetic side; negative values indicate a shift toward the parasympathetic side.
+          </p>
+          <div className="mt-2 space-y-0.5">
+            <span className="block">
+              RMSSD component: {rmssdComponent > 0 ? "+" : ""}{rmssdComponent}
+            </span>
+            <span className="block">
+              LF/HF component: {lfhfComponent > 0 ? "+" : ""}{lfhfComponent}
+            </span>
+            <span className="block font-medium text-foreground">
+              Combined score: {value > 0 ? "+" : ""}{value}
+            </span>
+            <span className="block font-medium text-foreground">
+              Classification: {label}
+            </span>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }
@@ -181,12 +211,6 @@ function SecondaryMetricCard({
   );
 }
 
-function formatDate(): string {
-  return new Date().toLocaleDateString("en-GB", {
-    day: "numeric", month: "long", year: "numeric",
-  });
-}
-
 function buildPlainText(
   interpretation: HrvInterpretation,
   input: MeasurementInput
@@ -195,27 +219,43 @@ function buildPlainText(
   lines.push("5HRV Interpretation");
   lines.push("");
   const ageBand = getAgeBand(input.age);
+  const rec = input.recording;
   lines.push(`Age: ${input.age} years`);
   lines.push(
     `Reference: ${input.referenceSex === "none" ? "No sex-specific reference" : input.referenceSex === "female" ? "Female" : "Male"}${ageBand ? `, ${ageBand} years` : ""}`
   );
-  lines.push(`Date: ${formatDate()}`);
+  if (rec?.recordingDate) {
+    lines.push(`Recording date: ${formatDate(rec.recordingDate)}`);
+  }
+  if (rec?.durationSeconds) {
+    lines.push(`Recording duration: ${formatDuration(rec.durationSeconds)}`);
+  }
+  if (rec?.samplingFrequencyHz) {
+    lines.push(`Sampling frequency: ${rec.samplingFrequencyHz} Hz`);
+  }
+  if (rec?.totalBeats) {
+    lines.push(`Analysed intervals: ${rec.totalBeats}`);
+  }
+  lines.push(`Report generated: ${formatDate()}`);
 
   if (interpretation.autonomicScore) {
     lines.push("");
-    lines.push(`5HRV Autonomic Score: ${interpretation.autonomicScore.value > 0 ? "+" : ""}${interpretation.autonomicScore.value} (${interpretation.autonomicScore.label})`);
+    const s = interpretation.autonomicScore;
+    lines.push(`5HRV Autonomic Score: ${s.value > 0 ? "+" : ""}${s.value} (${s.label})`);
+    lines.push(`  RMSSD component: ${s.rmssdComponent > 0 ? "+" : ""}${s.rmssdComponent}`);
+    lines.push(`  LF/HF component: ${s.lfhfComponent > 0 ? "+" : ""}${s.lfhfComponent}`);
   }
 
   lines.push("");
   for (const m of interpretation.metrics) {
     if (m.key === "rmssd" || m.key === "sdnn") {
       const ref = m.referencePercentiles;
-      const pct = ref ? approxPercentile(m.value, ref) : null;
+      const pct = ref ? estimatePercentile(m.value, ref) : null;
       lines.push(`${m.name}: ${m.value} ${m.unit}`);
-      if (m.categoryLabel) lines.push(`${m.categoryLabel}${pct !== null ? ` — approximately ${ordinal(pct)} percentile` : ""}`);
+      if (m.categoryLabel) lines.push(`${m.categoryLabel}${pct !== null ? ` \u2014 approximately ${ordinal(pct)} percentile` : ""}`);
       lines.push(m.interpretation);
       if (ref) {
-        lines.push(`Reference details: P5: ${ref[0]} · P25: ${ref[1]} · P50: ${ref[2]} · P75: ${ref[3]} · P95: ${ref[4]} ${m.unit}`);
+        lines.push(`Reference details: P5: ${ref[0]} \u00B7 P25: ${ref[1]} \u00B7 P50: ${ref[2]} \u00B7 P75: ${ref[3]} \u00B7 P95: ${ref[4]} ${m.unit}`);
       }
       lines.push("");
     } else {
@@ -227,8 +267,7 @@ function buildPlainText(
     }
   }
 
-  const clinicalPara = buildClinicalParagraph(interpretation.metrics, interpretation.autonomicScore);
-  if (clinicalPara) lines.push(clinicalPara);
+  lines.push(interpretation.overall);
 
   lines.push("Interpret HRV together with the ECG, symptoms and clinical context.");
   lines.push("Interpretation assumes an artefact-corrected five-minute NN recording in sinus rhythm under standardised resting conditions.");
@@ -245,6 +284,8 @@ export function ResultsView({ interpretation, input }: Props) {
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const ageBand = useMemo(() => getAgeBand(input.age), [input.age]);
+  const findings = interpretation.findings;
+  const rec = input.recording;
 
   const handleCopy = useCallback(async () => {
     const text = buildPlainText(interpretation, input);
@@ -318,6 +359,18 @@ export function ResultsView({ interpretation, input }: Props) {
                 Reference: {input.referenceSex === "none" ? "No sex-specific reference" : input.referenceSex === "female" ? "Female" : "Male"}
                 {ageBand ? `, ${ageBand} years` : ""}
               </span>
+              {rec?.recordingDate && (
+                <span>Recording: {formatDate(rec.recordingDate)}</span>
+              )}
+              {rec?.durationSeconds !== undefined && (
+                <span>Duration: {formatDuration(rec.durationSeconds)}</span>
+              )}
+              {rec?.samplingFrequencyHz && (
+                <span>{rec.samplingFrequencyHz} Hz</span>
+              )}
+              {rec?.totalBeats && (
+                <span>{rec.totalBeats} intervals</span>
+              )}
               <span>{formatDate()}</span>
             </div>
           </div>
@@ -384,9 +437,8 @@ export function ResultsView({ interpretation, input }: Props) {
                   label={m.name}
                   value={m.value}
                   unit={m.unit}
-                  category={m.category}
                   categoryLabel={m.categoryLabel}
-                  approxPct={m.referencePercentiles ? approxPercentile(m.value, m.referencePercentiles) : null}
+                  approxPct={m.referencePercentiles ? estimatePercentile(m.value, m.referencePercentiles) : null}
                   description={m.interpretation}
                   percentiles={m.referencePercentiles}
                 />
@@ -414,17 +466,11 @@ export function ResultsView({ interpretation, input }: Props) {
         )}
 
         {/* Clinical summary paragraph */}
-        {(() => {
-          const paragraph = buildClinicalParagraph(interpretation.metrics, interpretation.autonomicScore);
-          if (!paragraph) return null;
-          return (
-            <div className="border-t border-border px-6 py-6">
-              <p className="text-base leading-relaxed text-foreground">
-                {paragraph}
-              </p>
-            </div>
-          );
-        })()}
+        <div className="border-t border-border px-6 py-6">
+          <p className="text-base leading-relaxed text-foreground">
+            {interpretation.overall}
+          </p>
+        </div>
 
         {/* Clinical note */}
         <div className="border-t border-border px-6 py-4">

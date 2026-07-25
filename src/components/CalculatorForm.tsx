@@ -22,6 +22,11 @@ type FormState = {
   lfPower: string;
   lfhfRatio: string;
   lfhfSource: string;
+  recordingDate: string;
+  durationSeconds: string;
+  samplingFrequencyHz: string;
+  totalBeats: string;
+  sourceFilename: string;
 };
 
 const initialState: FormState = {
@@ -35,6 +40,11 @@ const initialState: FormState = {
   lfPower: "",
   lfhfRatio: "",
   lfhfSource: "",
+  recordingDate: "",
+  durationSeconds: "",
+  samplingFrequencyHz: "",
+  totalBeats: "",
+  sourceFilename: "",
 };
 
 const inputClass =
@@ -213,6 +223,21 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       pnn50: pnn50 ?? undefined,
     };
 
+    const recDate = form.recordingDate.trim() || undefined;
+    const durSec = normalizeNumber(form.durationSeconds);
+    const sampFreq = normalizeNumber(form.samplingFrequencyHz);
+    const totBeats = normalizeNumber(form.totalBeats);
+    const srcFile = form.sourceFilename.trim() || undefined;
+    if (recDate || durSec !== null || sampFreq !== null || totBeats !== null || srcFile) {
+      result.recording = {
+        recordingDate: recDate,
+        durationSeconds: durSec ?? undefined,
+        samplingFrequencyHz: sampFreq ?? undefined,
+        totalBeats: totBeats ?? undefined,
+        sourceFilename: srcFile,
+      };
+    }
+
     if (form.freqMode === "powers") {
       if (lfPower !== null && hfPower !== null) {
         result.hfPower = hfPower;
@@ -317,6 +342,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       base.hfPower = String(values.hfPower);
       base.freqMode = "powers";
     }
+    if (values.recordingDate) base.recordingDate = values.recordingDate;
+    if (values.durationSeconds) base.durationSeconds = String(values.durationSeconds);
+    if (values.samplingFrequency) base.samplingFrequencyHz = String(values.samplingFrequency);
+    if (values.totalBeats) base.totalBeats = String(values.totalBeats);
     setForm(base);
     setErrors({});
     const fieldKeys: (keyof FormState)[] = ["rmssd", "sdnn", "pnn50", "hfPower", "lfPower", "lfhfRatio"];

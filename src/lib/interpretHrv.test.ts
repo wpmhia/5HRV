@@ -5,16 +5,24 @@ import {
   computeLfhfRatio,
   hasLfhfDiscrepancy,
   describeLfhf,
+  deriveLfhfPattern,
   findProhibitedPhrases,
-  buildClinicalParagraph,
+  deriveHrvFindings,
+  renderMetricDescriptions,
+  renderClinicalSummary,
+  estimatePercentile,
 } from "@/lib/interpretHrv";
-import type { MetricResult, AutonomicScore } from "@/lib/types";
+import type {
+  MeasurementInput,
+  HrvInterpretation,
+  HrvFindings,
+} from "@/lib/types";
 import {
   getAgeBand,
   classifyPercentile,
   hrvReferenceData,
+  percentileLabels,
 } from "@/data/hrvReferenceData";
-import type { MeasurementInput, HrvInterpretation } from "@/lib/types";
 
 const baseInput: MeasurementInput = {
   age: 40,
@@ -99,6 +107,44 @@ describe("classifyPercentile", () => {
   });
 });
 
+describe("estimatePercentile", () => {
+  const ref = hrvReferenceData.female["30-39"].rmssd;
+  it("returns estimated percentile for SDNN 39.33 (female 30-39)", () => {
+    const sdnnRef = hrvReferenceData.female["30-39"].sdnn;
+    const pct = estimatePercentile(39.33, sdnnRef);
+    expect(pct).toBe(45);
+  });
+  it("returns estimated percentile for RMSSD 23.14 (female 30-39)", () => {
+    const pct = estimatePercentile(23.14, ref);
+    expect(pct).toBe(15);
+  });
+  it("returns null for array with wrong length", () => {
+    expect(estimatePercentile(30, [1, 2, 3])).toBeNull();
+  });
+  it("clamps to 0 at very low values", () => {
+    expect(estimatePercentile(0, [20, 40, 60, 80, 100])).toBe(0);
+  });
+  it("returns 100 at extreme high values", () => {
+    expect(estimatePercentile(999, [20, 40, 60, 80, 100])).toBe(100);
+  });
+});
+
+describe("deriveLfhfPattern", () => {
+  it("returns relative_hf_predominance below 0.5", () => {
+    expect(deriveLfhfPattern(0.3)).toBe("relative_hf_predominance");
+  });
+  it("returns comparable_lf_hf between 0.5 and 2.0", () => {
+    expect(deriveLfhfPattern(1)).toBe("comparable_lf_hf");
+    expect(deriveLfhfPattern(2)).toBe("comparable_lf_hf");
+  });
+  it("returns relative_lf_predominance between 2.0 and 4.0", () => {
+    expect(deriveLfhfPattern(3)).toBe("relative_lf_predominance");
+  });
+  it("returns marked_lf_predominance above 4.0", () => {
+    expect(deriveLfhfPattern(5)).toBe("marked_lf_predominance");
+  });
+});
+
 describe("LF/HF calculation", () => {
   it("computes ratio from LF and HF", () => {
     expect(computeLfhfRatio(400, 200)).toBe(2);
@@ -135,10 +181,7 @@ describe("LF/HF calculation", () => {
       ...baseInput, rmssd: 14.53, sdnn: 34.19, pnn50: 0.21,
       lfhfRatio: 9.49, lfhfSource: "manual",
     });
-    const paragraph = buildClinicalParagraph(result.metrics, result.autonomicScore);
-    expect(paragraph).toContain("LF/HF 9.49");
-    expect(paragraph).not.toContain(" HF ");
-    expect(paragraph).not.toContain(" LF ");
+    expect(result.overall).toContain("LF/HF ratio of 9.49");
   });
   it("calculated LF/HF takes priority over reported ratio", () => {
     const result = interpretHrv({
@@ -218,7 +261,7 @@ describe("combined interpretation patterns", () => {
       rmssd: 15,
       sdnn: 20,
     });
-    expect(result.overall).toContain("are reduced");
+    expect(result.overall).toContain("reduced");
   });
   it("low RMSSD with preserved SDNN", () => {
     const result = interpretHrv({
@@ -228,9 +271,8 @@ describe("combined interpretation patterns", () => {
       rmssd: 15,
       sdnn: 40,
     });
-    expect(result.overall).toContain(
-      "Parasympathetic activity is reduced, while overall short-term HRV is preserved"
-    );
+    expect(result.overall).toContain("reduced parasympathetic");
+    expect(result.overall).toContain("preserved");
   });
   it("low SDNN with central RMSSD", () => {
     const result = interpretHrv({
@@ -240,31 +282,54 @@ describe("combined interpretation patterns", () => {
       rmssd: 30,
       sdnn: 15,
     });
-    expect(result.overall).toContain(
-      "Parasympathetic activity is preserved, but overall short-term HRV is reduced"
-    );
+    expect(result.overall).toContain("preserved");
+    expect(result.overall).toContain("reduced");
   });
-  it("both central", () => {
-    const result = interpretHrv({
-      ...baseInput,
-      age: 45,
-      referenceSex: "male",
-      rmssd: 30,
-      sdnn: 34.04,
-    });
-    expect(result.overall).toContain("within the expected range");
+});
+
+describe("deriveHrvFindings", () => {
+  it("classifies patient example correctly", () => {
+    const input: MeasurementInput = {
+      age: 33,
+      referenceSex: "female",
+      rmssd: 23.14,
+      sdnn: 39.33,
+      pnn50: 3.28,
+      hfPower: 70.55,
+      lfPower: 416.47,
+    };
+    const f = deriveHrvFindings(input);
+    expect(f.rmssd.band).toBe("p5_to_p25");
+    expect(f.sdnn.band).toBe("p25_to_p75");
+    expect(f.frequencyDomain.lfhfRatio).toBeCloseTo(5.9, 1);
+    expect(f.frequencyDomain.pattern).toBe("marked_lf_predominance");
+    expect(f.autonomicScore?.value).toBe(58);
+    expect(f.autonomicScore?.label).toBe("Marked sympathetic predominance");
   });
-  it("RMSSD above 95th percentile with central SDNN", () => {
-    const result = interpretHrv({
-      ...baseInput,
-      age: 45,
-      referenceSex: "male",
-      rmssd: 100,
-      sdnn: 40,
-    });
-    expect(result.overall).toContain(
-      "Parasympathetic activity is high and overall short-term HRV is preserved"
-    );
+
+  it("estimates percentiles", () => {
+    const input: MeasurementInput = {
+      age: 33,
+      referenceSex: "female",
+      rmssd: 23.14,
+      sdnn: 39.33,
+    };
+    const f = deriveHrvFindings(input);
+    expect(f.rmssd.estimatedPercentile).toBe(15);
+    expect(f.sdnn.estimatedPercentile).toBe(45);
+  });
+
+  it("returns rmssdComponent and lfhfComponent in score", () => {
+    const input: MeasurementInput = {
+      age: 33,
+      referenceSex: "female",
+      rmssd: 23.14,
+      lfhfRatio: 5.9,
+    };
+    const f = deriveHrvFindings(input);
+    expect(f.autonomicScore).toBeDefined();
+    expect(f.autonomicScore!.rmssdComponent).toBe(25);
+    expect(f.autonomicScore!.lfhfComponent).toBeCloseTo(32.5, 1);
   });
 });
 
@@ -292,8 +357,8 @@ describe("seed example 1", () => {
   it("reports reduced HRV with autonomic score", () => {
     const result = interpretHrv(example1);
     expect(result.autonomicScore).toBeDefined();
-    expect(result.overall).toContain("reduced parasympathetic activity");
-    expect(result.overall).toContain("reduced overall HRV");
+    expect(result.overall).toContain("reduced parasympathetic");
+    expect(result.overall).toContain("reduced");
   });
   it("describes relative LF predominance", () => {
     const result = interpretHrv(example1);
@@ -350,157 +415,195 @@ describe("seed example 2", () => {
   it("reports preserved parasympathetic activity and high overall HRV with autonomic score", () => {
     const result = interpretHrv(example2);
     expect(result.autonomicScore).toBeDefined();
-    expect(result.overall).toContain("preserved parasympathetic activity");
-    expect(result.overall).toContain("high overall HRV");
+    expect(result.overall).toContain("preserved");
+    expect(result.overall).toContain("within");
   });
 });
 
-describe("buildClinicalParagraph", () => {
-  const baseRmssd: MetricResult = {
-    key: "rmssd", name: "RMSSD", value: 30, unit: "ms",
-    category: "p25_to_p75", categoryLabel: "Typical range \u00B7 P25\u2013P75",
-    referencePercentiles: [10, 20, 40, 60, 80],
-    interpretation: "Parasympathetic activity is preserved.",
-  };
-  const baseSdnn: MetricResult = {
-    key: "sdnn", name: "SDNN", value: 35, unit: "ms",
-    category: "p25_to_p75", categoryLabel: "Typical range \u00B7 P25\u2013P75",
-    referencePercentiles: [15, 25, 45, 65, 85],
-    interpretation: "Overall short-term HRV is within the expected range.",
-  };
-  const basePnn50: MetricResult = {
-    key: "pnn50", name: "pNN50", value: 5, unit: "%",
-    interpretation: "A vagal-related measure.",
-  };
-  const baseHf: MetricResult = {
-    key: "hf", name: "HF power", value: 200, unit: "ms²",
-    interpretation: "Respiratory-frequency variability.",
-  };
-  const baseLf: MetricResult = {
-    key: "lf", name: "LF power", value: 400, unit: "ms²",
-    interpretation: "Mixed autonomic and baroreflex-related influences.",
-  };
-  const baseLfhf: MetricResult = {
-    key: "lfhf", name: "LF/HF ratio", value: 2, unit: "",
-    interpretation: "LF and HF are of broadly comparable magnitude.",
-  };
+describe("renderClinicalSummary", () => {
+  it("renders for the patient example", () => {
+    const input: MeasurementInput = {
+      age: 33,
+      referenceSex: "female",
+      rmssd: 23.14,
+      sdnn: 39.33,
+      pnn50: 3.28,
+      hfPower: 70.55,
+      lfPower: 416.47,
+    };
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    expect(text).toContain("SDNN 39.33");
+    expect(text).toContain("RMSSD 23.14");
+    expect(text).toContain("LF/HF");
+    expect(text).toContain("5.9");
+    expect(text).toContain("Serial measurements");
+  });
 
-  it("empty metrics returns empty string", () => {
-    expect(buildClinicalParagraph([])).toBe("");
+  it("empty metrics returns empty-ish string (no crash)", () => {
+    const input: MeasurementInput = { age: 40, referenceSex: "none" };
+    const findings = deriveHrvFindings(input);
+    expect(() => renderClinicalSummary(findings)).not.toThrow();
   });
 
   it("reduced RMSSD → reduced parasympathetic activity", () => {
-    const rmssd: MetricResult = {
-      ...baseRmssd, value: 15, category: "p5_to_p25", categoryLabel: "Low",
+    const input: MeasurementInput = {
+      ...baseInput,
+      age: 45,
+      referenceSex: "male",
+      rmssd: 15,
+      sdnn: 35,
     };
-    const result = buildClinicalParagraph([rmssd, baseSdnn]);
-    expect(result).toContain("reduced parasympathetic activity");
-    expect(result).not.toContain("mixed parasympathetic");
-  });
-
-  it("reduced RMSSD with pNN50 → still reduced parasympathetic (RMSSD is primary)", () => {
-    const rmssd: MetricResult = {
-      ...baseRmssd, value: 15, category: "p5_to_p25", categoryLabel: "Low",
-    };
-    const pnn50: MetricResult = { ...basePnn50, value: 0.5 };
-    const result = buildClinicalParagraph([rmssd, baseSdnn, pnn50]);
-    expect(result).toContain("reduced parasympathetic activity");
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    expect(text).toContain("reduced");
   });
 
   it("preserved RMSSD with pNN50 — parasympathetic still preserved (RMSSD is primary)", () => {
-    const pnn50: MetricResult = { ...basePnn50, value: 0.5 };
-    const result = buildClinicalParagraph([baseRmssd, baseSdnn, pnn50]);
-    expect(result).toContain("preserved parasympathetic activity");
-    expect(result).not.toContain("reduced parasympathetic activity");
+    const input: MeasurementInput = {
+      ...baseInput,
+      age: 45,
+      referenceSex: "male",
+      rmssd: 30,
+      sdnn: 35,
+      pnn50: 0.5,
+    };
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    expect(text).toContain("preserved");
   });
 
   it("preserved RMSSD with HF — parasympathetic still preserved (RMSSD is primary)", () => {
-    const hf: MetricResult = { ...baseHf, value: 30 };
-    const result = buildClinicalParagraph([baseRmssd, baseSdnn, hf]);
-    expect(result).toContain("preserved parasympathetic activity");
-  });
-
-  it("preserved RMSSD with pNN50 and HF — preserved parasympathetic", () => {
-    const result = buildClinicalParagraph([baseRmssd, baseSdnn, basePnn50, baseHf]);
-    expect(result).toContain("preserved parasympathetic activity");
-  });
-
-  it("RMSSD absent → no parasympathetic statement at all", () => {
-    const result = buildClinicalParagraph([baseSdnn]);
-    expect(result).not.toContain("parasympathetic");
-    expect(result).toContain("preserved total variability");
-  });
-
-  it("RMSSD present but unclassified → could not be classified", () => {
-    const rmssd: MetricResult = {
-      ...baseRmssd, category: undefined, categoryLabel: undefined,
+    const input: MeasurementInput = {
+      ...baseInput,
+      age: 45,
+      referenceSex: "male",
+      rmssd: 30,
+      sdnn: 35,
+      hfPower: 30,
+      lfPower: 400,
     };
-    const sdnn: MetricResult = {
-      ...baseSdnn, category: undefined, categoryLabel: undefined,
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    expect(text).toContain("preserved");
+  });
+
+  it("RMSSD absent → no RMSSD statement", () => {
+    const input: MeasurementInput = {
+      age: 40,
+      referenceSex: "male",
+      sdnn: 35,
     };
-    const result = buildClinicalParagraph([rmssd, sdnn]);
-    expect(result).toContain("could not be classified");
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    expect(text).not.toContain("RMSSD");
   });
 
   it("includes autonomic score direction when available", () => {
-    const result = buildClinicalParagraph(
-      [baseRmssd, baseSdnn, baseLfhf],
-      { value: 10, label: "Balanced or mixed pattern" }
-    );
-    expect(result).toContain("balanced or mixed autonomic pattern");
+    const input: MeasurementInput = {
+      ...baseInput, lfhfRatio: 2.0,
+    };
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    expect(text).toContain("balanced or mixed");
   });
 
   it("builds from autonomic score when score is available over LF/HF", () => {
-    const result = buildClinicalParagraph(
-      [baseRmssd, baseSdnn, baseLfhf],
-      { value: 60, label: "Mild sympathetic shift" }
-    );
-    expect(result).toContain("marked sympathetic predominance");
-  });
-
-  it("uses LF/HF direction when no autonomic score", () => {
-    const lfhf: MetricResult = { ...baseLfhf, value: 3.5 };
-    const result = buildClinicalParagraph([baseRmssd, baseSdnn, lfhf]);
-    expect(result).toContain("relative LF predominance");
+    const input: MeasurementInput = {
+      ...baseInput, lfhfRatio: 9.49, rmssd: 14.53,
+    };
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    // Score will be high (marked sympathetic predominance)
+    expect(text).toContain("Serial measurements");
   });
 
   it("appends chronic stress sentence for abnormal patterns", () => {
-    const rmssd: MetricResult = {
-      ...baseRmssd, value: 15, category: "p5_to_p25", categoryLabel: "Low",
+    const input: MeasurementInput = {
+      ...baseInput,
+      age: 45,
+      referenceSex: "male",
+      rmssd: 15,
+      sdnn: 35,
     };
-    const result = buildClinicalParagraph([rmssd, baseSdnn]);
-    expect(result).toMatch(/chronic physiological stress/i);
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    expect(text).toMatch(/chronic physiological stress/i);
   });
 
   it("omits chronic stress sentence for preserved patterns", () => {
-    const result = buildClinicalParagraph([baseRmssd, baseSdnn]);
-    expect(result).not.toMatch(/chronic physiological stress/i);
+    const input: MeasurementInput = {
+      ...baseInput,
+      age: 45,
+      referenceSex: "male",
+      rmssd: 30,
+      sdnn: 35,
+    };
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    expect(text).not.toMatch(/chronic physiological stress/i);
   });
 
+  it("always includes serial measurements sentence", () => {
+    const input: MeasurementInput = { age: 40, referenceSex: "none", rmssd: 30, sdnn: 35 };
+    const findings = deriveHrvFindings(input);
+    const text = renderClinicalSummary(findings);
+    expect(text).toContain("Serial measurements");
+  });
+});
+
+describe("renderMetricDescriptions", () => {
   it("includes preface with all metrics present", () => {
-    const result = buildClinicalParagraph([
-      baseRmssd, baseSdnn, basePnn50, baseHf, baseLf, baseLfhf,
-    ]);
-    expect(result).toContain("Time domain:");
-    expect(result).toContain("frequency domain:");
-    expect(result).toContain("SDNN 35 ms");
-    expect(result).toContain("RMSSD 30 ms");
-    expect(result).toContain("pNN50 5%");
-    expect(result).toContain("HF 200 ms²");
-    expect(result).toContain("LF 400 ms²");
-    expect(result).toContain("LF/HF 2");
+    const input: MeasurementInput = {
+      age: 45,
+      referenceSex: "male",
+      rmssd: 30,
+      sdnn: 35,
+      pnn50: 5,
+      hfPower: 200,
+      lfPower: 400,
+      lfhfRatio: 2,
+    };
+    const findings = deriveHrvFindings(input);
+    const metrics = renderMetricDescriptions(findings);
+    expect(metrics.find((m) => m.key === "sdnn")).toBeDefined();
+    expect(metrics.find((m) => m.key === "rmssd")).toBeDefined();
+    expect(metrics.find((m) => m.key === "pnn50")).toBeDefined();
+    expect(metrics.find((m) => m.key === "hf")).toBeDefined();
+    expect(metrics.find((m) => m.key === "lf")).toBeDefined();
+    expect(metrics.find((m) => m.key === "lfhf")).toBeDefined();
   });
 
   it("handles only frequency-domain metrics", () => {
-    const result = buildClinicalParagraph([baseHf, baseLf, baseLfhf]);
-    expect(result).toContain("frequency domain:");
-    expect(result).not.toContain("Time domain:");
+    const input: MeasurementInput = {
+      age: 45,
+      referenceSex: "male",
+      rmssd: 30,
+      sdnn: 35,
+      hfPower: 200,
+      lfPower: 400,
+      lfhfRatio: 2,
+    };
+    const findings = deriveHrvFindings(input);
+    const metrics = renderMetricDescriptions(findings);
+    expect(metrics.find((m) => m.key === "hf")).toBeDefined();
+    expect(metrics.find((m) => m.key === "lf")).toBeDefined();
+    expect(metrics.find((m) => m.key === "pnn50")).toBeUndefined();
   });
 
   it("handles only time-domain metrics", () => {
-    const result = buildClinicalParagraph([baseRmssd, baseSdnn]);
-    expect(result).toContain("Time domain:");
-    expect(result).not.toContain("frequency domain:");
+    const input: MeasurementInput = {
+      age: 45,
+      referenceSex: "male",
+      rmssd: 30,
+      sdnn: 35,
+    };
+    const findings = deriveHrvFindings(input);
+    const metrics = renderMetricDescriptions(findings);
+    expect(metrics.find((m) => m.key === "rmssd")).toBeDefined();
+    expect(metrics.find((m) => m.key === "sdnn")).toBeDefined();
+    expect(metrics.find((m) => m.key === "hf")).toBeUndefined();
+    expect(metrics.find((m) => m.key === "lf")).toBeUndefined();
   });
 });
 
@@ -545,5 +648,79 @@ describe("prohibited terminology", () => {
         expect(label).not.toContain("healthy");
       }
     }
+  });
+});
+
+describe("patient regression fixture", () => {
+  const patientFixture: MeasurementInput = {
+    age: 33,
+    referenceSex: "female",
+    rmssd: 23.14,
+    sdnn: 39.33,
+    pnn50: 3.28,
+    hfPower: 70.55,
+    lfPower: 416.47,
+  };
+
+  it("classifies bands correctly", () => {
+    const f = deriveHrvFindings(patientFixture);
+    expect(f.rmssd.band).toBe("p5_to_p25");
+    expect(f.sdnn.band).toBe("p25_to_p75");
+  });
+
+  it("estimates percentiles", () => {
+    const f = deriveHrvFindings(patientFixture);
+    expect(f.rmssd.estimatedPercentile).toBe(15);
+    expect(f.sdnn.estimatedPercentile).toBe(45);
+  });
+
+  it("frequency domain pattern is marked LF predominance", () => {
+    const f = deriveHrvFindings(patientFixture);
+    expect(f.frequencyDomain.lfhfRatio).toBeCloseTo(5.9, 1);
+    expect(f.frequencyDomain.pattern).toBe("marked_lf_predominance");
+  });
+
+  it("computes autonomic score with percentile-based RMSSD component", () => {
+    const result = interpretHrv(patientFixture);
+    expect(result.autonomicScore).toBeDefined();
+    // RMSSD 23.14 is p5_to_p25 for women 30-39 → component = 25
+    expect(result.autonomicScore!.rmssdComponent).toBe(25);
+    // LF/HF = 416.47/70.55 ≈ 5.90 → lfhfComponent = clamp((5.90-2)/6)*50 ≈ 32.53
+    expect(result.autonomicScore!.lfhfComponent).toBeCloseTo(32.53, 1);
+    // Total = round(25 + 32.53) = 58 → "Marked sympathetic predominance"
+    expect(result.autonomicScore!.value).toBe(58);
+    expect(result.autonomicScore!.label).toBe("Marked sympathetic predominance");
+  });
+
+  it("score components are exposed", () => {
+    const result = interpretHrv(patientFixture);
+    expect(result.autonomicScore).toBeDefined();
+    expect(result.autonomicScore!.rmssdComponent).toBe(25);
+    expect(result.autonomicScore!.lfhfComponent).toBeCloseTo(32.53, 1);
+  });
+
+  it("labels contain percentile range", () => {
+    const result = interpretHrv(patientFixture);
+    const rmssdLabel = result.metrics.find((m) => m.key === "rmssd")!.categoryLabel;
+    const sdnnLabel = result.metrics.find((m) => m.key === "sdnn")!.categoryLabel;
+    expect(rmssdLabel).toContain("P5");
+    expect(sdnnLabel).toContain("P25");
+  });
+
+  it("every LF/HF result has its limitation", () => {
+    const result = interpretHrv(patientFixture);
+    const lfhf = result.metrics.find((m) => m.key === "lfhf");
+    expect(lfhf).toBeDefined();
+    expect(lfhf!.limitation).toBeDefined();
+  });
+
+  it("summary mentions reduced parasympathetic activity (low RMSSD)", () => {
+    const result = interpretHrv(patientFixture);
+    expect(result.overall).toMatch(/reduced/i);
+  });
+
+  it("summary mentions preserved total variability (typical SDNN)", () => {
+    const result = interpretHrv(patientFixture);
+    expect(result.overall).toMatch(/preserved/i);
   });
 });

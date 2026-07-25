@@ -1,5 +1,6 @@
 export type ParsedReportValues = {
   recordingDate?: string;
+  durationSeconds?: number;
   samplingFrequency?: number;
   totalBeats?: number;
   sdnn?: number;
@@ -21,19 +22,18 @@ function normalizeNum(value: string): number | null {
 
 export function parseDurationSeconds(text: string): number | null {
   const patterns = [
-    /(?:sample\s*length|duration|recording\s*duration)\s*[:=]?\s*(\d+)\s*s(?:ec(?:onds?)?)?\b/i,
-    /(?:sample\s*length|duration|recording\s*duration)\s*[:=]?\s*(\d+)\s*seconds\b/i,
-    /(\d+(?:[.,]\d+)?)\s*(?:min(?:ute)?s?)\b/i,
-    /(\d+)\s*s\b(?!hz)/i,
+    { re: /(?:sample\s*length|duration|recording\s*duration)\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*(?:min(?:ute)?s?)\b/i, multiplier: 60 },
+    { re: /(?:sample\s*length|duration|recording\s*duration)\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*s(?:ec(?:onds?)?)?\b/i, multiplier: 1 },
+    { re: /(\d+(?:[.,]\d+)?)\s*(?:min(?:ute)?s?)\b/i, multiplier: 60 },
+    { re: /(\d+)\s*s\b(?!hz)/i, multiplier: 1 },
   ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
+  for (const { re, multiplier } of patterns) {
+    const match = text.match(re);
     if (match) {
       const raw = match[1].replace(",", ".");
       const num = Number(raw);
       if (Number.isFinite(num) && num > 0) {
-        if (pattern.toString().includes("min")) return num;
-        return num / 60;
+        return Math.round(num * multiplier);
       }
     }
   }
@@ -47,6 +47,12 @@ export function parseHrvReport(text: string): ParsedReportValues {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
+
+    // Duration (must be before general number patterns)
+    if (values.durationSeconds === undefined) {
+      const dur = parseDurationSeconds(trimmed);
+      if (dur !== null) values.durationSeconds = dur;
+    }
 
     // Recording date
     if (!values.recordingDate) {

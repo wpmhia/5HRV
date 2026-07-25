@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseHrvReport, hasHrvContent } from "@/lib/parseHrvReport";
+import { parseHrvReport, hasHrvContent, parseDurationSeconds } from "@/lib/parseHrvReport";
 
 describe("parseHrvReport", () => {
   it("extracts all values from example report", () => {
@@ -21,6 +21,7 @@ pNN50 3.28%`;
     expect(result.hfPower).toBeCloseTo(70.55, 1);
     expect(result.lfhfRatio).toBeCloseTo(5.90, 1);
     expect(result.pnn50).toBeCloseTo(3.28, 1);
+    expect(result.durationSeconds).toBe(322);
   });
 
   it("maps rMSSD to RMSSD", () => {
@@ -156,6 +157,7 @@ LF/HF: 5.90`;
     expect(result.hfPower).toBeCloseTo(70.55, 1);
     expect(result.lfhfRatio).toBeCloseTo(5.90, 1);
     expect(result.samplingFrequency).toBe(1000);
+    expect(result.durationSeconds).toBe(322);
   });
 });
 
@@ -192,6 +194,24 @@ describe("worker termination preservation", () => {
   it("parser works after simulated OCR failure (empty text)", () => {
     const result = parseHrvReport("");
     expect(result.sdnn).toBeUndefined();
+  });
+});
+
+describe("parseDurationSeconds", () => {
+  it("parses seconds", () => {
+    expect(parseDurationSeconds("Duration: 300 s")).toBe(300);
+  });
+  it("parses minutes into seconds", () => {
+    expect(parseDurationSeconds("Duration: 5 minutes")).toBe(300);
+  });
+  it("parses decimal minutes into seconds", () => {
+    expect(parseDurationSeconds("Recording duration 4.5 min")).toBe(270);
+  });
+  it("parses Sample Length in seconds", () => {
+    expect(parseDurationSeconds("Sample Length 322s")).toBe(322);
+  });
+  it("returns null for unrecognised text", () => {
+    expect(parseDurationSeconds("no duration here")).toBeNull();
   });
 });
 
