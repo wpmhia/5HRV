@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
-import { estimatePercentile, VAGAL_WEIGHT, SPECTRAL_WEIGHT } from "@/lib/interpretHrv";
+import { estimatePercentile, VAGAL_WEIGHT, SPECTRAL_WEIGHT, AUTONOMIC_SCORE_DENOMINATOR } from "@/lib/interpretHrv";
 import { getAgeBand } from "@/data/hrvReferenceData";
 import type { AutonomicProfile, AutonomicConcordance } from "@/lib/types";
 
@@ -183,6 +183,13 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
         {profile.label}
       </p>
 
+      {Math.abs(profile.score) >= 95 && (
+        <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <span className="font-semibold">Score &ge;{Math.abs(profile.score)}: </span>
+          Upper limit reached; this does not represent a direct measurement or percentage of {profile.score > 0 ? "sympathetic" : "parasympathetic"} activity.
+        </div>
+      )}
+
       <details className="mt-3">
         <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
           How this score was calculated
@@ -212,7 +219,7 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
               Spectral weighted (0.3): {spectralWeighted >= 0 ? "+" : ""}{spectralWeighted.toFixed(2)}
             </span>
             <span className="block">
-              Combined deviation: {combinedDev.toFixed(2)} / 1.645 = {(combinedDev / 1.645).toFixed(2)}
+              Combined deviation: {combinedDev.toFixed(2)} / {AUTONOMIC_SCORE_DENOMINATOR} = {(combinedDev / AUTONOMIC_SCORE_DENOMINATOR).toFixed(2)}
             </span>
             <span className="block font-medium text-foreground">
               Pattern score: {profile.score > 0 ? "+" : ""}{profile.score}

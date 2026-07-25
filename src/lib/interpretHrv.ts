@@ -164,6 +164,7 @@ function categorizeVariability(band: ReferenceBand): VariabilityStatus {
 // influences than frequency-domain ratios.
 export const VAGAL_WEIGHT = 0.7;
 export const SPECTRAL_WEIGHT = 0.3;
+export const AUTONOMIC_SCORE_DENOMINATOR = 2.2;
 
 function deriveConcordance(
   rmssdPercentile: number,
@@ -202,7 +203,7 @@ function computeAutonomicProfile(
   const spectralWeighted = SPECTRAL_WEIGHT * spectralDeviation;
   const combinedDeviation = vagalWeighted + spectralWeighted;
 
-  const score = Math.round(clamp(combinedDeviation / 1.645, -1, 1) * 100);
+  const score = Math.round(clamp(combinedDeviation / AUTONOMIC_SCORE_DENOMINATOR, -1, 1) * 100);
 
   const concordance = deriveConcordance(rmssdPercentile, lfhfPercentile);
 
@@ -522,17 +523,6 @@ export function renderClinicalSummary(findings: HrvFindings): string {
   clauses.push(
     `Overall variability is ${overallVar}, with ${paraStatus} parasympathetic activity${patternText}.`
   );
-
-  const isAbnormal =
-    bandIsLow(sdnn.band) ||
-    bandIsLow(rmssd.band) ||
-    (profile !== undefined && profile.score >= 25);
-
-  if (isAbnormal) {
-    clauses.push(
-      "This pattern may indicate chronic physiological stress or autonomic imbalance in the appropriate clinical context."
-    );
-  }
 
   clauses.push(
     "Serial measurements under standardised conditions are more informative than a single recording."

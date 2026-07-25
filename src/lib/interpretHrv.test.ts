@@ -345,8 +345,8 @@ describe("deriveHrvFindings", () => {
     expect(f.frequencyDomain.lfhfRatio).toBeCloseTo(5.9, 1);
     expect(f.frequencyDomain.pattern).toBe("marked_lf_predominance");
     expect(f.autonomicProfile).toBeDefined();
-    expect(f.autonomicProfile!.score).toBeGreaterThanOrEqual(70);
-    expect(f.autonomicProfile!.score).toBeLessThan(75);
+    expect(f.autonomicProfile!.score).toBeGreaterThanOrEqual(50);
+    expect(f.autonomicProfile!.score).toBeLessThan(60);
     expect(f.autonomicProfile!.label).toBe("Marked sympathetic-direction shift");
   });
 
@@ -560,19 +560,6 @@ describe("renderClinicalSummary", () => {
     expect(text).toContain("Serial measurements");
   });
 
-  it("appends chronic stress sentence for abnormal patterns", () => {
-    const input: MeasurementInput = {
-      ...baseInput,
-      age: 45,
-      referenceSex: "male",
-      rmssd: 15,
-      sdnn: 35,
-    };
-    const findings = deriveHrvFindings(input);
-    const text = renderClinicalSummary(findings);
-    expect(text).toMatch(/chronic physiological stress/i);
-  });
-
   it("omits chronic stress sentence for preserved patterns", () => {
     const input: MeasurementInput = {
       ...baseInput,
@@ -725,8 +712,8 @@ describe("patient regression fixture", () => {
   it("computes continuous autonomic profile score", () => {
     const result = interpretHrv(patientFixture);
     expect(result.autonomicProfile).toBeDefined();
-    expect(result.autonomicProfile!.score).toBeGreaterThanOrEqual(70);
-    expect(result.autonomicProfile!.score).toBeLessThan(75);
+    expect(result.autonomicProfile!.score).toBeGreaterThanOrEqual(50);
+    expect(result.autonomicProfile!.score).toBeLessThan(60);
     expect(result.autonomicProfile!.label).toBe("Marked sympathetic-direction shift");
   });
 
