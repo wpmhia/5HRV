@@ -57,6 +57,11 @@ export const pages = {
     description:
       "A structured framework for interpreting short-term HRV measurements using age- and sex-specific reference percentiles from the DanFunD population study.",
   },
+  methodology: {
+    title: "Methodology – 5HRV",
+    description:
+      "How the 5HRV scientific calculator works: reference populations (DanFunD), percentile interpolation, the Autonomic Pattern Score algorithm, scope and limitations.",
+  },
   method: {
     title: "The 5-Minute Method – 5HRV",
     description:

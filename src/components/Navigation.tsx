@@ -7,12 +7,13 @@ import { Button } from "./ui/button";
 
 const navItems = [
   { href: "/method", label: "Method" },
+  { href: "/methodology", label: "Methodology" },
   { href: "/applications", label: "Clinical Use" },
   { href: "/evidence", label: "Evidence" },
   { href: "/calculator", label: "Calculator" },
 ];
 
-const textItems = navItems.slice(0, 3);
+const textItems = navItems.slice(0, 4);
 const calculatorItem = navItems[3];
 
 export function Navigation() {
