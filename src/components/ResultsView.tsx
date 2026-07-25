@@ -152,11 +152,13 @@ function SecondaryMetricCard({
   value,
   unit,
   description,
+  limitation,
 }: {
   label: string;
   value: number;
   unit: string;
   description: string;
+  limitation?: string;
 }) {
   return (
     <div className="rounded-lg border border-border bg-background p-5">
@@ -170,6 +172,11 @@ function SecondaryMetricCard({
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
       <p className="mt-2 text-sm text-foreground/80">{description}</p>
+      {limitation && (
+        <p className="mt-2 text-xs italic text-muted-foreground/70">
+          {limitation}
+        </p>
+      )}
     </div>
   );
 }
@@ -224,6 +231,7 @@ function buildPlainText(
   if (clinicalPara) lines.push(clinicalPara);
 
   lines.push("Interpret HRV together with the ECG, symptoms and clinical context.");
+  lines.push("Interpretation assumes an artefact-corrected five-minute NN recording in sinus rhythm under standardised resting conditions.");
   if (interpretation.referenceNote) {
     lines.push("");
     lines.push(interpretation.referenceNote);
@@ -398,6 +406,7 @@ export function ResultsView({ interpretation, input }: Props) {
                   value={m.value}
                   unit={m.unit}
                   description={m.interpretation}
+                  limitation={m.limitation}
                 />
               ))}
             </div>
@@ -427,6 +436,9 @@ export function ResultsView({ interpretation, input }: Props) {
               {interpretation.referenceNote}
             </p>
           )}
+          <p className="mt-3 text-xs italic text-muted-foreground/60">
+            Interpretation assumes an artefact-corrected five-minute NN recording in sinus rhythm under standardised resting conditions.
+          </p>
         </div>
       </div>
     </div>

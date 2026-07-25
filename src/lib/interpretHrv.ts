@@ -56,17 +56,21 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export function calculateAutonomicScore(
-  rmssd?: number,
+  rmssdCategory: PercentileCategory | undefined,
   lfhfRatio?: number
 ): AutonomicScore | undefined {
-  if (rmssd === undefined || lfhfRatio === undefined) return undefined;
+  if (rmssdCategory === undefined || lfhfRatio === undefined) return undefined;
 
-  const vagalComponent =
-    rmssd < 20
-      ? clamp((20 - rmssd) / 20, 0, 1) * 50
-      : rmssd > 50
-        ? -clamp((rmssd - 50) / 50, 0, 1) * 50
-        : 0;
+  const vagalComponent = (() => {
+    switch (rmssdCategory) {
+      case "below_p5": return 50;
+      case "p5_to_p25": return 25;
+      case "p25_to_p75": return 0;
+      case "p75_to_p95": return -25;
+      case "above_p95": return -50;
+      default: return 0;
+    }
+  })();
 
   const sympatheticComponent =
     lfhfRatio > 2
@@ -255,6 +259,9 @@ export function buildClinicalParagraph(
 
   if (isAbnormal) {
     text += " This pattern may indicate chronic physiological stress or autonomic imbalance in the appropriate clinical context.";
+    text += " Serial measurements under standardised conditions are more informative than a single recording.";
+  } else {
+    text += " Serial measurements under standardised conditions are more informative than a single recording.";
   }
 
   return text;
@@ -401,7 +408,7 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     });
   }
 
-  const autonomicScore = calculateAutonomicScore(input.rmssd, ratio);
+  const autonomicScore = calculateAutonomicScore(rmssdCategory, ratio);
 
   const conclusion = referenceAvailable
     ? buildConclusion(rmssdCategory, sdnnCategory, autonomicScore)

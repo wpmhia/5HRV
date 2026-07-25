@@ -358,13 +358,13 @@ describe("seed example 2", () => {
 describe("buildClinicalParagraph", () => {
   const baseRmssd: MetricResult = {
     key: "rmssd", name: "RMSSD", value: 30, unit: "ms",
-    category: "p25_to_p75", categoryLabel: "Typical",
+    category: "p25_to_p75", categoryLabel: "Typical range \u00B7 P25\u2013P75",
     referencePercentiles: [10, 20, 40, 60, 80],
     interpretation: "Parasympathetic activity is preserved.",
   };
   const baseSdnn: MetricResult = {
     key: "sdnn", name: "SDNN", value: 35, unit: "ms",
-    category: "p25_to_p75", categoryLabel: "Typical",
+    category: "p25_to_p75", categoryLabel: "Typical range \u00B7 P25\u2013P75",
     referencePercentiles: [15, 25, 45, 65, 85],
     interpretation: "Overall short-term HRV is within the expected range.",
   };

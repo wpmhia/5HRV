@@ -79,7 +79,7 @@ export type PercentileCategory =
 export const percentileLabels: Record<PercentileCategory, string> = {
   below_p5: "Very low",
   p5_to_p25: "Low",
-  p25_to_p75: "Typical",
+  p25_to_p75: "Typical range \u00B7 P25\u2013P75",
   p75_to_p95: "High",
   above_p95: "Very high",
 };
