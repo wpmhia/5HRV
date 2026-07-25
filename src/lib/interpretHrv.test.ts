@@ -5,6 +5,7 @@ import {
   computeLfhfRatio,
   hasLfhfDiscrepancy,
   describeLfhf,
+  describeLfhfByBand,
   deriveLfhfPattern,
   findProhibitedPhrases,
   deriveHrvFindings,
@@ -254,6 +255,15 @@ describe("LF/HF calculation", () => {
     expect(describeLfhf(2.6)).toBe("Relative LF predominance");
     expect(describeLfhf(5)).toBe("Marked relative LF predominance");
   });
+
+  it("describes LF/HF by percentile band", () => {
+    expect(describeLfhfByBand("below_p5")).toBe("Very low relative to the reference population, indicating marked HF predominance.");
+    expect(describeLfhfByBand("p5_to_p25")).toBe("Low relative to the reference population, indicating HF predominance.");
+    expect(describeLfhfByBand("p25_to_p75")).toBe("Within the typical range for the reference population.");
+    expect(describeLfhfByBand("p75_to_p95")).toBe("High relative to the reference population, consistent with LF predominance.");
+    expect(describeLfhfByBand("above_p95")).toBe("Very high relative to the reference population, indicating marked LF predominance.");
+    expect(describeLfhfByBand("unclassified")).toBeNull();
+  });
   it("always attaches the LF/HF caution to limitation", () => {
     const result = interpretHrv({ ...baseInput, lfhfRatio: 2.6 });
     const lfhf = result.metrics.find((m) => m.key === "lfhf");
@@ -396,7 +406,7 @@ describe("seed example 1", () => {
   it("describes relative LF predominance", () => {
     const result = interpretHrv(example1);
     expect(result.metrics.find((m) => m.key === "lfhf")!.interpretation).toContain(
-      "Relative LF predominance"
+      "High relative to the reference population, consistent with LF predominance."
     );
   });
   it("conclusion is concise without diagnostic disclaimer", () => {
@@ -430,7 +440,7 @@ describe("seed example 2", () => {
   it("describes relative LF predominance", () => {
     const result = interpretHrv(example2);
     expect(result.metrics.find((m) => m.key === "lfhf")!.interpretation).toContain(
-      "Relative LF predominance"
+      "Within the typical range for the reference population."
     );
   });
   it("does not conclude sympathetic overactivation", () => {
@@ -776,7 +786,7 @@ describe("patient regression fixture", () => {
   it("marked relative LF predominance for the patient fixture", () => {
     const result = interpretHrv(patientFixture);
     const lfhf = result.metrics.find((m) => m.key === "lfhf");
-    expect(lfhf?.interpretation).toContain("Marked relative LF predominance");
+    expect(lfhf?.interpretation).toContain("Very high relative to the reference population, indicating marked LF predominance.");
   });
 
   it("concordant sympathetic-direction shift for the patient fixture", () => {

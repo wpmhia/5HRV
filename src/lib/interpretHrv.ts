@@ -50,6 +50,17 @@ export function describeLfhf(ratio: number): string {
   return "Marked relative LF predominance";
 }
 
+export function describeLfhfByBand(band: ReferenceBand): string | null {
+  switch (band) {
+    case "below_p5": return "Very low relative to the reference population, indicating marked HF predominance.";
+    case "p5_to_p25": return "Low relative to the reference population, indicating HF predominance.";
+    case "p25_to_p75": return "Within the typical range for the reference population.";
+    case "p75_to_p95": return "High relative to the reference population, consistent with LF predominance.";
+    case "above_p95": return "Very high relative to the reference population, indicating marked LF predominance.";
+    default: return null;
+  }
+}
+
 export function deriveLfhfPattern(ratio: number): FrequencyDomainPattern {
   if (ratio < 0.5) return "relative_hf_predominance";
   if (ratio <= 2.0) return "comparable_lf_hf";
@@ -151,8 +162,8 @@ function categorizeVariability(band: ReferenceBand): VariabilityStatus {
 // against relative spectral pattern (LF/HF). RMSSD is the primary
 // component because it isolates vagal tone with fewer confounding
 // influences than frequency-domain ratios.
-const VAGAL_WEIGHT = 0.7;
-const SPECTRAL_WEIGHT = 0.3;
+export const VAGAL_WEIGHT = 0.7;
+export const SPECTRAL_WEIGHT = 0.3;
 
 function deriveConcordance(
   rmssdPercentile: number,
@@ -228,6 +239,9 @@ function computeAutonomicProfile(
     } : undefined,
     concordance,
     provisional: true,
+    vagalWeighted,
+    spectralWeighted,
+    combinedDeviation,
   };
 }
 
@@ -337,6 +351,7 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
       lfhfRatio: ratio !== undefined ? Math.round(ratio * 100) / 100 : undefined,
       lfhfSource,
       pattern: fdPattern,
+      lfhfBand: lfhfBand !== "unclassified" ? lfhfBand : undefined,
     },
 
     autonomicProfile,
@@ -445,13 +460,17 @@ export function renderMetricDescriptions(findings: HrvFindings): MetricResult[] 
         : source === "manual"
           ? " Entered ratio."
           : " Reported ratio from the uploaded analysis.";
+    const lfhfBand = findings.frequencyDomain.lfhfBand;
+    const bandDescription = lfhfBand ? describeLfhfByBand(lfhfBand) : null;
     metrics.push({
       key: "lfhf",
       name: "LF/HF ratio",
       value: ratio,
       unit: "",
+      category: lfhfBand && lfhfBand !== "unclassified" ? (lfhfBand as PercentileCategory) : undefined,
+      categoryLabel: lfhfBand && lfhfBand !== "unclassified" ? percentileLabels[lfhfBand as PercentileCategory] : undefined,
       lfhfSource: source,
-      interpretation: describeLfhf(ratio) + "." + sourceText,
+      interpretation: (bandDescription ?? describeLfhf(ratio) + ".") + sourceText,
       limitation: LFHF_CAUTION,
     });
   }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
-import { estimatePercentile } from "@/lib/interpretHrv";
+import { estimatePercentile, VAGAL_WEIGHT, SPECTRAL_WEIGHT } from "@/lib/interpretHrv";
 import { getAgeBand } from "@/data/hrvReferenceData";
 import type { AutonomicProfile, AutonomicConcordance } from "@/lib/types";
 
@@ -136,8 +136,9 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
   const rawPosition = ((profile.score + 100) / 200) * 100;
   const markerPosition = Math.min(98, Math.max(2, rawPosition));
 
-  const vagalWeighted = 0.7 * profile.vagal.deviationZ;
-  const spectralWeighted = 0.3 * profile.spectral.deviationZ;
+  const vagalWeighted = profile.vagalWeighted ?? VAGAL_WEIGHT * profile.vagal.deviationZ;
+  const spectralWeighted = profile.spectralWeighted ?? SPECTRAL_WEIGHT * profile.spectral.deviationZ;
+  const combinedDev = profile.combinedDeviation ?? vagalWeighted + spectralWeighted;
 
   return (
     <div className="rounded-lg border border-border bg-background p-5">
@@ -211,7 +212,7 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
               Spectral weighted (0.3): {spectralWeighted >= 0 ? "+" : ""}{spectralWeighted.toFixed(2)}
             </span>
             <span className="block">
-              Combined deviation: {(vagalWeighted + spectralWeighted).toFixed(2)} / 1.645 = {((vagalWeighted + spectralWeighted) / 1.645).toFixed(2)}
+              Combined deviation: {combinedDev.toFixed(2)} / 1.645 = {(combinedDev / 1.645).toFixed(2)}
             </span>
             <span className="block font-medium text-foreground">
               Pattern score: {profile.score > 0 ? "+" : ""}{profile.score}
@@ -258,22 +259,6 @@ function SecondaryMetricCard({
       )}
     </div>
   );
-}
-
-function hasAdequateFrequencyMetadata(input: MeasurementInput): boolean {
-  const r = input.recording;
-  return (
-    r?.durationSeconds !== undefined &&
-    r.durationSeconds >= 270 &&
-    r.durationSeconds <= 330 &&
-    r.sinusRhythmConfirmed === true &&
-    r.artefactCorrectionConfirmed === true &&
-    r.restingSpontaneousRespirationConfirmed === true
-  );
-}
-
-function hasFrequencyData(input: MeasurementInput): boolean {
-  return input.lfPower !== undefined || input.hfPower !== undefined || input.lfhfRatio !== undefined;
 }
 
 function buildPlainText(
@@ -336,10 +321,7 @@ function buildPlainText(
   lines.push(interpretation.overall);
 
   lines.push("Interpret HRV together with the ECG, symptoms and clinical context.");
-  lines.push("Interpretation assumes an artefact-corrected five-minute NN recording in sinus rhythm under standardised resting conditions.");
-  if (hasFrequencyData(input) && !hasAdequateFrequencyMetadata(input)) {
-    lines.push("Frequency-domain interpretation assumes a standardised five-minute recording in sinus rhythm with appropriate artefact correction and spontaneous resting respiration.");
-  }
+  lines.push("Interpretation assumes that the supplied values originate from a technically valid five-minute HRV analysis.");
   if (interpretation.referenceNote) {
     lines.push("");
     lines.push(interpretation.referenceNote);
@@ -552,13 +534,8 @@ export function ResultsView({ interpretation, input }: Props) {
             </p>
           )}
           <p className="mt-3 text-xs italic text-muted-foreground/60">
-            Interpretation assumes an artefact-corrected five-minute NN recording in sinus rhythm under standardised resting conditions.
+            Interpretation assumes that the supplied values originate from a technically valid five-minute HRV analysis.
           </p>
-          {hasFrequencyData(input) && !hasAdequateFrequencyMetadata(input) && (
-            <p className="mt-2 text-xs italic text-muted-foreground/60">
-              Frequency-domain interpretation assumes a standardised five-minute recording in sinus rhythm with appropriate artefact correction and spontaneous resting respiration.
-            </p>
-          )}
         </div>
       </div>
     </div>
