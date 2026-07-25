@@ -191,18 +191,6 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <ConcordanceBadge concordance={profile.concordance} />
-        {profile.provisional && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 cursor-help">
-                Provisional
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-80">
-              The published reference percentiles underpin the individual metrics, but the combined 5HRV Autonomic Pattern Score is an interpretive model that has not yet been independently validated as a diagnostic scale.
-            </TooltipContent>
-          </Tooltip>
-        )}
       </div>
 
       <div className="mt-4">
