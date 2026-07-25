@@ -37,11 +37,11 @@ export default function Home() {
                 Five-minute HRV for clinicians and researchers
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Interpret five-minute HRV with clinical context.
+                Analyse five-minute HRV against published reference data.
               </h1>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
                 5HRV converts standardized short-term HRV measurements into a
-                structured interpretation of parasympathetic activity, total
+                structured analysis of parasympathetic activity, total
                 variability and autonomic direction.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
