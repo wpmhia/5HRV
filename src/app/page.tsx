@@ -1,6 +1,11 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
+import { pages } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: pages.home.title,
+  description: pages.home.description,
+};
 
 function FeatureCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (

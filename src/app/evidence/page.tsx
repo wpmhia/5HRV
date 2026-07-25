@@ -1,4 +1,10 @@
-"use client";
+import type { Metadata } from "next";
+import { pages } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: pages.evidence.title,
+  description: pages.evidence.description,
+};
 
 export default function EvidencePage() {
   return (

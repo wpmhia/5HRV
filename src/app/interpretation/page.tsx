@@ -1,7 +1,12 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
 import { hrvReferenceData, ageBands } from "@/data/hrvReferenceData";
+import { pages } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: pages.interpretation.title,
+  description: pages.interpretation.description,
+};
 
 const percentiles = ["P5", "P25", "P50", "P75", "P95"] as const;
 

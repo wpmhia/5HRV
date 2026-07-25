@@ -1,4 +1,10 @@
-"use client";
+import type { Metadata } from "next";
+import { pages } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: pages.parameters.title,
+  description: pages.parameters.description,
+};
 
 export default function ParametersPage() {
   return (

@@ -1,6 +1,11 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
+import { pages } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: pages.method.title,
+  description: pages.method.description,
+};
 
 export default function MethodPage() {
   return (
