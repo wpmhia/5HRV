@@ -234,6 +234,23 @@ export default function EvidencePage() {
               future studies using direct HRV measurement.
             </span>
           </li>
+          <li>
+            Gielen W. 5HRV Autonomic Score: a single numerical index for
+            five-minute heart rate variability interpretation.{" "}
+            <em>Zenodo</em>. 2025.{" "}
+            <a
+              href="https://zenodo.org/records/21558647"
+              className="text-primary underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              DOI: 10.5281/zenodo.21558647
+            </a>
+            <span className="block text-muted-foreground">
+              Describes the derivation and interpretation of the 5HRV Autonomic
+              Score used in the 5HRV calculator.
+            </span>
+          </li>
         </ol>
       </section>
 
