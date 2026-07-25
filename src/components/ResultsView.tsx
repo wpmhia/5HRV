@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HrvInterpretation, MeasurementInput } from "@/lib/types";
 import { estimatePercentile } from "@/lib/interpretHrv";
 import { getAgeBand } from "@/data/hrvReferenceData";
-import type { AutonomicProfile } from "@/lib/types";
+import type { AutonomicProfile, AutonomicConcordance } from "@/lib/types";
 
 type Props = {
   interpretation: HrvInterpretation;
@@ -108,16 +108,20 @@ function MetricCard({
   );
 }
 
-function ConcordanceBadge({ concordance }: { concordance: string }) {
+function ConcordanceBadge({ concordance }: { concordance: AutonomicConcordance }) {
   const colors: Record<string, string> = {
     concordant_sympathetic_shift: "bg-rose-100 text-rose-800 border-rose-200",
     concordant_parasympathetic_shift: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    single_axis_sympathetic_shift: "bg-orange-100 text-orange-800 border-orange-200",
+    single_axis_parasympathetic_shift: "bg-teal-100 text-teal-800 border-teal-200",
     mixed: "bg-amber-100 text-amber-800 border-amber-200",
     central: "bg-stone-100 text-stone-800 border-stone-200",
   };
   const labels: Record<string, string> = {
-    concordant_sympathetic_shift: "Sympathetic-direction shift",
-    concordant_parasympathetic_shift: "Parasympathetic-direction shift",
+    concordant_sympathetic_shift: "Sympathetic-direction shift (concordant)",
+    concordant_parasympathetic_shift: "Parasympathetic-direction shift (concordant)",
+    single_axis_sympathetic_shift: "Single-axis sympathetic shift",
+    single_axis_parasympathetic_shift: "Single-axis parasympathetic shift",
     mixed: "Mixed autonomic pattern",
     central: "Central autonomic pattern",
   };
@@ -128,32 +132,27 @@ function ConcordanceBadge({ concordance }: { concordance: string }) {
   );
 }
 
-function AutonomicScoreDisplay({
-  score: { value, label, rmssdComponent, lfhfComponent },
-  profile,
-}: {
-  score: { value: number; label: string; rmssdComponent: number; lfhfComponent: number };
-  profile?: AutonomicProfile;
-}) {
-  const rawPosition = ((value + 100) / 200) * 100;
+function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
+  const rawPosition = ((profile.score + 100) / 200) * 100;
   const markerPosition = Math.min(98, Math.max(2, rawPosition));
+
+  const vagalWeighted = 0.7 * profile.vagal.deviationZ;
+  const spectralWeighted = 0.3 * profile.spectral.deviationZ;
 
   return (
     <div className="rounded-lg border border-border bg-background p-5">
       <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        5HRV Autonomic Score
+        5HRV Autonomic Pattern Score
       </div>
 
-      {profile && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <ConcordanceBadge concordance={profile.concordance} />
-          {profile.provisional && (
-            <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-              Provisional
-            </span>
-          )}
-        </div>
-      )}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <ConcordanceBadge concordance={profile.concordance} />
+        {profile.provisional && (
+          <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+            Provisional
+          </span>
+        )}
+      </div>
 
       <div className="mt-4">
         <div className="flex justify-between text-[11px] text-muted-foreground">
@@ -173,14 +172,14 @@ function AutonomicScoreDisplay({
             className="absolute top-4 -translate-x-1/2 whitespace-nowrap text-xs font-semibold text-foreground tabular-nums"
             style={{ left: `${markerPosition}%` }}
           >
-            {value > 0 ? "+" : ""}
-            {value}
+            {profile.score > 0 ? "+" : ""}
+            {profile.score}
           </div>
         </div>
       </div>
 
       <p className="mt-2 text-sm font-semibold text-foreground">
-        {label}
+        {profile.label}
       </p>
 
       <details className="mt-3">
@@ -189,33 +188,36 @@ function AutonomicScoreDisplay({
         </summary>
         <div className="mt-2 space-y-1 text-xs text-muted-foreground">
           <p>
-            The 5HRV Autonomic Score is a directional composite derived from RMSSD and LF/HF. Positive values indicate a shift toward the sympathetic side; negative values indicate a shift toward the parasympathetic side.
+            The 5HRV Autonomic Pattern Score is a directional composite derived from RMSSD and LF/HF percentiles. Positive values indicate a shift toward the sympathetic side; negative values indicate a shift toward the parasympathetic side.
           </p>
-          {profile && (
-            <div className="mt-2 space-y-0.5">
-              <span className="block">
-                Vagal modulation (RMSSD): {profile.vagal.percentile}th percentile (Z = {profile.vagal.deviationZ.toFixed(2)})
-              </span>
-              <span className="block">
-                Spectral pattern (LF/HF): {profile.spectral.percentile}th percentile (Z = {profile.spectral.deviationZ.toFixed(2)})
-              </span>
-              <span className="block">
-                Concordance: {profile.concordance.replace(/_/g, " ")}
-              </span>
-            </div>
-          )}
           <div className="mt-2 space-y-0.5">
             <span className="block">
-              RMSSD component: {rmssdComponent > 0 ? "+" : ""}{rmssdComponent}
+              Vagal modulation (RMSSD): {Math.round(profile.vagal.percentile)}
+              th percentile (Z = {profile.vagal.deviationZ.toFixed(2)})
             </span>
             <span className="block">
-              LF/HF component: {lfhfComponent > 0 ? "+" : ""}{lfhfComponent}
+              Spectral pattern (LF/HF): {Math.round(profile.spectral.percentile)}
+              th percentile (Z = {profile.spectral.deviationZ.toFixed(2)})
+            </span>
+            <span className="block">
+              Concordance: {profile.concordance.replace(/_/g, " ")}
+            </span>
+          </div>
+          <div className="mt-2 space-y-0.5">
+            <span className="block">
+              Vagal weighted (0.7): {vagalWeighted >= 0 ? "+" : ""}{vagalWeighted.toFixed(2)}
+            </span>
+            <span className="block">
+              Spectral weighted (0.3): {spectralWeighted >= 0 ? "+" : ""}{spectralWeighted.toFixed(2)}
+            </span>
+            <span className="block">
+              Combined deviation: {(vagalWeighted + spectralWeighted).toFixed(2)} / 1.645 = {((vagalWeighted + spectralWeighted) / 1.645).toFixed(2)}
             </span>
             <span className="block font-medium text-foreground">
-              Combined score: {value > 0 ? "+" : ""}{value}
+              Pattern score: {profile.score > 0 ? "+" : ""}{profile.score}
             </span>
             <span className="block font-medium text-foreground">
-              Classification: {label}
+              Classification: {profile.label}
             </span>
           </div>
         </div>
@@ -258,6 +260,22 @@ function SecondaryMetricCard({
   );
 }
 
+function hasAdequateFrequencyMetadata(input: MeasurementInput): boolean {
+  const r = input.recording;
+  return (
+    r?.durationSeconds !== undefined &&
+    r.durationSeconds >= 270 &&
+    r.durationSeconds <= 330 &&
+    r.sinusRhythmConfirmed === true &&
+    r.artefactCorrectionConfirmed === true &&
+    r.restingSpontaneousRespirationConfirmed === true
+  );
+}
+
+function hasFrequencyData(input: MeasurementInput): boolean {
+  return input.lfPower !== undefined || input.hfPower !== undefined || input.lfhfRatio !== undefined;
+}
+
 function buildPlainText(
   interpretation: HrvInterpretation,
   input: MeasurementInput
@@ -285,12 +303,13 @@ function buildPlainText(
   }
   lines.push(`Report generated: ${formatDate()}`);
 
-  if (interpretation.autonomicScore) {
+  if (interpretation.autonomicProfile) {
     lines.push("");
-    const s = interpretation.autonomicScore;
-    lines.push(`5HRV Autonomic Score: ${s.value > 0 ? "+" : ""}${s.value} (${s.label})`);
-    lines.push(`  RMSSD component: ${s.rmssdComponent > 0 ? "+" : ""}${s.rmssdComponent}`);
-    lines.push(`  LF/HF component: ${s.lfhfComponent > 0 ? "+" : ""}${s.lfhfComponent}`);
+    const p = interpretation.autonomicProfile;
+    lines.push(`5HRV Autonomic Pattern Score: ${p.score > 0 ? "+" : ""}${p.score} (${p.label})`);
+    lines.push(`  Vagal modulation (RMSSD): ${Math.round(p.vagal.percentile)}th percentile (Z = ${p.vagal.deviationZ.toFixed(2)})`);
+    lines.push(`  Spectral pattern (LF/HF): ${Math.round(p.spectral.percentile)}th percentile (Z = ${p.spectral.deviationZ.toFixed(2)})`);
+    lines.push(`  Concordance: ${p.concordance.replace(/_/g, " ")}`);
   }
 
   lines.push("");
@@ -299,7 +318,7 @@ function buildPlainText(
       const ref = m.referencePercentiles;
       const pct = ref ? estimatePercentile(m.value, ref) : null;
       lines.push(`${m.name}: ${m.value} ${m.unit}`);
-      if (m.categoryLabel) lines.push(`${m.categoryLabel}${pct !== null ? ` \u2014 approximately ${ordinal(pct)} percentile` : ""}`);
+      if (m.categoryLabel) lines.push(`${m.categoryLabel}${pct !== null ? ` \u2014 approximately ${ordinal(Math.round(pct))} percentile` : ""}`);
       lines.push(m.interpretation);
       if (ref) {
         lines.push(`Reference details: P5: ${ref[0]} \u00B7 P25: ${ref[1]} \u00B7 P50: ${ref[2]} \u00B7 P75: ${ref[3]} \u00B7 P95: ${ref[4]} ${m.unit}`);
@@ -318,7 +337,7 @@ function buildPlainText(
 
   lines.push("Interpret HRV together with the ECG, symptoms and clinical context.");
   lines.push("Interpretation assumes an artefact-corrected five-minute NN recording in sinus rhythm under standardised resting conditions.");
-  if (hasFrequencyData(input) && !hasRecordingMetadata(input)) {
+  if (hasFrequencyData(input) && !hasAdequateFrequencyMetadata(input)) {
     lines.push("Frequency-domain interpretation assumes a standardised five-minute recording in sinus rhythm with appropriate artefact correction and spontaneous resting respiration.");
   }
   if (interpretation.referenceNote) {
@@ -326,15 +345,6 @@ function buildPlainText(
     lines.push(interpretation.referenceNote);
   }
   return lines.join("\n");
-}
-
-function hasFrequencyData(input: MeasurementInput): boolean {
-  return input.lfPower !== undefined || input.hfPower !== undefined || input.lfhfRatio !== undefined;
-}
-
-function hasRecordingMetadata(input: MeasurementInput): boolean {
-  const rec = input.recording;
-  return rec?.durationSeconds !== undefined || rec?.samplingFrequencyHz !== undefined || rec?.totalBeats !== undefined;
 }
 
 export function ResultsView({ interpretation, input }: Props) {
@@ -480,9 +490,9 @@ export function ResultsView({ interpretation, input }: Props) {
         )}
 
         {/* Autonomic score */}
-        {interpretation.autonomicScore && (
+        {interpretation.autonomicProfile && (
           <div className="border-b border-border px-6 py-5">
-            <AutonomicScoreDisplay score={interpretation.autonomicScore} profile={interpretation.autonomicProfile} />
+            <AutonomicScoreDisplay profile={interpretation.autonomicProfile} />
           </div>
         )}
 
@@ -544,7 +554,7 @@ export function ResultsView({ interpretation, input }: Props) {
           <p className="mt-3 text-xs italic text-muted-foreground/60">
             Interpretation assumes an artefact-corrected five-minute NN recording in sinus rhythm under standardised resting conditions.
           </p>
-          {hasFrequencyData(input) && !hasRecordingMetadata(input) && (
+          {hasFrequencyData(input) && !hasAdequateFrequencyMetadata(input) && (
             <p className="mt-2 text-xs italic text-muted-foreground/60">
               Frequency-domain interpretation assumes a standardised five-minute recording in sinus rhythm with appropriate artefact correction and spontaneous resting respiration.
             </p>

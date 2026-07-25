@@ -35,6 +35,11 @@ export type RecordingMetadata = {
   samplingFrequencyHz?: number;
   totalBeats?: number;
   sourceFilename?: string;
+
+  posture?: "supine" | "seated" | "standing" | "unknown";
+  sinusRhythmConfirmed?: boolean;
+  artefactCorrectionConfirmed?: boolean;
+  restingSpontaneousRespirationConfirmed?: boolean;
 };
 
 export type MeasurementInput = {
@@ -83,13 +88,6 @@ export type HrvFindings = {
     pattern: FrequencyDomainPattern;
   };
 
-  autonomicScore?: {
-    value: number;
-    label: string;
-    rmssdComponent: number;
-    lfhfComponent: number;
-  };
-
   autonomicProfile?: AutonomicProfile;
 };
 
@@ -106,16 +104,11 @@ export type MetricResult = {
   lfhfSource?: LfhfSource;
 };
 
-export type AutonomicScore = {
-  value: number;
-  label: string;
-  rmssdComponent: number;
-  lfhfComponent: number;
-};
-
 export type AutonomicConcordance =
   | "concordant_sympathetic_shift"
   | "concordant_parasympathetic_shift"
+  | "single_axis_sympathetic_shift"
+  | "single_axis_parasympathetic_shift"
   | "mixed"
   | "central";
 
@@ -153,7 +146,6 @@ export type HrvInterpretation = {
   referenceAvailable: boolean;
   referenceNote?: string;
   safetyMessage: string;
-  autonomicScore?: AutonomicScore;
   autonomicProfile?: AutonomicProfile;
   findings: HrvFindings;
 };

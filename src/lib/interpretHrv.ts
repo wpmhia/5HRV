@@ -10,7 +10,6 @@ import type {
   HrvInterpretation,
   MetricResult,
   PercentileCategory,
-  AutonomicScore,
   AutonomicConcordance,
   AutonomicProfile,
   LfhfSource,
@@ -88,37 +87,35 @@ export function estimatePercentile(
   } else {
     percentile = 95 + ((value - p95) / p95) * 5;
   }
-  return Math.round(Math.min(100, Math.max(0, percentile)));
+  return clamp(percentile, 0, 100);
 }
 
-export function estimatePercentileLog(
+export function interpolateLogPercentile(
   value: number,
   reference: readonly [number, number, number, number, number],
-): number | null {
+): number {
   const [p5, p25, p50, p75, p95] = reference;
-  if (p5 <= 0 || value <= 0) return estimatePercentile(value, reference);
-  const logVal = Math.log(value);
+  if (p5 <= 0 || value <= 0) return estimatePercentile(value, reference) ?? 50;
+
+  const cappedVal = clamp(value, p5, p95);
+
+  const logVal = Math.log(cappedVal);
   const logP5 = Math.log(p5);
   const logP25 = Math.log(p25);
   const logP50 = Math.log(p50);
   const logP75 = Math.log(p75);
   const logP95 = Math.log(p95);
 
-  let percentile: number;
-  if (value <= p5) {
-    percentile = (logVal / logP5) * 5;
-  } else if (value <= p25) {
-    percentile = 5 + ((logVal - logP5) / (logP25 - logP5)) * 20;
-  } else if (value <= p50) {
-    percentile = 25 + ((logVal - logP25) / (logP50 - logP25)) * 25;
-  } else if (value <= p75) {
-    percentile = 50 + ((logVal - logP50) / (logP75 - logP50)) * 25;
-  } else if (value <= p95) {
-    percentile = 75 + ((logVal - logP75) / (logP95 - logP75)) * 20;
-  } else {
-    percentile = 95 + ((logVal - logP95) / logP95) * 5;
+  if (cappedVal <= p25) {
+    return clamp(5 + ((logVal - logP5) / (logP25 - logP5)) * 20, 5, 25);
   }
-  return Math.round(Math.min(100, Math.max(0, percentile)));
+  if (cappedVal <= p50) {
+    return clamp(25 + ((logVal - logP25) / (logP50 - logP25)) * 25, 25, 50);
+  }
+  if (cappedVal <= p75) {
+    return clamp(50 + ((logVal - logP50) / (logP75 - logP50)) * 25, 50, 75);
+  }
+  return clamp(75 + ((logVal - logP75) / (logP95 - logP75)) * 20, 75, 95);
 }
 
 export function percentileToZ(percentile: number): number {
@@ -150,6 +147,10 @@ function categorizeVariability(band: ReferenceBand): VariabilityStatus {
   }
 }
 
+// Provisional 70/30 weighting balancing vagal modulation (RMSSD)
+// against relative spectral pattern (LF/HF). RMSSD is the primary
+// component because it isolates vagal tone with fewer confounding
+// influences than frequency-domain ratios.
 const VAGAL_WEIGHT = 0.7;
 const SPECTRAL_WEIGHT = 0.3;
 
@@ -159,24 +160,38 @@ function deriveConcordance(
 ): AutonomicConcordance {
   const rmssdLow = rmssdPercentile < 25;
   const rmssdHigh = rmssdPercentile > 75;
+  const rmssdCentral = !rmssdLow && !rmssdHigh;
   const lfhfLow = lfhfPercentile < 25;
   const lfhfHigh = lfhfPercentile > 75;
+  const lfhfCentral = !lfhfLow && !lfhfHigh;
+
+  if (rmssdCentral && lfhfCentral) return "central";
 
   if (rmssdLow && lfhfHigh) return "concordant_sympathetic_shift";
   if (rmssdHigh && lfhfLow) return "concordant_parasympathetic_shift";
+
   if ((rmssdLow && lfhfLow) || (rmssdHigh && lfhfHigh)) return "mixed";
-  return "central";
+
+  if (rmssdLow || lfhfHigh) return "single_axis_sympathetic_shift";
+  return "single_axis_parasympathetic_shift";
 }
 
 function computeAutonomicProfile(
   rmssdPercentile: number,
   lfhfPercentile: number,
+  rmssdBand: ReferenceBand,
+  lfhfBand: ReferenceBand,
   sdnnPercentile?: number,
+  sdnnBand?: ReferenceBand,
 ): AutonomicProfile {
   const vagalDeviation = -percentileToZ(rmssdPercentile);
   const spectralDeviation = percentileToZ(lfhfPercentile);
-  const combined = 0.7 * vagalDeviation + 0.3 * spectralDeviation;
-  const score = Math.round(clamp(combined / 1.645, -1, 1) * 100);
+
+  const vagalWeighted = VAGAL_WEIGHT * vagalDeviation;
+  const spectralWeighted = SPECTRAL_WEIGHT * spectralDeviation;
+  const combinedDeviation = vagalWeighted + spectralWeighted;
+
+  const score = Math.round(clamp(combinedDeviation / 1.645, -1, 1) * 100);
 
   const concordance = deriveConcordance(rmssdPercentile, lfhfPercentile);
 
@@ -194,51 +209,26 @@ function computeAutonomicProfile(
     return "Pronounced sympathetic-direction shift";
   })();
 
-  const vagalCategory = classifyFromPercentile(rmssdPercentile);
-  const spectralCategory = classifyFromPercentile(lfhfPercentile);
-
   return {
     score,
     label,
     vagal: {
       percentile: rmssdPercentile,
       deviationZ: vagalDeviation,
-      category: vagalCategory,
+      category: rmssdBand as PercentileCategory,
     },
     spectral: {
       percentile: lfhfPercentile,
       deviationZ: spectralDeviation,
-      category: spectralCategory,
+      category: lfhfBand as PercentileCategory,
     },
-    totalVariability: sdnnPercentile !== undefined ? {
+    totalVariability: sdnnPercentile !== undefined && sdnnBand !== undefined ? {
       percentile: sdnnPercentile,
-      category: classifyFromPercentile(sdnnPercentile),
+      category: sdnnBand as PercentileCategory,
     } : undefined,
     concordance,
     provisional: true,
   };
-}
-
-function classifyFromPercentile(pct: number): PercentileCategory {
-  if (pct < 5) return "below_p5";
-  if (pct < 25) return "p5_to_p25";
-  if (pct <= 75) return "p25_to_p75";
-  if (pct <= 95) return "p75_to_p95";
-  return "above_p95";
-}
-
-export function scoreLabel(value: number, concordance: AutonomicConcordance): string {
-  if (concordance === "mixed") return "Mixed autonomic pattern";
-  if (value <= -75) return "Pronounced parasympathetic-direction shift";
-  if (value <= -50) return "Marked parasympathetic-direction shift";
-  if (value <= -25) return "Mild parasympathetic-direction shift";
-  if (value < 25) {
-    if (concordance === "central") return "Central autonomic pattern";
-    return "Mixed autonomic pattern";
-  }
-  if (value < 50) return "Mild sympathetic-direction shift";
-  if (value < 75) return "Marked sympathetic-direction shift";
-  return "Pronounced sympathetic-direction shift";
 }
 
 export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
@@ -275,12 +265,16 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
 
   let ratio: number | undefined;
   let lfhfSource: LfhfSource | undefined;
+  let lfhfBand: ReferenceBand = "unclassified";
   if (input.lfPower !== undefined && input.hfPower !== undefined && input.hfPower > 0) {
     ratio = input.lfPower / input.hfPower;
     lfhfSource = "calculated";
   } else if (input.lfhfRatio !== undefined) {
     ratio = input.lfhfRatio;
     lfhfSource = input.lfhfSource ?? "imported";
+  }
+  if (ratio !== undefined && lfhfPercentiles) {
+    lfhfBand = classifyPercentile(ratio, lfhfPercentiles);
   }
 
   const fdPattern: FrequencyDomainPattern =
@@ -301,43 +295,15 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
 
   const lfhfPct =
     ratio !== undefined && lfhfPercentiles
-      ? estimatePercentileLog(ratio, lfhfPercentiles as readonly [number, number, number, number, number]) ?? 50
+      ? interpolateLogPercentile(ratio, lfhfPercentiles as readonly [number, number, number, number, number])
       : undefined;
 
-  let autonomicScore: HrvFindings["autonomicScore"] = undefined;
   let autonomicProfile: HrvFindings["autonomicProfile"] = undefined;
 
   if (rmssdPct !== undefined && lfhfPct !== undefined) {
-    const rmssdComponent = (() => {
-      switch (rmssdBand) {
-        case "below_p5": return 50;
-        case "p5_to_p25": return 25;
-        case "p25_to_p75": return 0;
-        case "p75_to_p95": return -25;
-        case "above_p95": return -50;
-        default: return 0;
-      }
-    })();
-
-    const lfhfComponent = ratio !== undefined
-      ? (ratio > 2
-          ? clamp((ratio - 2) / 6, 0, 1) * 50
-          : ratio < 1
-            ? -clamp(1 - ratio, 0, 1) * 50
-            : 0)
-      : 0;
-
-    const scoreValue = Math.round(clamp(rmssdComponent + lfhfComponent, -100, 100));
-    const concordance = deriveConcordance(rmssdPct, lfhfPct);
-
-    autonomicProfile = computeAutonomicProfile(rmssdPct, lfhfPct, sdnnPct);
-
-    autonomicScore = {
-      value: scoreValue,
-      label: scoreLabel(scoreValue, concordance),
-      rmssdComponent,
-      lfhfComponent,
-    };
+    autonomicProfile = computeAutonomicProfile(
+      rmssdPct, lfhfPct, rmssdBand, lfhfBand, sdnnPct, sdnnBand,
+    );
   }
 
   return {
@@ -373,17 +339,12 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
       pattern: fdPattern,
     },
 
-    autonomicScore,
     autonomicProfile,
   };
 }
 
 function bandIsLow(band: ReferenceBand): boolean {
   return band === "below_p5" || band === "p5_to_p25";
-}
-
-function bandIsTypical(band: ReferenceBand): boolean {
-  return band === "p25_to_p75";
 }
 
 function bandIsHigh(band: ReferenceBand): boolean {
@@ -502,14 +463,14 @@ export function renderClinicalSummary(findings: HrvFindings): string {
   const sdnn = findings.sdnn;
   const rmssd = findings.rmssd;
   const fd = findings.frequencyDomain;
-  const score = findings.autonomicScore;
+  const profile = findings.autonomicProfile;
 
   const clauses: string[] = [];
 
   if (sdnn.value !== undefined && sdnn.referencePercentiles && findings.ageBand) {
     const sexLabel = findings.referenceSex === "female" ? "women" : findings.referenceSex === "male" ? "men" : "the selected reference group";
     const bandLabel = sdnn.band !== "unclassified" ? percentileLabels[sdnn.band as PercentileCategory] : "";
-    const pctStr = sdnn.estimatedPercentile !== undefined ? `, at approximately the ${ordinal(sdnn.estimatedPercentile)} percentile` : "";
+    const pctStr = sdnn.estimatedPercentile !== undefined ? `, at approximately the ${ordinal(Math.round(sdnn.estimatedPercentile))} percentile` : "";
     clauses.push(
       `SDNN ${sdnn.value} ms is within the ${bandLabel} reference range for ${sexLabel} aged ${findings.ageBand}${pctStr}.`
     );
@@ -518,7 +479,7 @@ export function renderClinicalSummary(findings: HrvFindings): string {
   if (rmssd.value !== undefined && rmssd.referencePercentiles && findings.ageBand) {
     const sexLabel = findings.referenceSex === "female" ? "women" : findings.referenceSex === "male" ? "men" : "the selected reference group";
     const bandLabel = rmssd.band !== "unclassified" ? percentileLabels[rmssd.band as PercentileCategory] : "";
-    const pctStr = rmssd.estimatedPercentile !== undefined ? `, at approximately the ${ordinal(rmssd.estimatedPercentile)} percentile` : "";
+    const pctStr = rmssd.estimatedPercentile !== undefined ? `, at approximately the ${ordinal(Math.round(rmssd.estimatedPercentile))} percentile` : "";
     const vagalText = rmssd.vagalStatus === "reduced" || rmssd.vagalStatus === "markedly_reduced"
       ? ", indicating reduced short-term parasympathetic activity"
       : "";
@@ -536,17 +497,17 @@ export function renderClinicalSummary(findings: HrvFindings): string {
 
   const overallVar = sdnn.band !== "unclassified" && !bandIsLow(sdnn.band) ? "preserved" : "reduced";
   const paraStatus = rmssd.vagalStatus === "reduced" || rmssd.vagalStatus === "markedly_reduced" ? "reduced" : "preserved";
-  const scoreText = score
-    ? ` and a ${score.label.toLowerCase()}`
+  const patternText = profile
+    ? ` and a ${profile.label.toLowerCase()}`
     : "";
   clauses.push(
-    `Overall variability is ${overallVar}, with ${paraStatus} parasympathetic activity${scoreText}.`
+    `Overall variability is ${overallVar}, with ${paraStatus} parasympathetic activity${patternText}.`
   );
 
   const isAbnormal =
     bandIsLow(sdnn.band) ||
     bandIsLow(rmssd.band) ||
-    (score !== undefined && score.value >= 25);
+    (profile !== undefined && profile.score >= 25);
 
   if (isAbnormal) {
     clauses.push(
@@ -599,7 +560,6 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     referenceAvailable: findings.referenceAvailable,
     referenceNote: findings.referenceNote,
     safetyMessage: "",
-    autonomicScore: findings.autonomicScore,
     autonomicProfile: findings.autonomicProfile,
     findings,
   };

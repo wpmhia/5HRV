@@ -11,7 +11,8 @@ import {
   renderMetricDescriptions,
   renderClinicalSummary,
   estimatePercentile,
-  estimatePercentileLog,
+  interpolateLogPercentile,
+  percentileToZ,
 } from "@/lib/interpretHrv";
 import type {
   MeasurementInput,
@@ -113,11 +114,11 @@ describe("estimatePercentile", () => {
   it("returns estimated percentile for SDNN 39.33 (female 30-39)", () => {
     const sdnnRef = hrvReferenceData.female["30-39"].sdnn;
     const pct = estimatePercentile(39.33, sdnnRef);
-    expect(pct).toBe(45);
+    expect(Math.round(pct!)).toBe(45);
   });
   it("returns estimated percentile for RMSSD 23.14 (female 30-39)", () => {
     const pct = estimatePercentile(23.14, ref);
-    expect(pct).toBe(15);
+    expect(Math.round(pct!)).toBe(15);
   });
   it("returns null for array with wrong length", () => {
     expect(estimatePercentile(30, [1, 2, 3])).toBeNull();
@@ -127,6 +128,35 @@ describe("estimatePercentile", () => {
   });
   it("returns 100 at extreme high values", () => {
     expect(estimatePercentile(999, [20, 40, 60, 80, 100])).toBe(100);
+  });
+});
+
+describe("interpolateLogPercentile", () => {
+  it("clamps to 5-95 range", () => {
+    const ref = hrvReferenceData.female["30-39"].lfhf;
+    const below = interpolateLogPercentile(0.01, ref as readonly [number, number, number, number, number]);
+    const above = interpolateLogPercentile(100, ref as readonly [number, number, number, number, number]);
+    expect(below).toBeGreaterThanOrEqual(5);
+    expect(above).toBeLessThanOrEqual(95);
+  });
+  it("returns intermediate value within published anchors", () => {
+    const ref = hrvReferenceData.male["40-49"].lfhf;
+    const pct = interpolateLogPercentile(2.0, ref as readonly [number, number, number, number, number]);
+    expect(pct).toBeGreaterThanOrEqual(25);
+    expect(pct).toBeLessThanOrEqual(75);
+  });
+});
+
+describe("percentileToZ", () => {
+  it("returns 0 at 50th percentile", () => {
+    expect(percentileToZ(50)).toBeCloseTo(0, 1);
+  });
+  it("returns positive above 50, negative below", () => {
+    expect(percentileToZ(95)).toBeGreaterThan(0);
+    expect(percentileToZ(5)).toBeLessThan(0);
+  });
+  it("is symmetric around 50", () => {
+    expect(percentileToZ(5) + percentileToZ(95)).toBeCloseTo(0, 1);
   });
 });
 
@@ -165,7 +195,7 @@ describe("LF/HF calculation", () => {
     expect(lfhf).toBeDefined();
     expect(lfhf!.value).toBe(2);
   });
-  it("reported LF/HF includes source in metric and is used for Autonomic Score", () => {
+  it("reported LF/HF includes source in metric and produces a profile score", () => {
     const result = interpretHrv({
       ...baseInput, rmssd: 14.53, sdnn: 34.19, pnn50: 0.21,
       lfhfRatio: 9.49, lfhfSource: "manual",
@@ -174,8 +204,8 @@ describe("LF/HF calculation", () => {
     expect(lfhf).toBeDefined();
     expect(lfhf!.lfhfSource).toBe("manual");
     expect(lfhf!.interpretation).toContain("Entered ratio.");
-    expect(result.autonomicScore).toBeDefined();
-    expect(result.autonomicScore!.value).toBeGreaterThan(0);
+    expect(result.autonomicProfile).toBeDefined();
+    expect(result.autonomicProfile!.score).toBeGreaterThan(0);
   });
   it("reported-only LF/HF produces clinical paragraph with frequency domain LF/HF only", () => {
     const result = interpretHrv({
@@ -289,7 +319,7 @@ describe("combined interpretation patterns", () => {
 });
 
 describe("deriveHrvFindings", () => {
-  it("classifies patient example correctly", () => {
+  it("classifies patient example correctly via autonomic profile", () => {
     const input: MeasurementInput = {
       age: 33,
       referenceSex: "female",
@@ -304,11 +334,13 @@ describe("deriveHrvFindings", () => {
     expect(f.sdnn.band).toBe("p25_to_p75");
     expect(f.frequencyDomain.lfhfRatio).toBeCloseTo(5.9, 1);
     expect(f.frequencyDomain.pattern).toBe("marked_lf_predominance");
-    expect(f.autonomicScore?.value).toBe(58);
-    expect(f.autonomicScore?.label).toBe("Marked sympathetic-direction shift");
+    expect(f.autonomicProfile).toBeDefined();
+    expect(f.autonomicProfile!.score).toBeGreaterThanOrEqual(70);
+    expect(f.autonomicProfile!.score).toBeLessThan(75);
+    expect(f.autonomicProfile!.label).toBe("Marked sympathetic-direction shift");
   });
 
-  it("estimates percentiles", () => {
+  it("estimates percentiles for RMSSD and SDNN", () => {
     const input: MeasurementInput = {
       age: 33,
       referenceSex: "female",
@@ -316,11 +348,11 @@ describe("deriveHrvFindings", () => {
       sdnn: 39.33,
     };
     const f = deriveHrvFindings(input);
-    expect(f.rmssd.estimatedPercentile).toBe(15);
-    expect(f.sdnn.estimatedPercentile).toBe(45);
+    expect(Math.round(f.rmssd.estimatedPercentile!)).toBe(15);
+    expect(Math.round(f.sdnn.estimatedPercentile!)).toBe(45);
   });
 
-  it("returns rmssdComponent and lfhfComponent in score", () => {
+  it("profile score uses floating-point internal percentiles", () => {
     const input: MeasurementInput = {
       age: 33,
       referenceSex: "female",
@@ -328,9 +360,9 @@ describe("deriveHrvFindings", () => {
       lfhfRatio: 5.9,
     };
     const f = deriveHrvFindings(input);
-    expect(f.autonomicScore).toBeDefined();
-    expect(f.autonomicScore!.rmssdComponent).toBe(25);
-    expect(f.autonomicScore!.lfhfComponent).toBeCloseTo(32.5, 1);
+    expect(f.autonomicProfile).toBeDefined();
+    expect(f.autonomicProfile!.vagal.deviationZ).toBeDefined();
+    expect(f.autonomicProfile!.spectral.deviationZ).toBeDefined();
   });
 });
 
@@ -355,9 +387,9 @@ describe("seed example 1", () => {
       "p5_to_p25"
     );
   });
-  it("reports reduced HRV with autonomic score", () => {
+  it("reports reduced HRV with autonomic profile", () => {
     const result = interpretHrv(example1);
-    expect(result.autonomicScore).toBeDefined();
+    expect(result.autonomicProfile).toBeDefined();
     expect(result.overall).toContain("reduced parasympathetic");
     expect(result.overall).toContain("reduced");
   });
@@ -413,9 +445,9 @@ describe("seed example 2", () => {
       "breathing"
     );
   });
-  it("reports preserved parasympathetic activity and high overall HRV with autonomic score", () => {
+  it("reports preserved parasympathetic activity and high overall HRV with profile", () => {
     const result = interpretHrv(example2);
-    expect(result.autonomicScore).toBeDefined();
+    expect(result.autonomicProfile).toBeDefined();
     expect(result.overall).toContain("preserved");
     expect(result.overall).toContain("within");
   });
@@ -447,7 +479,7 @@ describe("renderClinicalSummary", () => {
     expect(() => renderClinicalSummary(findings)).not.toThrow();
   });
 
-  it("reduced RMSSD → reduced parasympathetic activity", () => {
+  it("reduced RMSSD -> reduced parasympathetic activity", () => {
     const input: MeasurementInput = {
       ...baseInput,
       age: 45,
@@ -460,7 +492,7 @@ describe("renderClinicalSummary", () => {
     expect(text).toContain("reduced");
   });
 
-  it("preserved RMSSD with pNN50 — parasympathetic still preserved (RMSSD is primary)", () => {
+  it("preserved RMSSD with pNN50 -- parasympathetic still preserved (RMSSD is primary)", () => {
     const input: MeasurementInput = {
       ...baseInput,
       age: 45,
@@ -474,7 +506,7 @@ describe("renderClinicalSummary", () => {
     expect(text).toContain("preserved");
   });
 
-  it("preserved RMSSD with HF — parasympathetic still preserved (RMSSD is primary)", () => {
+  it("preserved RMSSD with HF -- parasympathetic still preserved (RMSSD is primary)", () => {
     const input: MeasurementInput = {
       ...baseInput,
       age: 45,
@@ -489,7 +521,7 @@ describe("renderClinicalSummary", () => {
     expect(text).toContain("preserved");
   });
 
-  it("RMSSD absent → no RMSSD statement", () => {
+  it("RMSSD absent -> no RMSSD statement", () => {
     const input: MeasurementInput = {
       age: 40,
       referenceSex: "male",
@@ -509,13 +541,12 @@ describe("renderClinicalSummary", () => {
     expect(text).toContain("central autonomic pattern");
   });
 
-  it("builds from autonomic score when score is available over LF/HF", () => {
+  it("builds from autonomic profile when score is available over LF/HF", () => {
     const input: MeasurementInput = {
       ...baseInput, lfhfRatio: 9.49, rmssd: 14.53,
     };
     const findings = deriveHrvFindings(input);
     const text = renderClinicalSummary(findings);
-    // Score will be high (marked sympathetic predominance)
     expect(text).toContain("Serial measurements");
   });
 
@@ -554,7 +585,7 @@ describe("renderClinicalSummary", () => {
 });
 
 describe("renderMetricDescriptions", () => {
-  it("includes preface with all metrics present", () => {
+  it("includes all metrics present", () => {
     const input: MeasurementInput = {
       age: 45,
       referenceSex: "male",
@@ -669,10 +700,10 @@ describe("patient regression fixture", () => {
     expect(f.sdnn.band).toBe("p25_to_p75");
   });
 
-  it("estimates percentiles", () => {
+  it("estimates rounded percentiles for display", () => {
     const f = deriveHrvFindings(patientFixture);
-    expect(f.rmssd.estimatedPercentile).toBe(15);
-    expect(f.sdnn.estimatedPercentile).toBe(45);
+    expect(Math.round(f.rmssd.estimatedPercentile!)).toBe(15);
+    expect(Math.round(f.sdnn.estimatedPercentile!)).toBe(45);
   });
 
   it("frequency domain pattern is marked LF predominance", () => {
@@ -681,23 +712,19 @@ describe("patient regression fixture", () => {
     expect(f.frequencyDomain.pattern).toBe("marked_lf_predominance");
   });
 
-  it("computes autonomic score with percentile-based RMSSD component", () => {
+  it("computes continuous autonomic profile score", () => {
     const result = interpretHrv(patientFixture);
-    expect(result.autonomicScore).toBeDefined();
-    // RMSSD 23.14 is p5_to_p25 for women 30-39 → component = 25
-    expect(result.autonomicScore!.rmssdComponent).toBe(25);
-    // LF/HF = 416.47/70.55 ≈ 5.90 → lfhfComponent = clamp((5.90-2)/6)*50 ≈ 32.53
-    expect(result.autonomicScore!.lfhfComponent).toBeCloseTo(32.53, 1);
-    // Total = round(25 + 32.53) = 58 → "Marked sympathetic predominance"
-    expect(result.autonomicScore!.value).toBe(58);
-    expect(result.autonomicScore!.label).toBe("Marked sympathetic-direction shift");
+    expect(result.autonomicProfile).toBeDefined();
+    expect(result.autonomicProfile!.score).toBeGreaterThanOrEqual(70);
+    expect(result.autonomicProfile!.score).toBeLessThan(75);
+    expect(result.autonomicProfile!.label).toBe("Marked sympathetic-direction shift");
   });
 
-  it("score components are exposed", () => {
+  it("profile vagal and spectral components are defined", () => {
     const result = interpretHrv(patientFixture);
-    expect(result.autonomicScore).toBeDefined();
-    expect(result.autonomicScore!.rmssdComponent).toBe(25);
-    expect(result.autonomicScore!.lfhfComponent).toBeCloseTo(32.53, 1);
+    expect(result.autonomicProfile).toBeDefined();
+    expect(result.autonomicProfile!.vagal.deviationZ).toBeGreaterThan(0);
+    expect(result.autonomicProfile!.spectral.deviationZ).toBeGreaterThan(0);
   });
 
   it("labels contain percentile range", () => {
@@ -735,10 +762,10 @@ describe("patient regression fixture", () => {
     expect(result.findings.sdnn.band).toBe("p25_to_p75");
   });
 
-  it("LF/HF above P95 for the patient fixture", () => {
+  it("LF/HF category is above_p95 for the patient fixture", () => {
     const result = interpretHrv(patientFixture);
-    const lfhfPct = result.findings.autonomicProfile?.spectral.percentile;
-    expect(lfhfPct).toBeGreaterThanOrEqual(95);
+    const cat = result.findings.autonomicProfile?.spectral.category;
+    expect(cat).toBe("above_p95");
   });
 
   it("reduced vagal modulation for the patient fixture", () => {
@@ -761,11 +788,22 @@ describe("patient regression fixture", () => {
 describe("continuous percentile estimation", () => {
   const maleRef = hrvReferenceData.male["30-39"].rmssd;
   const p25 = maleRef[1];
-  const epsilon = 0.01;
+
+  it("profile score changes continuously across RMSSD P25", () => {
+    const input: MeasurementInput = { age: 35, referenceSex: "male", sdnn: 40, lfhfRatio: 1.5 };
+    const below = interpretHrv({ ...input, rmssd: p25 - 0.01 });
+    const above = interpretHrv({ ...input, rmssd: p25 + 0.01 });
+    expect(
+      Math.abs(
+        below.autonomicProfile!.score -
+        above.autonomicProfile!.score
+      )
+    ).toBeLessThanOrEqual(2);
+  });
 
   it("P25 - epsilon and P25 + epsilon must not differ by 25 score points", () => {
-    const pctBelow = estimatePercentile(p25 - epsilon, maleRef)!;
-    const pctAbove = estimatePercentile(p25 + epsilon, maleRef)!;
+    const pctBelow = estimatePercentile(p25 - 0.01, maleRef)!;
+    const pctAbove = estimatePercentile(p25 + 0.01, maleRef)!;
     expect(Math.abs(pctBelow - pctAbove)).toBeLessThan(25);
   });
 });
@@ -775,8 +813,8 @@ describe("age/sex normalisation", () => {
     const sameRatio = 1.6;
     const male18 = hrvReferenceData.male["18-29"].lfhf;
     const female18 = hrvReferenceData.female["18-29"].lfhf;
-    const pctMale = estimatePercentileLog(sameRatio, male18 as readonly [number, number, number, number, number])!;
-    const pctFemale = estimatePercentileLog(sameRatio, female18 as readonly [number, number, number, number, number])!;
+    const pctMale = interpolateLogPercentile(sameRatio, male18 as readonly [number, number, number, number, number]);
+    const pctFemale = interpolateLogPercentile(sameRatio, female18 as readonly [number, number, number, number, number]);
     expect(pctMale).not.toBe(pctFemale);
   });
 });
@@ -794,42 +832,98 @@ describe("concordance", () => {
   }
 
   it("low RMSSD + high LF/HF => concordant sympathetic-direction shift", () => {
-    const result = interpretHrv(makeInput({ rmssd: 6, lfhfRatio: 9 }));
+    const result = interpretHrv(makeInput({ rmssd: 4, lfhfRatio: 15 }));
     expect(result.findings.autonomicProfile?.concordance).toBe("concordant_sympathetic_shift");
   });
 
   it("high RMSSD + low LF/HF => concordant parasympathetic-direction shift", () => {
-    const result = interpretHrv(makeInput({ rmssd: 120, lfhfRatio: 0.2 }));
+    const result = interpretHrv(makeInput({ rmssd: 150, lfhfRatio: 0.1 }));
     expect(result.findings.autonomicProfile?.concordance).toBe("concordant_parasympathetic_shift");
   });
 
   it("low RMSSD + low LF/HF => mixed", () => {
-    const result = interpretHrv(makeInput({ rmssd: 6, lfhfRatio: 0.2 }));
+    const result = interpretHrv(makeInput({ rmssd: 4, lfhfRatio: 0.1 }));
     expect(result.findings.autonomicProfile?.concordance).toBe("mixed");
   });
 
   it("high RMSSD + high LF/HF => mixed", () => {
-    const result = interpretHrv(makeInput({ rmssd: 120, lfhfRatio: 9 }));
+    const result = interpretHrv(makeInput({ rmssd: 150, lfhfRatio: 15 }));
     expect(result.findings.autonomicProfile?.concordance).toBe("mixed");
   });
 
+  it("both axes central => central", () => {
+    const result = interpretHrv(makeInput({ rmssd: 35, lfhfRatio: 2.0 }));
+    expect(result.findings.autonomicProfile?.concordance).toBe("central");
+  });
+
   it("opposing extreme components must never produce label 'Central' or 'Balanced'", () => {
-    const result = interpretHrv(makeInput({ rmssd: 6, lfhfRatio: 9 }));
-    const label = result.autonomicScore?.label ?? "";
+    const result = interpretHrv(makeInput({ rmssd: 4, lfhfRatio: 15 }));
+    const label = result.autonomicProfile?.label ?? "";
     expect(label).not.toMatch(/central|balanced/i);
   });
 });
 
 describe("no misleading cancellation", () => {
-  it("very low RMSSD + very high LF/HF still labels as mixed or sympathetic, never central", () => {
+  it("very low RMSSD + very high LF/HF labels as sympathetic shift, never central", () => {
     const result = interpretHrv({
       age: 40,
       referenceSex: "male",
-      rmssd: 5,
+      rmssd: 3,
       sdnn: 35,
-      lfhfRatio: 12,
+      lfhfRatio: 20,
     });
     expect(result.findings.autonomicProfile?.concordance).not.toBe("central");
     expect(result.findings.autonomicProfile?.concordance).toBe("concordant_sympathetic_shift");
+  });
+});
+
+describe("DanFunD reference data validation (Table 3)", () => {
+  it("male 18-29 lfhf matches published Table 3", () => {
+    const arr = hrvReferenceData.male["18-29"].lfhf;
+    expect(arr[0]).toBe(0.34);
+    expect(arr[1]).toBe(0.79);
+    expect(arr[2]).toBe(1.32);
+    expect(arr[3]).toBe(2.37);
+    expect(arr[4]).toBe(6.16);
+  });
+  it("male 40-49 lfhf matches published Table 3", () => {
+    const arr = hrvReferenceData.male["40-49"].lfhf;
+    expect(arr[0]).toBe(0.47);
+    expect(arr[1]).toBe(1.15);
+    expect(arr[2]).toBe(2.11);
+    expect(arr[3]).toBe(3.99);
+    expect(arr[4]).toBe(10.35);
+  });
+  it("female 30-39 lfhf matches published Table 3", () => {
+    const arr = hrvReferenceData.female["30-39"].lfhf;
+    expect(arr[0]).toBe(0.25);
+    expect(arr[1]).toBe(0.46);
+    expect(arr[2]).toBe(0.90);
+    expect(arr[3]).toBe(1.88);
+    expect(arr[4]).toBe(5.41);
+  });
+  it("female 50-59 lfhf matches published Table 3", () => {
+    const arr = hrvReferenceData.female["50-59"].lfhf;
+    expect(arr[0]).toBe(0.30);
+    expect(arr[1]).toBe(0.80);
+    expect(arr[2]).toBe(1.51);
+    expect(arr[3]).toBe(2.90);
+    expect(arr[4]).toBe(8.06);
+  });
+  it("male 60-72 lfhf matches published Table 3", () => {
+    const arr = hrvReferenceData.male["60-72"].lfhf;
+    expect(arr[0]).toBe(0.41);
+    expect(arr[1]).toBe(1.14);
+    expect(arr[2]).toBe(2.31);
+    expect(arr[3]).toBe(4.47);
+    expect(arr[4]).toBe(10.32);
+  });
+  it("female 60-72 lfhf matches published Table 3", () => {
+    const arr = hrvReferenceData.female["60-72"].lfhf;
+    expect(arr[0]).toBe(0.34);
+    expect(arr[1]).toBe(0.85);
+    expect(arr[2]).toBe(1.79);
+    expect(arr[3]).toBe(3.10);
+    expect(arr[4]).toBe(7.01);
   });
 });
