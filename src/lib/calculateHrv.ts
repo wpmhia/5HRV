@@ -25,12 +25,6 @@ function sum(values: number[]): number {
   return s;
 }
 
-function dot(a: number[], b: number[]): number {
-  let s = 0;
-  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
-  return s;
-}
-
 function mean(values: number[]): number {
   return values.length === 0 ? 0 : sum(values) / values.length;
 }
@@ -56,53 +50,68 @@ function smoothnessPriors(y: number[], lambda: number): number[] {
   if (n < 4) return y.slice();
   const lambda2 = lambda * lambda;
 
-  const apply = (p: number[]): number[] => {
-    const q = new Array<number>(n - 2).fill(0);
-    for (let i = 0; i < n - 2; i++) q[i] = p[i] - 2 * p[i + 1] + p[i + 2];
-    const out = new Array<number>(n);
-    for (let j = 0; j < n; j++) {
-      let s = 0;
-      if (j >= 2) s += q[j - 2];
-      if (j >= 1 && j - 1 < q.length) s += -2 * q[j - 1];
-      if (j < q.length) s += q[j];
-      out[j] = p[j] + lambda2 * s;
-    }
-    return out;
-  };
+  const diag = new Array<number>(n).fill(1 + 6 * lambda2);
+  const sub1 = new Array<number>(n - 1).fill(-4 * lambda2);
+  const sub2 = new Array<number>(n - 2).fill(lambda2);
+  if (n >= 1) diag[0] = 1 + lambda2;
+  if (n >= 2) {
+    diag[n - 1] = 1 + lambda2;
+    sub1[0] = -2 * lambda2;
+    sub1[n - 2] = -2 * lambda2;
+  }
+  if (n >= 3) {
+    diag[1] = 1 + 5 * lambda2;
+    diag[n - 2] = 1 + 5 * lambda2;
+  }
 
-  const x = new Array<number>(n).fill(0);
-  const r = y.slice();
-  const p = r.slice();
-  let rho = dot(r, r);
-  const tolerance = 1e-12 * rho;
-  for (let iter = 0; iter < 300; iter++) {
-    if (rho <= tolerance) break;
-    const ap = apply(p);
-    const pAp = dot(p, ap);
-    if (pAp === 0) break;
-    const alpha = rho / pAp;
-    for (let i = 0; i < n; i++) {
-      x[i] += alpha * p[i];
-      r[i] -= alpha * ap[i];
+  const l0 = new Float64Array(n);
+  const l1 = new Float64Array(n);
+  const l2 = new Float64Array(n);
+  for (let j = 0; j < n; j++) {
+    let d = diag[j];
+    if (j >= 1) d -= l1[j] * l1[j];
+    if (j >= 2) d -= l2[j] * l2[j];
+    l0[j] = Math.sqrt(Math.max(d, 1e-12));
+    if (j + 1 < n) {
+      let s = sub1[j];
+      if (j >= 1) s -= l2[j + 1] * l1[j];
+      l1[j + 1] = s / l0[j];
     }
-    const rhoNext = dot(r, r);
-    if (rhoNext <= tolerance) break;
-    const beta = rhoNext / rho;
-    for (let i = 0; i < n; i++) p[i] = r[i] + beta * p[i];
-    rho = rhoNext;
+    if (j + 2 < n) {
+      l2[j + 2] = sub2[j] / l0[j];
+    }
+  }
+
+  const z = new Float64Array(n);
+  z[0] = y[0] / l0[0];
+  if (n >= 2) z[1] = (y[1] - l1[1] * z[0]) / l0[1];
+  for (let i = 2; i < n; i++) {
+    z[i] = (y[i] - l1[i] * z[i - 1] - l2[i] * z[i - 2]) / l0[i];
+  }
+  z[n - 1] /= l0[n - 1];
+  if (n >= 2) z[n - 2] = (z[n - 2] - l1[n - 1] * z[n - 1]) / l0[n - 2];
+  for (let i = n - 3; i >= 0; i--) {
+    let s = z[i];
+    if (i + 1 < n) s -= l1[i + 1] * z[i + 1];
+    if (i + 2 < n) s -= l2[i + 2] * z[i + 2];
+    z[i] = s / l0[i];
   }
 
   const residual = new Array<number>(n);
-  for (let i = 0; i < n; i++) residual[i] = y[i] - x[i];
+  for (let i = 0; i < n; i++) residual[i] = y[i] - z[i];
   return residual;
 }
 
-function buildTachogram(timesMs: number[], values: number[], fs: number): number[] {
+function buildTachogram(
+  timesMs: number[],
+  values: number[],
+  durationMs: number,
+  fs: number,
+): number[] {
   const n = timesMs.length;
   if (n === 0) return [];
-  const totalMs = timesMs[n - 1] + values[n - 1];
   const dt = 1000 / fs;
-  const m = Math.max(1, Math.floor(totalMs / dt));
+  const m = Math.max(1, Math.floor(durationMs / dt));
   const xOut = new Array<number>(m);
   for (let k = 0; k < m; k++) xOut[k] = k * dt;
   return naturalCubicSpline(timesMs, values, xOut);
@@ -209,7 +218,8 @@ export function calculateHrv(nn: number[]): HrvMetrics {
   const timesMs = new Array<number>(n);
   timesMs[0] = 0;
   for (let i = 1; i < n; i++) timesMs[i] = timesMs[i - 1] + nn[i - 1];
-  const tachogram = buildTachogram(timesMs, detrended, RESAMPLE_FREQUENCY_HZ);
+  const durationMs = timesMs[n - 1] + nn[n - 1];
+  const tachogram = buildTachogram(timesMs, detrended, durationMs, RESAMPLE_FREQUENCY_HZ);
   const { lfPower, hfPower } = welchPower(tachogram, RESAMPLE_FREQUENCY_HZ);
 
   return {

@@ -30,7 +30,8 @@ function median(values: number[]): number {
 function localMedian(rr: number[], i: number): number {
   const window: number[] = [];
   for (let j = i - 2; j <= i + 2; j++) {
-    if (j >= 0 && j < rr.length) window.push(rr[j]);
+    if (j === i || j < 0 || j >= rr.length) continue;
+    window.push(rr[j]);
   }
   return median(window);
 }
@@ -51,7 +52,8 @@ export function detectArtifacts(rr: number[]): boolean[] {
   for (let i = 0; i < n; i++) {
     const v = rr[i];
     const med = localMedian(rr, i);
-    const ratio = med > 0 ? v / med : 1;
+    if (!Number.isFinite(med)) continue;
+    const ratio = v / med;
     if (
       !Number.isFinite(v) ||
       v < MIN_RR_MS ||
@@ -77,7 +79,12 @@ function correctBeatStructure(rr: number[]): { nn: number[]; corrections: number
       continue;
     }
     const med = localMedian(rr, i);
-    const ratio = med > 0 ? rr[i] / med : 1;
+    if (!Number.isFinite(med)) {
+      nn.push(rr[i]);
+      i++;
+      continue;
+    }
+    const ratio = rr[i] / med;
     if (ratio < EXTRA_BEAT_RATIO && i + 1 < n) {
       nn.push(rr[i] + rr[i + 1]);
       corrections++;
@@ -109,6 +116,7 @@ function interpolateAbnormal(
     return { corrected, corrections: 0 };
   }
 
+  const splined = new Set<number>();
   const knownIndices: number[] = [];
   const knownValues: number[] = [];
   for (let i = 0; i < nn.length; i++) {
@@ -119,9 +127,9 @@ function interpolateAbnormal(
   }
 
   if (knownIndices.length >= 2) {
-    const interior: number[] = [];
     const firstKnown = knownIndices[0];
     const lastKnown = knownIndices[knownIndices.length - 1];
+    const interior: number[] = [];
     for (const idx of flaggedIndices) {
       if (idx > firstKnown && idx < lastKnown) interior.push(idx);
     }
@@ -129,6 +137,7 @@ function interpolateAbnormal(
       const values = naturalCubicSpline(knownIndices, knownValues, interior);
       for (let k = 0; k < interior.length; k++) {
         corrected[interior[k]] = values[k];
+        splined.add(interior[k]);
       }
     }
   }
@@ -136,6 +145,7 @@ function interpolateAbnormal(
   let corrections = 0;
   for (const idx of flaggedIndices) {
     corrections++;
+    if (splined.has(idx)) continue;
     let left = idx - 1;
     while (left >= 0 && flagged[left]) left--;
     let right = idx + 1;

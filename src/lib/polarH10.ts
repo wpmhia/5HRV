@@ -63,6 +63,7 @@ export class PolarH10Session {
     }
     const device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [POLAR_H10_SERVICE_UUID] }],
+      optionalServices: [HEART_RATE_SERVICE_UUID],
     });
     const gatt = device.gatt;
     if (!gatt) throw new Error("Could not connect to the Polar H10.");

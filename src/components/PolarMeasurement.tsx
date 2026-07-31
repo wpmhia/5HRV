@@ -19,15 +19,16 @@ import { calculateHrv, type HrvMetrics } from "@/lib/calculateHrv";
 
 const SETTLING_SECONDS = 300;
 const RECORDING_SECONDS = 300;
-const MIN_ANALYSED_SECONDS = 295;
+const RECORDING_MARGIN_SECONDS = 5;
+const RECORDING_TOTAL_SECONDS = RECORDING_SECONDS + RECORDING_MARGIN_SECONDS;
+const MIN_ANALYSED_MS = 299_000;
 
-function trimToDurationMs(rr: number[], durationMs: number): number[] {
+function extractWindow(rr: number[], windowMs: number): number[] {
   if (rr.length === 0) return [];
   const result: number[] = [];
   let cumulative = 0;
-  for (let i = 1; i < rr.length; i++) {
-    const v = rr[i];
-    if (cumulative + v > durationMs) break;
+  for (const v of rr) {
+    if (cumulative + v > windowMs) break;
     result.push(v);
     cumulative += v;
   }
@@ -115,21 +116,28 @@ export function PolarMeasurement({ onPrefill }: Props) {
     setBeatsReceived(0);
     setSignal("good");
     recordingStartedAtRef.current = Date.now();
-    recordingEndsAtRef.current = Date.now() + RECORDING_SECONDS * 1000;
-    setRecordingRemaining(RECORDING_SECONDS);
+    recordingEndsAtRef.current = Date.now() + RECORDING_TOTAL_SECONDS * 1000;
+    setRecordingRemaining(RECORDING_TOTAL_SECONDS);
     setPhase("recording");
   }, []);
 
   const finishRecording = useCallback(() => {
     const elapsedSeconds = (Date.now() - recordingStartedAtRef.current) / 1000;
-    if (elapsedSeconds < RECORDING_SECONDS - 1) {
+    if (elapsedSeconds < RECORDING_TOTAL_SECONDS - 0.5) {
       setPhase("error");
       setError("Recording stopped early. A complete five-minute recording is required.");
       return;
     }
-    const rr = trimToDurationMs(rrBufferRef.current, RECORDING_SECONDS * 1000);
-    const analysedSeconds = rr.reduce((s, v) => s + v, 0) / 1000;
-    if (analysedSeconds < MIN_ANALYSED_SECONDS) {
+    const raw = rrBufferRef.current;
+    const rawMs = raw.reduce((s, v) => s + v, 0);
+    if (rawMs < RECORDING_SECONDS * 1000) {
+      setPhase("error");
+      setError("The recording did not contain a complete five-minute analysis window. Please repeat.");
+      return;
+    }
+    const rr = extractWindow(raw, RECORDING_SECONDS * 1000);
+    const analysedMs = rr.reduce((s, v) => s + v, 0);
+    if (analysedMs < MIN_ANALYSED_MS) {
       setPhase("error");
       setError("The recording did not contain a complete five-minute analysis window. Please repeat.");
       return;
@@ -249,7 +257,7 @@ export function PolarMeasurement({ onPrefill }: Props) {
     setRrDetected(false);
     setHeartRate(null);
     setSettlingRemaining(SETTLING_SECONDS);
-    setRecordingRemaining(RECORDING_SECONDS);
+    setRecordingRemaining(RECORDING_TOTAL_SECONDS);
     setBeatsReceived(0);
     setSignal("good");
     setResult(null);
