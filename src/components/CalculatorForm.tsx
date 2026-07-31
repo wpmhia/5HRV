@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import type { MeasurementInput } from "@/lib/types";
-import type { ParsedReportValues } from "@/lib/parseHrvReport";
+import type { ParsedReportValues, PolarMeasurementMetadata } from "@/lib/parseHrvReport";
 import { normalizeNumber } from "@/lib/interpretHrv";
 import { ReportUpload } from "@/components/ReportUpload";
+import { PolarMeasurement } from "@/components/PolarMeasurement";
 
 type Props = {
   onInterpret: (input: MeasurementInput) => void;
@@ -22,6 +23,7 @@ type FormState = {
   lfPower: string;
   lfhfRatio: string;
   lfhfSource: string;
+  measurement?: PolarMeasurementMetadata;
 };
 
 const initialState: FormState = {
@@ -35,6 +37,7 @@ const initialState: FormState = {
   lfPower: "",
   lfhfRatio: "",
   lfhfSource: "",
+  measurement: undefined,
 };
 
 const inputClass =
@@ -213,6 +216,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       pnn50: pnn50 ?? undefined,
     };
 
+    if (form.measurement) {
+      result.recording = { ...form.measurement };
+    }
+
     if (form.freqMode === "powers") {
       if (lfPower !== null && hfPower !== null) {
         result.hfPower = hfPower;
@@ -286,6 +293,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       lfhfRatio: "",
       lfhfSource: "",
       freqMode: "powers",
+      measurement: undefined,
     }));
     setErrors({});
     setImportedFromReport(false);
@@ -317,6 +325,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       base.hfPower = String(values.hfPower);
       base.freqMode = "powers";
     }
+    if (values.measurement) base.measurement = values.measurement;
     setForm(base);
     setErrors({});
     const fieldKeys: (keyof FormState)[] = ["rmssd", "sdnn", "pnn50", "hfPower", "lfPower", "lfhfRatio"];
@@ -382,13 +391,16 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           >
             HRV values
           </h2>
-          <ReportUpload
-            onPrefill={handlePrefill}
-            onClearImport={handleClearImport}
-            imported={importedFromReport}
-            importedCount={importedCount}
-            onBusyChange={setExtracting}
-          />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <ReportUpload
+              onPrefill={handlePrefill}
+              onClearImport={handleClearImport}
+              imported={importedFromReport}
+              importedCount={importedCount}
+              onBusyChange={setExtracting}
+            />
+            <PolarMeasurement onPrefill={handlePrefill} />
+          </div>
         </div>
 
         {importedFromReport && (

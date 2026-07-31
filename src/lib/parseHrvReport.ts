@@ -1,3 +1,15 @@
+export type PolarMeasurementMetadata = {
+  source: "polar_h10";
+  deviceName: string;
+  posture: "supine";
+  preparationSeconds: number;
+  durationSeconds: number;
+  totalBeats: number;
+  correctedIntervals: number;
+  artifactPercentage: number;
+  quality: "good" | "acceptable" | "poor";
+};
+
 export type ParsedReportValues = {
   recordingDate?: string;
   durationSeconds?: number;
@@ -9,6 +21,7 @@ export type ParsedReportValues = {
   hfPower?: number;
   lfPower?: number;
   lfhfRatio?: number;
+  measurement?: PolarMeasurementMetadata;
 };
 
 function normalizeNum(value: string): number | null {

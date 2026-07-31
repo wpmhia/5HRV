@@ -76,6 +76,7 @@
     "@types/pdfjs-dist": "^2.10.378",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-bluetooth": "^0.0.21",
     "eslint": "^9",
     "eslint-config-next": "^15.5.7",
     "tailwindcss": "^4",

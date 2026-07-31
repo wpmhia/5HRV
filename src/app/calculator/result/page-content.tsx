@@ -8,6 +8,21 @@ import { ResultsView } from "@/components/ResultsView";
 
 const referenceSexSchema = z.enum(["female", "male", "none"]);
 
+const RecordingSchema = z.object({
+  recordingDate: z.string().optional(),
+  durationSeconds: z.number().optional(),
+  samplingFrequencyHz: z.number().optional(),
+  totalBeats: z.number().optional(),
+  sourceFilename: z.string().optional(),
+  source: z.literal("polar_h10").optional(),
+  deviceName: z.string().optional(),
+  posture: z.string().optional(),
+  preparationSeconds: z.number().optional(),
+  correctedIntervals: z.number().optional(),
+  artifactPercentage: z.number().optional(),
+  quality: z.enum(["good", "acceptable", "poor"]).optional(),
+});
+
 const MeasurementInputSchema = z.object({
   age: z.number().finite().min(18).max(120),
   referenceSex: referenceSexSchema,
@@ -18,6 +33,7 @@ const MeasurementInputSchema = z.object({
   lfPower: z.number().finite().nonnegative().optional(),
   lfhfRatio: z.number().finite().nonnegative().optional(),
   lfhfSource: z.enum(["calculated", "manual", "imported"]).optional(),
+  recording: RecordingSchema.optional(),
 }).superRefine((data, ctx) => {
   if (data.rmssd === undefined && data.sdnn === undefined) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least RMSSD or SDNN is required." });

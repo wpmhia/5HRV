@@ -1,0 +1,139 @@
+import { describe, it, expect } from "vitest";
+import { calculateHrv } from "@/lib/calculateHrv";
+import { correctRrIntervals, detectArtifacts } from "@/lib/rrArtifactCorrection";
+import { parseHeartRateMeasurement } from "@/lib/polarH10";
+
+function generateModulatedRr(
+  base: number,
+  amplitude: number,
+  freqHz: number,
+  beats: number,
+): number[] {
+  const rr: number[] = [];
+  let t = 0;
+  for (let i = 0; i < beats; i++) {
+    rr.push(base + amplitude * Math.sin(2 * Math.PI * freqHz * t));
+    t += 1;
+  }
+  return rr;
+}
+
+describe("calculateHrv", () => {
+  it("calculates time-domain metrics", () => {
+    const rr = [800, 840, 800, 840, 800, 840, 800, 840, 800, 840];
+    const hrv = calculateHrv(rr);
+    expect(hrv.totalBeats).toBe(10);
+    expect(hrv.rmssd).toBeCloseTo(40, 5);
+    expect(hrv.meanHr).toBeCloseTo(60000 / 820, 1);
+    expect(hrv.sdnn).toBeGreaterThan(0);
+  });
+
+  it("calculates pNN50 as the share of successive differences above 50 ms", () => {
+    const rr: number[] = [];
+    for (let i = 0; i < 100; i++) {
+      rr.push(800);
+      rr.push(900);
+    }
+    const hrv = calculateHrv(rr);
+    expect(hrv.pnn50).toBeCloseTo(100, 1);
+  });
+
+  it("concentrates power in the LF band for a 0.1 Hz modulation", () => {
+    const rr = generateModulatedRr(1000, 20, 0.1, 300);
+    const hrv = calculateHrv(rr);
+    expect(hrv.lfPower).toBeGreaterThan(hrv.hfPower);
+    expect(hrv.lfPower).toBeGreaterThan(120);
+  });
+
+  it("concentrates power in the HF band for a 0.25 Hz modulation", () => {
+    const rr = generateModulatedRr(1000, 20, 0.25, 300);
+    const hrv = calculateHrv(rr);
+    expect(hrv.hfPower).toBeGreaterThan(hrv.lfPower);
+    expect(hrv.hfPower).toBeGreaterThan(120);
+  });
+
+  it("returns near-zero spectral power for a constant series", () => {
+    const rr = new Array<number>(300).fill(1000);
+    const hrv = calculateHrv(rr);
+    expect(hrv.lfPower + hrv.hfPower).toBeLessThan(1);
+  });
+
+  it("computes an LF/HF ratio from LF and HF power", () => {
+    const rr = generateModulatedRr(1000, 20, 0.1, 300);
+    const hrv = calculateHrv(rr);
+    expect(hrv.lfhfRatio).toBeCloseTo(hrv.lfPower / hrv.hfPower, 2);
+  });
+});
+
+describe("correctRrIntervals", () => {
+  it("corrects an isolated doubled interval", () => {
+    const rr = new Array<number>(100).fill(800);
+    rr[50] = 1600;
+    const result = correctRrIntervals(rr);
+    expect(result.correctedIntervals).toBe(1);
+    expect(result.artifactPercentage).toBeCloseTo(1, 1);
+    expect(result.quality).toBe("good");
+    expect(result.nn[50]).toBeCloseTo(800, 0);
+  });
+
+  it("detects a run of implausible intervals as substantial signal loss", () => {
+    const rr = new Array<number>(100).fill(800);
+    for (let i = 40; i < 80; i++) rr[i] = 3000;
+    const result = correctRrIntervals(rr);
+    expect(result.quality).toBe("poor");
+    expect(result.reason).toContain("signal loss");
+  });
+
+  it("classifies recordings with more than 5% artefacts as poor", () => {
+    const rr = new Array<number>(100).fill(800);
+    for (const idx of [5, 15, 25, 35, 45, 55]) rr[idx] = 1600;
+    const result = correctRrIntervals(rr);
+    expect(result.quality).toBe("poor");
+  });
+
+  it("classifies recordings between 3% and 5% as acceptable", () => {
+    const rr = new Array<number>(100).fill(800);
+    for (const idx of [5, 15, 25, 35]) rr[idx] = 1600;
+    const result = correctRrIntervals(rr);
+    expect(result.artifactPercentage).toBeGreaterThan(3);
+    expect(result.artifactPercentage).toBeLessThanOrEqual(5);
+    expect(result.quality).toBe("acceptable");
+  });
+
+  it("handles an empty input without crashing", () => {
+    const result = correctRrIntervals([]);
+    expect(result.totalIntervals).toBe(0);
+    expect(result.quality).toBe("good");
+    expect(result.nn).toEqual([]);
+  });
+
+  it("exposes detection independently of correction", () => {
+    const rr = new Array<number>(50).fill(800);
+    rr[25] = 1600;
+    const artifact = detectArtifacts(rr);
+    expect(artifact[25]).toBe(true);
+  });
+});
+
+describe("parseHeartRateMeasurement", () => {
+  it("parses 8-bit heart rate and RR intervals in ms", () => {
+    const buffer = new Uint8Array([0x10, 70, 0x00, 0x04, 0x00, 0x02]);
+    const result = parseHeartRateMeasurement(new DataView(buffer.buffer));
+    expect(result.heartRate).toBe(70);
+    expect(result.rrIntervalsMs).toEqual([1000, 500]);
+  });
+
+  it("parses 16-bit heart rate without RR intervals", () => {
+    const buffer = new Uint8Array([0x01, 0x2c, 0x01]);
+    const result = parseHeartRateMeasurement(new DataView(buffer.buffer));
+    expect(result.heartRate).toBe(300);
+    expect(result.rrIntervalsMs).toEqual([]);
+  });
+
+  it("skips energy-expended bytes when present", () => {
+    const buffer = new Uint8Array([0x18, 70, 0x0a, 0x00, 0x00, 0x04]);
+    const result = parseHeartRateMeasurement(new DataView(buffer.buffer));
+    expect(result.heartRate).toBe(70);
+    expect(result.rrIntervalsMs).toEqual([1000]);
+  });
+});

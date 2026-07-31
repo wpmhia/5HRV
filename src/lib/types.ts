@@ -29,12 +29,21 @@ export type FrequencyDomainPattern =
   | "marked_lf_predominance"
   | "unavailable";
 
+export type RecordingQuality = "good" | "acceptable" | "poor";
+
 export type RecordingMetadata = {
   recordingDate?: string;
   durationSeconds?: number;
   samplingFrequencyHz?: number;
   totalBeats?: number;
   sourceFilename?: string;
+  source?: "polar_h10";
+  deviceName?: string;
+  posture?: string;
+  preparationSeconds?: number;
+  correctedIntervals?: number;
+  artifactPercentage?: number;
+  quality?: RecordingQuality;
 };
 
 export type MeasurementInput = {

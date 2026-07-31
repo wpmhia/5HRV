@@ -354,6 +354,12 @@ function buildPlainText(
   if (rec?.totalBeats) {
     lines.push(`Analysed intervals: ${rec.totalBeats}`);
   }
+  if (rec?.source === "polar_h10") {
+    lines.push(`Source: ${rec.deviceName ?? "Polar H10"} (supine, quality: ${rec.quality ?? "good"})`);
+    if (rec.correctedIntervals !== undefined && rec.totalBeats !== undefined) {
+      lines.push(`Detected artefacts: ${rec.correctedIntervals} of ${rec.totalBeats}${rec.artifactPercentage !== undefined ? ` (${rec.artifactPercentage.toFixed(1)}%)` : ""}`);
+    }
+  }
   lines.push(`Report generated: ${formatDate()}`);
 
   if (interpretation.autonomicProfile) {
@@ -496,6 +502,16 @@ export function ResultsView({ interpretation, input }: Props) {
               )}
               {rec?.totalBeats && (
                 <span>{rec.totalBeats} intervals</span>
+              )}
+              {rec?.source === "polar_h10" && (
+                <span>
+                  Source: {rec.deviceName ?? "Polar H10"} · Supine ·{" "}
+                  {rec.quality === "acceptable"
+                    ? "Acceptable"
+                    : rec.quality === "poor"
+                      ? "Poor"
+                      : "Good"}
+                </span>
               )}
               <span>{formatDate()}</span>
             </div>
