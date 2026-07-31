@@ -1,4 +1,3 @@
-export const POLAR_H10_SERVICE_UUID = "fb005c80-02e7-f387-1cad-8acd2d8df0c8";
 export const HEART_RATE_SERVICE_UUID = 0x180d;
 export const HEART_RATE_MEASUREMENT_UUID = 0x2a37;
 
@@ -62,11 +61,13 @@ export class PolarH10Session {
       throw new Error("Web Bluetooth is not supported in this browser. Use Chrome or Edge.");
     }
     const device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [POLAR_H10_SERVICE_UUID] }],
-      optionalServices: [HEART_RATE_SERVICE_UUID],
+      filters: [{ services: [HEART_RATE_SERVICE_UUID] }],
     });
     const gatt = device.gatt;
     if (!gatt) throw new Error("Could not connect to the Polar H10.");
+    if (!device.name?.toLowerCase().startsWith("polar h10")) {
+      throw new Error("The selected device is not a Polar H10. Please try again.");
+    }
     const server = await gatt.connect();
     const service = await server.getPrimaryService(HEART_RATE_SERVICE_UUID);
     const characteristic = await service.getCharacteristic(HEART_RATE_MEASUREMENT_UUID);
