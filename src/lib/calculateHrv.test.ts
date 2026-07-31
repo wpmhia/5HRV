@@ -85,6 +85,24 @@ describe("correctRrIntervals", () => {
     expect(result.nn[51]).toBeCloseTo(800, 0);
   });
 
+  it("counts every inserted beat for a multi-missed interval", () => {
+    const rr = new Array<number>(100).fill(800);
+    rr[50] = 2400;
+    const result = correctRrIntervals(rr);
+    expect(result.totalIntervals).toBe(102);
+    expect(result.correctedIntervals).toBe(2);
+    expect(result.quality).toBe("good");
+  });
+
+  it("rejects an isolated raw gap above the signal-loss threshold", () => {
+    const rr = new Array<number>(100).fill(800);
+    rr[50] = 5000;
+    const result = correctRrIntervals(rr);
+    expect(result.quality).toBe("poor");
+    expect(result.reason).toContain("signal loss");
+    expect(result.nn).toEqual([]);
+  });
+
   it("removes an extra beat by merging a short interval with the next", () => {
     const rr = new Array<number>(100).fill(800);
     rr[50] = 300;
@@ -169,8 +187,10 @@ describe("golden validation", () => {
   const missedBeat = new Array<number>(300).fill(800);
   missedBeat[150] = 1600;
 
+  const withDuration = (rr: number[]) => calculateHrv(rr, { analysisDurationMs: 300000 });
+
   it("matches golden values for a constant series", () => {
-    const hrv = calculateHrv(constant);
+    const hrv = withDuration(constant);
     expect(hrv.rmssd).toBeLessThan(1e-6);
     expect(hrv.sdnn).toBeLessThan(1e-6);
     expect(hrv.pnn50).toBe(0);
@@ -181,37 +201,37 @@ describe("golden validation", () => {
   });
 
   it("matches golden values for an alternating series", () => {
-    const hrv = calculateHrv(alternating);
+    const hrv = withDuration(alternating);
     expectClose(hrv.rmssd, 100, 0.01);
     expectClose(hrv.sdnn, 50.08, 0.01);
     expectClose(hrv.pnn50, 100, 0.01);
     expectClose(hrv.meanHr, 70.588, 0.01);
     expect(hrv.totalBeats).toBe(300);
-    expectClose(hrv.lfPower, 5.255, 0.05);
-    expectClose(hrv.hfPower, 11.649, 0.05);
+    expectClose(hrv.lfPower, 13.689, 0.05);
+    expectClose(hrv.hfPower, 4.225, 0.05);
   });
 
   it("matches golden values for a 0.1 Hz modulated series", () => {
-    const hrv = calculateHrv(lfModulated);
+    const hrv = withDuration(lfModulated);
     expectClose(hrv.rmssd, 8.727, 0.05);
     expectClose(hrv.sdnn, 14.148, 0.05);
     expect(hrv.pnn50).toBe(0);
     expectClose(hrv.meanHr, 60.012, 0.01);
     expect(hrv.totalBeats).toBe(300);
-    expectClose(hrv.lfPower, 198.788, 0.05);
-    expectClose(hrv.hfPower, 0.262, 0.5);
-    expectClose(hrv.lfhfRatio, 759.18, 0.1);
+    expectClose(hrv.lfPower, 199.287, 0.05);
+    expectClose(hrv.hfPower, 0.028, 0.5);
+    expectClose(hrv.lfhfRatio, 7195.06, 0.1);
   });
 
   it("matches golden values for a 0.25 Hz modulated series", () => {
-    const hrv = calculateHrv(hfModulated);
+    const hrv = withDuration(hfModulated);
     expectClose(hrv.rmssd, 20, 0.05);
     expectClose(hrv.sdnn, 14.163, 0.05);
     expect(hrv.pnn50).toBe(0);
     expectClose(hrv.meanHr, 60.009, 0.01);
     expect(hrv.totalBeats).toBe(300);
-    expectClose(hrv.lfPower, 0.403, 0.5);
-    expectClose(hrv.hfPower, 194.066, 0.05);
+    expectClose(hrv.lfPower, 0.017, 0.5);
+    expectClose(hrv.hfPower, 194.361, 0.05);
   });
 
   it("restores a clean series after structural artefact correction", () => {

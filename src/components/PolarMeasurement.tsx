@@ -21,7 +21,7 @@ const SETTLING_SECONDS = 300;
 const RECORDING_SECONDS = 300;
 const RECORDING_MARGIN_SECONDS = 5;
 const RECORDING_TOTAL_SECONDS = RECORDING_SECONDS + RECORDING_MARGIN_SECONDS;
-const MIN_ANALYSED_MS = 299_000;
+const MIN_ANALYSED_MS = 290_000;
 
 function extractWindow(rr: number[], windowMs: number): number[] {
   if (rr.length === 0) return [];
@@ -148,7 +148,9 @@ export function PolarMeasurement({ onPrefill }: Props) {
       setError(correction.reason ?? "Poor signal quality. Please repeat the measurement.");
       return;
     }
-    const metrics = calculateHrv(correction.nn);
+    const metrics = calculateHrv(correction.nn, {
+      analysisDurationMs: RECORDING_SECONDS * 1000,
+    });
     setResult({
       ...metrics,
       correctedIntervals: correction.correctedIntervals,

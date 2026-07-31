@@ -39,12 +39,6 @@ function standardDeviation(values: number[], m: number): number {
   return Math.sqrt(s / (values.length - 1));
 }
 
-function nextPowerOfTwo(n: number): number {
-  let p = 1;
-  while (p < n) p <<= 1;
-  return p;
-}
-
 function smoothnessPriors(y: number[], lambda: number): number[] {
   const n = y.length;
   if (n < 4) return y.slice();
@@ -112,64 +106,48 @@ function buildTachogram(
   if (n === 0) return [];
   const dt = 1000 / fs;
   const m = Math.max(1, Math.floor(durationMs / dt));
+  const lastBeatMs = timesMs[n - 1];
   const xOut = new Array<number>(m);
-  for (let k = 0; k < m; k++) xOut[k] = k * dt;
+  for (let k = 0; k < m; k++) {
+    const t = k * dt;
+    xOut[k] = t > lastBeatMs ? lastBeatMs : t;
+  }
   return naturalCubicSpline(timesMs, values, xOut);
-}
-
-function fft(re: Float64Array, im: Float64Array): void {
-  const n = re.length;
-  for (let i = 1, j = 0; i < n; i++) {
-    let bit = n >> 1;
-    for (; j & bit; bit >>= 1) j ^= bit;
-    j ^= bit;
-    if (i < j) {
-      const tr = re[i]; re[i] = re[j]; re[j] = tr;
-      const ti = im[i]; im[i] = im[j]; im[j] = ti;
-    }
-  }
-  for (let len = 2; len <= n; len <<= 1) {
-    const ang = (-2 * Math.PI) / len;
-    const wLenR = Math.cos(ang);
-    const wLenI = Math.sin(ang);
-    for (let i = 0; i < n; i += len) {
-      let wR = 1;
-      let wI = 0;
-      for (let k = 0; k < len / 2; k++) {
-        const uR = re[i + k];
-        const uI = im[i + k];
-        const vR = re[i + k + len / 2] * wR - im[i + k + len / 2] * wI;
-        const vI = re[i + k + len / 2] * wI + im[i + k + len / 2] * wR;
-        re[i + k] = uR + vR;
-        im[i + k] = uI + vI;
-        re[i + k + len / 2] = uR - vR;
-        im[i + k + len / 2] = uI - vI;
-        const nextR = wR * wLenR - wI * wLenI;
-        const nextI = wR * wLenI + wI * wLenR;
-        wR = nextR;
-        wI = nextI;
-      }
-    }
-  }
 }
 
 function periodogram(segment: number[], fs: number): { lfPower: number; hfPower: number } {
   const n = segment.length;
   if (n < 4) return { lfPower: 0, hfPower: 0 };
   const m = mean(segment);
-  const nfft = nextPowerOfTwo(n);
-  const re = new Float64Array(nfft);
-  const im = new Float64Array(nfft);
-  for (let i = 0; i < n; i++) re[i] = segment[i] - m;
-  fft(re, im);
+  const x = new Float64Array(n);
+  for (let i = 0; i < n; i++) x[i] = segment[i] - m;
 
+  // FFT point density equals the Welch window width (no zero-padding), matching
+  // the Kubios default frequency grid. Only bins in the LF/HF bands are needed.
+  const scale = 2 / (n * n);
+  const kMin = Math.max(1, Math.ceil((LF_LOW_HZ * n) / fs));
+  const kMax = Math.floor((HF_HIGH_HZ * n) / fs);
   let lf = 0;
   let hf = 0;
-  const scale = 2 / (n * nfft);
-  for (let k = 1; k < nfft / 2; k++) {
-    const freq = (k * fs) / nfft;
-    const power = scale * (re[k] * re[k] + im[k] * im[k]);
-    if (freq >= LF_LOW_HZ && freq <= LF_HIGH_HZ) lf += power;
+  for (let k = kMin; k <= kMax; k++) {
+    const freq = (k * fs) / n;
+    const omega = (2 * Math.PI * k) / n;
+    const cStep = Math.cos(omega);
+    const sStep = Math.sin(omega);
+    let c = 1;
+    let s = 0;
+    let re = 0;
+    let im = 0;
+    for (let i = 0; i < n; i++) {
+      re += x[i] * c;
+      im -= x[i] * s;
+      const nextC = c * cStep - s * sStep;
+      const nextS = c * sStep + s * cStep;
+      c = nextC;
+      s = nextS;
+    }
+    const power = scale * (re * re + im * im);
+    if (freq >= LF_LOW_HZ && freq < LF_HIGH_HZ) lf += power;
     if (freq >= HF_LOW_HZ && freq <= HF_HIGH_HZ) hf += power;
   }
   return { lfPower: lf, hfPower: hf };
@@ -197,7 +175,11 @@ function welchPower(signal: number[], fs: number): { lfPower: number; hfPower: n
   return { lfPower: lfTotal / segments, hfPower: hfTotal / segments };
 }
 
-export function calculateHrv(nn: number[]): HrvMetrics {
+export type CalculateHrvOptions = {
+  analysisDurationMs?: number;
+};
+
+export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMetrics {
   const n = nn.length;
   const meanRr = mean(nn);
   const meanHr = meanRr > 0 ? 60000 / meanRr : 0;
@@ -218,7 +200,7 @@ export function calculateHrv(nn: number[]): HrvMetrics {
   const timesMs = new Array<number>(n);
   timesMs[0] = 0;
   for (let i = 1; i < n; i++) timesMs[i] = timesMs[i - 1] + nn[i - 1];
-  const durationMs = timesMs[n - 1] + nn[n - 1];
+  const durationMs = options?.analysisDurationMs ?? timesMs[n - 1] + nn[n - 1];
   const tachogram = buildTachogram(timesMs, detrended, durationMs, RESAMPLE_FREQUENCY_HZ);
   const { lfPower, hfPower } = welchPower(tachogram, RESAMPLE_FREQUENCY_HZ);
 

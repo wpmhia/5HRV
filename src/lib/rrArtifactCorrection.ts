@@ -31,8 +31,10 @@ function localMedian(rr: number[], i: number): number {
   const window: number[] = [];
   for (let j = i - 2; j <= i + 2; j++) {
     if (j === i || j < 0 || j >= rr.length) continue;
-    window.push(rr[j]);
+    const v = rr[j];
+    if (Number.isFinite(v)) window.push(v);
   }
+  if (window.length < 2) return NaN;
   return median(window);
 }
 
@@ -93,7 +95,7 @@ function correctBeatStructure(rr: number[]): { nn: number[]; corrections: number
       const parts = Math.max(2, Math.round(ratio));
       const each = rr[i] / parts;
       for (let k = 0; k < parts; k++) nn.push(each);
-      corrections++;
+      corrections += parts - 1;
       i++;
     } else {
       nn.push(rr[i]);
@@ -171,6 +173,21 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
       correctedIntervals: 0,
       artifactPercentage: 0,
       quality: "good",
+    };
+  }
+
+  let rawMaxGap = 0;
+  for (const v of rr) {
+    if (Number.isFinite(v) && v > rawMaxGap) rawMaxGap = v;
+  }
+  if (rawMaxGap > SIGNAL_LOSS_GAP_MS) {
+    return {
+      nn: [],
+      totalIntervals: rr.length,
+      correctedIntervals: 0,
+      artifactPercentage: 0,
+      quality: "poor",
+      reason: "Substantial signal loss detected.",
     };
   }
 
