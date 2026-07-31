@@ -134,12 +134,12 @@ export default function InterpretationPage() {
           RMSSD is the primary metric for short-term vagal-related assessment.
           Its interpretation is based on the age- and sex-specific percentile
           category: values below the 5th percentile are classified as
-          &ldquo;Very low &middot; below P5&rdquo;; values between the 5th and
-          25th percentile as &ldquo;Low &middot; P5&ndash;P25&rdquo;; values
-          between the 25th and 75th percentile as &ldquo;Typical &middot;
-          P25&ndash;P75&rdquo;; values between the 75th and 95th percentile as
-          &ldquo;High &middot; P75&ndash;P95&rdquo;; and values above the 95th
-          percentile as &ldquo;Very high &middot; above P95&rdquo;.
+          &ldquo;very low (below P5)&rdquo;; values between the 5th and
+          25th percentile as &ldquo;low (P5&ndash;P25)&rdquo;; values
+          between the 25th and 75th percentile as &ldquo;typical
+          (P25&ndash;P75)&rdquo;; values between the 75th and 95th percentile as
+          &ldquo;high (P75&ndash;P95)&rdquo;; and values above the 95th
+          percentile as &ldquo;very high (above P95)&rdquo;.
         </p>
       </section>
 
@@ -149,7 +149,7 @@ export default function InterpretationPage() {
         </h2>
         <p className="text-base leading-7 text-foreground/85">
           SDNN reflects total short-term variability. The same percentile
-          classification is applied: Very low, Low, Typical, High or Very high,
+          classification is applied: very low, low, typical, high or very high,
           based on the DanFunD reference distribution.
         </p>
       </section>

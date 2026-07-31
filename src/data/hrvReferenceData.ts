@@ -92,11 +92,11 @@ export type PercentileCategory =
   | "above_p95";
 
 export const percentileLabels: Record<PercentileCategory, string> = {
-  below_p5: "Very low \u00B7 below P5",
-  p5_to_p25: "Low \u00B7 P5\u2013P25",
-  p25_to_p75: "Typical \u00B7 P25\u2013P75",
-  p75_to_p95: "High \u00B7 P75\u2013P95",
-  above_p95: "Very high \u00B7 above P95",
+  below_p5: "very low (below P5)",
+  p5_to_p25: "low (P5\u2013P25)",
+  p25_to_p75: "typical (P25\u2013P75)",
+  p75_to_p95: "high (P75\u2013P95)",
+  above_p95: "very high (above P95)",
 };
 
 export const percentileExplanations: Record<PercentileCategory, string> = {
