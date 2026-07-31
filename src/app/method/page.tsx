@@ -65,6 +65,35 @@ export default function MethodPage() {
 
       <section className="mt-12 space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">
+          Direct measurement with Polar H10
+        </h2>
+        <p className="text-base leading-7 text-foreground/85">
+          5HRV can receive beat-to-beat RR intervals directly from a Polar H10
+          chest strap using Bluetooth. The user first rests quietly for five
+          minutes in the supine position. The application then records slightly
+          longer than five minutes to ensure that a complete 300-second analysis
+          window and sufficient boundary data are available.
+        </p>
+        <p className="text-base leading-7 text-foreground/85">
+          The received RR intervals are checked for implausible values, missed
+          or additional beat detections, abrupt interval changes and substantial
+          signal loss. Recordings with poor signal quality are rejected. Accepted
+          recordings are corrected where appropriate before the HRV parameters
+          are calculated.
+        </p>
+        <aside className="my-6 border-l-4 border-primary pl-4 text-sm leading-6 text-foreground/80">
+          The standard Bluetooth heart-rate service supplies RR intervals but
+          not a diagnostic ECG tracing. 5HRV can identify data patterns
+          consistent with artefacts or unreliable beat detection, but it cannot
+          inspect QRS morphology, confirm ectopic beats or diagnose an
+          arrhythmia. Measurements should therefore be obtained during presumed
+          sinus rhythm. Atrial fibrillation, atrial flutter and paced ventricular
+          rhythms are not suitable for standard HRV interpretation.
+        </aside>
+      </section>
+
+      <section className="mt-12 space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
           Conversion from RR to NN intervals
         </h2>
         <p className="text-base leading-7 text-foreground/85">
@@ -128,7 +157,8 @@ export default function MethodPage() {
               <tr>
                 <td className="py-2 pr-4 align-top font-medium">Rest</td>
                 <td className="py-2 pr-4 text-foreground/85">
-                  Quiet rest before recording; no conversation during measurement
+                  Five minutes of quiet supine rest before direct Polar H10
+                  measurement
                 </td>
               </tr>
               <tr>
@@ -141,13 +171,17 @@ export default function MethodPage() {
               <tr>
                 <td className="py-2 pr-4 align-top font-medium">Duration</td>
                 <td className="py-2 pr-4 text-foreground/85">
-                  Approximately five minutes of analysable NN intervals
+                  An exact 300-second analysis window. Direct Polar measurements
+                  collect a short additional margin to ensure full spectral
+                  interpolation support
                 </td>
               </tr>
               <tr>
                 <td className="py-2 pr-4 align-top font-medium">Sampling rate</td>
                 <td className="py-2 pr-4 text-foreground/85">
-                  Preferably at least 250 Hz
+                  Raw ECG: preferably at least 250 Hz. Direct Polar H10 mode
+                  receives beat-to-beat RR intervals through the Bluetooth Heart
+                  Rate Service
                 </td>
               </tr>
               <tr>

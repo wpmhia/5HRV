@@ -34,29 +34,29 @@ export default function Home() {
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-                Scientific five-minute HRV measurement and interpretation
+                Scientific five-minute HRV calculator
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Measure five-minute HRV with Polar H10 and interpret it against scientific reference data.
+                Calculate and interpret five-minute HRV against scientific reference data.
               </h1>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-                Connect a Polar H10, complete a guided supine recording, and let
-                5HRV calculate RMSSD, SDNN, pNN50, LF, HF and LF/HF directly in
-                your browser. Existing HRV reports and manually entered values
-                are also supported.
+                Connect a Polar H10 for a guided supine recording, or upload an
+                existing HRV report and enter values manually. 5HRV calculates
+                RMSSD, SDNN, pNN50, LF, HF and LF/HF directly in your browser and
+                interprets them against age- and sex-specific reference data.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   href="/calculator"
                   className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
                 >
-                  Measure with Polar H10
+                  Open the calculator
                 </Link>
                 <Link
                   href="/calculator"
                   className="inline-flex items-center rounded-lg border border-border px-6 py-3 text-sm font-semibold text-foreground hover:bg-muted"
                 >
-                  Use existing HRV values
+                  Measure with Polar H10
                 </Link>
               </div>
             </div>
@@ -107,8 +107,8 @@ export default function Home() {
       <section className="border-b border-border bg-card/30">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <ValueItem>Guided supine measurement protocol</ValueItem>
-            <ValueItem>Direct Polar H10 integration</ValueItem>
+            <ValueItem>Five-minute standardized protocol</ValueItem>
+            <ValueItem>Direct Polar H10 measurement</ValueItem>
             <ValueItem>Age- and sex-specific reference percentiles</ValueItem>
             <ValueItem>Local browser processing &mdash; no RR data uploaded</ValueItem>
           </div>
@@ -165,18 +165,18 @@ export default function Home() {
             {[
               {
                 step: "1",
-                title: "Prepare",
-                text: "Wear the Polar H10, lie comfortably on your back and complete the guided five-minute resting period.",
+                title: "Measure or enter",
+                text: "Connect a Polar H10 for a guided supine measurement, or upload an existing report and enter previously calculated values.",
               },
               {
                 step: "2",
-                title: "Measure",
-                text: "5HRV records a complete five-minute RR-interval analysis window and calculates the HRV parameters directly in your browser.",
+                title: "Calculate",
+                text: "5HRV calculates RMSSD, SDNN, pNN50, LF, HF and LF/HF directly in your browser from the received RR intervals or entered values.",
               },
               {
                 step: "3",
                 title: "Interpret",
-                text: "Review the calculated values, recording quality, age- and sex-specific reference placement and structured scientific analysis.",
+                text: "Review recording quality, age- and sex-specific reference placement and the structured scientific analysis.",
               },
             ].map((item) => (
               <div key={item.step} className="flex gap-4">

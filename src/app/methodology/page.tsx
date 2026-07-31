@@ -163,6 +163,13 @@ export default function MethodologyPage() {
           and two sex categories, providing 10 separate reference distributions
           per metric.
         </p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          The direct 5HRV workflow uses five minutes of supine rest followed by
+          an exact five-minute analysis window. DanFunD recorded seven minutes
+          after the resting period and analysed the final five minutes. The
+          posture, resting period and analysed duration are aligned, but the
+          acquisition workflow is not identical.
+        </p>
       </section>
 
       {/* 3. 5HRV algorithms */}
@@ -170,6 +177,65 @@ export default function MethodologyPage() {
         <h2 className="text-2xl font-semibold tracking-tight">
           5HRV algorithms
         </h2>
+
+        <h3 className="mt-6 text-lg font-semibold text-foreground">
+          Calculation from RR intervals
+        </h3>
+        <p className="text-base leading-7 text-foreground/85">
+          When Polar H10 measurement is used, 5HRV calculates the HRV parameters
+          directly from the received RR intervals. Processing is performed
+          locally in the browser.
+        </p>
+        <ol className="list-decimal space-y-3 pl-6 text-base leading-7 text-foreground/85">
+          <li>RR intervals are converted to milliseconds.</li>
+          <li>
+            Invalid, missing, additional and abruptly abnormal intervals are
+            identified.
+          </li>
+          <li>
+            Missed or additional beat detections are corrected structurally
+            where possible.
+          </li>
+          <li>
+            Remaining isolated abnormal intervals are corrected using cubic-spline
+            interpolation.
+          </li>
+          <li>
+            Recordings with excessive artefacts or substantial signal loss are
+            rejected.
+          </li>
+          <li>Smoothness-priors detrending is applied with &lambda; = 500.</li>
+          <li>
+            RMSSD, SDNN and pNN50 are calculated from the detrended complete
+            NN-interval series.
+          </li>
+          <li>
+            Mean RR and mean heart rate use the corrected, non-detrended
+            intervals.
+          </li>
+          <li>The tachogram is interpolated at 4 Hz.</li>
+          <li>
+            Spectral power is calculated over an exact 300-second sample using a
+            300-second Welch window.
+          </li>
+          <li>
+            LF is integrated over 0.04&ndash;0.15 Hz and HF over
+            0.15&ndash;0.40 Hz.
+          </li>
+          <li>
+            LF/HF is calculated as absolute LF power divided by absolute HF
+            power.
+          </li>
+        </ol>
+        <p className="text-sm text-muted-foreground">
+          The formulas and principal analysis settings are aligned with
+          published HRV methodology and the settings reported for the DanFunD
+          study. The 5HRV artefact-correction implementation is a transparent
+          custom implementation and is not the proprietary Kubios correction
+          algorithm. Numerical equivalence with Kubios has not yet been
+          established through independent analysis of identical real-world RR
+          recordings.
+        </p>
 
         <h3 className="mt-6 text-lg font-semibold text-foreground">
           Percentile interpolation

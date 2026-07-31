@@ -24,6 +24,12 @@ export default function CalculatorPageContent() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Calculator
         </h1>
+        <p className="mt-3 text-base leading-7 text-muted-foreground">
+          Measure HRV directly with a Polar H10, import an existing report, or
+          enter values manually. Direct measurements use a standardized supine
+          protocol and calculate the HRV parameters locally from the received
+          RR intervals.
+        </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5 sm:p-8">

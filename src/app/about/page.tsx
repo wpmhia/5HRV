@@ -47,10 +47,12 @@ export default function AboutPage() {
           Components of the method
         </h2>
         <p className="text-base leading-7 text-foreground/85">
-          The 5HRV method integrates a standardized recording protocol,
-          ECG-based RR-interval analysis, time-domain HRV (RMSSD, SDNN, pNN50),
-          frequency-domain HRV (HF, LF, LF/HF), and age- and sex-specific
-          reference interpretation using the DanFunD population percentiles.
+          The 5HRV method integrates a standardized supine recording protocol,
+          direct RR-interval measurement with Polar H10, import of existing HRV
+          reports, time-domain analysis using RMSSD, SDNN and pNN50,
+          frequency-domain analysis using HF, LF and LF/HF, and age- and
+          sex-specific reference interpretation using the DanFunD population
+          percentiles.
         </p>
       </section>
 
@@ -80,11 +82,13 @@ export default function AboutPage() {
           Data processing and privacy
         </h2>
         <p className="text-base leading-7 text-foreground/85">
-          All calculations run locally in the browser. Entered values are
-          processed locally and are not transmitted to a server. They are
-          temporarily retained in this browser tab so the result page can be
-          displayed. Do not enter names, identification numbers, exact dates of
-          birth or other directly identifiable personal information.
+          All calculations run locally in the browser. During direct Polar H10
+          measurement, RR intervals are received through the browser&apos;s
+          Bluetooth connection and processed locally. Raw RR intervals, entered
+          values and calculated results are not transmitted to the 5HRV server.
+          Results are temporarily retained in the current browser session so the
+          result page can be displayed. No name, identification number or exact
+          date of birth is required.
         </p>
       </section>
 

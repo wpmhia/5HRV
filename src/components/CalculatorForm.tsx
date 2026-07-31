@@ -336,6 +336,62 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-8">
+      <section aria-labelledby="section-method">
+        <h2
+          id="section-method"
+          className="text-base font-semibold text-foreground"
+        >
+          How do you want to provide HRV values?
+        </h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="flex flex-col rounded-xl border-2 border-primary bg-primary/5 p-4">
+            <h3 className="text-sm font-semibold text-foreground">
+              Measure with Polar H10
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Recommended for a new standardized recording
+            </p>
+            <div className="mt-3">
+              <PolarMeasurement onPrefill={handlePrefill} primary />
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              Polar measurement requires a compatible browser with Web Bluetooth
+              and permission to connect to nearby Bluetooth devices. Raw RR
+              intervals and calculated values remain in the current browser
+              session.
+            </p>
+          </div>
+          <div className="flex flex-col rounded-xl border border-border p-4">
+            <h3 className="text-sm font-semibold text-foreground">
+              Upload or paste a report
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use values calculated by existing HRV software
+            </p>
+            <div className="mt-3">
+              <ReportUpload
+                onPrefill={handlePrefill}
+                onClearImport={handleClearImport}
+                imported={importedFromReport}
+                importedCount={importedCount}
+                onBusyChange={setExtracting}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col rounded-xl border border-border p-4">
+            <h3 className="text-sm font-semibold text-foreground">
+              Enter values manually
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use previously calculated HRV parameters
+            </p>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              Fill in the HRV value fields in the form below.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section>
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -391,16 +447,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           >
             HRV values
           </h2>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <ReportUpload
-              onPrefill={handlePrefill}
-              onClearImport={handleClearImport}
-              imported={importedFromReport}
-              importedCount={importedCount}
-              onBusyChange={setExtracting}
-            />
-            <PolarMeasurement onPrefill={handlePrefill} />
-          </div>
         </div>
 
         {importedFromReport && (

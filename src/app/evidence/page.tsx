@@ -152,7 +152,58 @@ export default function EvidencePage() {
               DOI: 10.1123/ijspp.2016-0668
             </a>
             <span className="block text-muted-foreground">
-              Compares HRV metrics derived from ECG, chest strap and PPG.
+              Historical supporting evidence for the earlier Polar H7 chest
+              strap. Compares HRV metrics derived from ECG, chest strap and PPG.
+            </span>
+          </li>
+        </ol>
+
+        <h3 className="mt-6 text-lg font-semibold text-foreground">
+          Polar H10 RR-interval validity
+        </h3>
+        <p className="text-base leading-7 text-foreground/85">
+          Polar H10 chest-strap RR intervals have shown very high agreement with
+          ECG-derived values for common linear HRV parameters, including mean
+          RR, RMSSD and SDNN, in controlled recordings. This supports its use
+          for standardized short-term HRV measurement when signal quality is
+          adequate and artefacts are handled appropriately. Device validity does
+          not remove the need for consistent posture, minimal movement,
+          spontaneous breathing and rhythm suitability.
+        </p>
+        <ol className="mt-4 list-decimal space-y-5 pl-6 text-sm leading-6" start={7}>
+          <li>
+            Gilgen-Ammann R, Schweizer T, Wyss T. RR interval signal quality of
+            a heart rate monitor and an ECG Holter at rest and during exercise.{" "}
+            <em>European Journal of Applied Physiology</em>. 2019;119:1523&ndash;1532.{" "}
+            <a
+              href="https://doi.org/10.1007/s00421-019-04142-5"
+              className="text-primary underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              DOI: 10.1007/s00421-019-04142-5
+            </a>
+            <span className="block text-muted-foreground">
+              Demonstrates very high agreement of Polar H10 RR intervals with
+              ECG Holter-derived values for mean RR, RMSSD and SDNN.
+            </span>
+          </li>
+          <li>
+            Schaffarczyk M, Rogers B, Reer R, Gronwald T. Validity of the Polar
+            H10 sensor for heart rate variability analysis during resting state
+            and different exercise intensities. <em>Frontiers in Physiology</em>.
+            2022;13:1003760.{" "}
+            <a
+              href="https://doi.org/10.3389/fphys.2022.1003760"
+              className="text-primary underline underline-offset-2"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              DOI: 10.3389/fphys.2022.1003760
+            </a>
+            <span className="block text-muted-foreground">
+              Confirms validity of Polar H10-derived HRV parameters in resting
+              and exercise conditions.
             </span>
           </li>
         </ol>
@@ -162,7 +213,7 @@ export default function EvidencePage() {
         <h2 className="text-2xl font-semibold tracking-tight">
           Clinical and research applications
         </h2>
-        <ol className="mt-4 list-decimal space-y-5 pl-6 text-sm leading-6" start={7}>
+        <ol className="mt-4 list-decimal space-y-5 pl-6 text-sm leading-6" start={9}>
           <li>
             Nelson MJ, Bahl JS, Buckley JD, Thomson RL, Davison K. Evidence
             of altered cardiac autonomic regulation in myalgic

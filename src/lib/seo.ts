@@ -1,8 +1,8 @@
 export const siteConfig = {
   name: "5HRV",
-  title: "5HRV – Scientific five-minute heart rate variability analysis",
+  title: "5HRV – Measure and interpret five-minute HRV with Polar H10",
   description:
-    "A scientific HRV calculator that analyses standardized five-minute HRV recordings using peer-reviewed research and age- and sex-specific reference populations. Developed by Willem Gielen.",
+    "Measure five-minute HRV directly with Polar H10 or analyse existing HRV values. 5HRV calculates RMSSD, SDNN, pNN50, LF, HF and LF/HF locally and interprets them using age- and sex-specific reference data.",
   url: "https://5hrv.com",
   ogImage: "/og-image.png",
   author: "Willem Gielen",
@@ -19,6 +19,12 @@ export const siteConfig = {
     "sympathetic",
     "HRV calculator",
     "DanFunD",
+    "Polar H10",
+    "Polar H10 HRV",
+    "HRV measurement",
+    "RR interval analysis",
+    "supine HRV",
+    "Bluetooth HRV",
   ],
 };
 
@@ -38,9 +44,9 @@ export const pages = {
       "How standardized five-minute HRV analysis is applied in research on autonomic function, POTS, ME/CFS, Long COVID, and cardiometabolic conditions.",
   },
   calculator: {
-    title: "HRV Calculator – 5HRV",
+    title: "Polar H10 HRV Measurement and Calculator – 5HRV",
     description:
-      "Enter RMSSD, SDNN, pNN50, HF and LF values to receive a structured scientific analysis. RMSSD, SDNN and LF/HF are placed within age- and sex-specific DanFunD reference percentiles.",
+      "Connect a Polar H10 for a guided supine five-minute HRV measurement, or upload and enter existing values. HRV calculations run locally in the browser.",
   },
   calculatorResult: {
     title: "HRV Interpretation Result – 5HRV",

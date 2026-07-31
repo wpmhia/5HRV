@@ -63,6 +63,14 @@ function formatDate(input?: string): string {
   return input;
 }
 
+function qualityLabel(quality?: "good" | "acceptable" | "poor"): string {
+  switch (quality) {
+    case "acceptable": return "Acceptable";
+    case "poor": return "Poor";
+    default: return "Good";
+  }
+}
+
 function MetricCard({
   label,
   value,
@@ -355,10 +363,17 @@ function buildPlainText(
     lines.push(`Analysed intervals: ${rec.totalBeats}`);
   }
   if (rec?.source === "polar_h10") {
-    lines.push(`Source: ${rec.deviceName ?? "Polar H10"} (supine, quality: ${rec.quality ?? "good"})`);
+    lines.push(`Measurement source: ${rec.deviceName ?? "Polar H10"}`);
+    lines.push(`Position: ${rec.posture === "supine" ? "Supine" : rec.posture ?? ""}`);
+    lines.push(`Analysed duration: ${formatDuration(rec.durationSeconds)}`);
+    lines.push(`Resting period: ${formatDuration(rec.preparationSeconds)}`);
+    lines.push(`Recording quality: ${qualityLabel(rec.quality)}`);
     if (rec.correctedIntervals !== undefined && rec.totalBeats !== undefined) {
-      lines.push(`Detected artefacts: ${rec.correctedIntervals} of ${rec.totalBeats}${rec.artifactPercentage !== undefined ? ` (${rec.artifactPercentage.toFixed(1)}%)` : ""}`);
+      lines.push(`Corrected intervals: ${rec.correctedIntervals} of ${rec.totalBeats}${rec.artifactPercentage !== undefined ? ` (${rec.artifactPercentage.toFixed(1)}%)` : ""}`);
     }
+    lines.push("");
+    lines.push("Values were calculated locally by 5HRV from the received RR intervals.");
+    lines.push("The Bluetooth RR recording is not a diagnostic ECG and does not establish the origin of detected abnormalities.");
   }
   lines.push(`Report generated: ${formatDate()}`);
 
@@ -494,24 +509,14 @@ export function ResultsView({ interpretation, input }: Props) {
               {rec?.recordingDate && (
                 <span>Recording: {formatDate(rec.recordingDate)}</span>
               )}
-              {rec?.durationSeconds !== undefined && (
+              {rec?.durationSeconds !== undefined && rec?.source !== "polar_h10" && (
                 <span>Duration: {formatDuration(rec.durationSeconds)}</span>
               )}
               {rec?.samplingFrequencyHz && (
                 <span>{rec.samplingFrequencyHz} Hz</span>
               )}
-              {rec?.totalBeats && (
+              {rec?.totalBeats && rec?.source !== "polar_h10" && (
                 <span>{rec.totalBeats} intervals</span>
-              )}
-              {rec?.source === "polar_h10" && (
-                <span>
-                  Source: {rec.deviceName ?? "Polar H10"} · Supine ·{" "}
-                  {rec.quality === "acceptable"
-                    ? "Acceptable"
-                    : rec.quality === "poor"
-                      ? "Poor"
-                      : "Good"}
-                </span>
               )}
               <span>{formatDate()}</span>
             </div>
@@ -541,6 +546,61 @@ export function ResultsView({ interpretation, input }: Props) {
             </button>
           </div>
         </div>
+
+        {/* Polar H10 provenance */}
+        {rec?.source === "polar_h10" && (
+          <div className="border-b border-border px-6 py-4">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Measurement source</span>
+                <span className="text-sm font-medium text-foreground">
+                  {rec.deviceName ?? "Polar H10"}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Position</span>
+                <span className="text-sm font-medium text-foreground">
+                  {rec.posture === "supine" ? "Supine" : rec.posture ?? ""}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Analysed duration</span>
+                <span className="font-mono text-sm font-medium tabular-nums text-foreground">
+                  {formatDuration(rec.durationSeconds)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Resting period</span>
+                <span className="font-mono text-sm font-medium tabular-nums text-foreground">
+                  {formatDuration(rec.preparationSeconds)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Recording quality</span>
+                <span className="text-sm font-medium text-foreground">
+                  {qualityLabel(rec.quality)}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Corrected intervals</span>
+                <span className="font-mono text-sm font-medium tabular-nums text-foreground">
+                  {rec.correctedIntervals ?? 0} of {rec.totalBeats ?? 0}
+                  {rec.artifactPercentage !== undefined
+                    ? ` (${rec.artifactPercentage.toFixed(1)}%)`
+                    : ""}
+                </span>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Values were calculated locally by 5HRV from the received RR
+              intervals.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground/70">
+              The Bluetooth RR recording is not a diagnostic ECG and does not
+              establish the origin of detected abnormalities.
+            </p>
+          </div>
+        )}
 
         {/* Copy status messages */}
         {copied && (
