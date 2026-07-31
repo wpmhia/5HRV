@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ParsedReportValues } from "@/lib/parseHrvReport";
-import { PolarH10Session, isBluetoothAvailable } from "@/lib/polarH10";
+import { BleHeartRateSession, isBluetoothAvailable } from "@/lib/bluetoothHeartRate";
 import {
   correctRrIntervals,
   detectArtifacts,
@@ -22,6 +22,7 @@ const RECORDING_SECONDS = 300;
 const RECORDING_MARGIN_SECONDS = 5;
 const RECORDING_TOTAL_SECONDS = RECORDING_SECONDS + RECORDING_MARGIN_SECONDS;
 const MIN_ANALYSED_MS = 296_000;
+const RR_DETECTION_TIMEOUT_MS = 15_000;
 
 type AnalysisWindow = {
   completeIntervals: number[];
@@ -92,7 +93,7 @@ const actionButtonClass =
 const secondaryButtonClass =
   "inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted";
 
-export function PolarMeasurement({ onPrefill }: Props) {
+export function BluetoothMeasurement({ onPrefill }: Props) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("prepare");
   const [error, setError] = useState<string | null>(null);
@@ -105,8 +106,10 @@ export function PolarMeasurement({ onPrefill }: Props) {
   const [signal, setSignal] = useState<RecordingQuality>("good");
   const [result, setResult] = useState<MeasurementResult | null>(null);
 
-  const sessionRef = useRef<PolarH10Session | null>(null);
+  const sessionRef = useRef<BleHeartRateSession | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rrTimeoutRef = useRef<number | null>(null);
+  const rrDetectedRef = useRef(false);
   const phaseRef = useRef<Phase>("prepare");
   phaseRef.current = phase;
   const openRef = useRef(false);
@@ -115,7 +118,7 @@ export function PolarMeasurement({ onPrefill }: Props) {
   const settlingStartedAtRef = useRef(0);
   const recordingStartedAtRef = useRef(0);
   const recordingEndsAtRef = useRef(0);
-  const deviceNameRef = useRef("Polar H10");
+  const deviceNameRef = useRef("Bluetooth HR sensor");
 
   const startSettling = useCallback(() => {
     settlingStartedAtRef.current = Date.now();
@@ -237,9 +240,16 @@ export function PolarMeasurement({ onPrefill }: Props) {
     setPhase("connecting");
     setError(null);
     try {
-      const session = await PolarH10Session.connect((event) => {
+      const session = await BleHeartRateSession.connect((event) => {
         if (event.heartRate > 0) setHeartRate(event.heartRate);
         if (event.rrIntervalsMs.length > 0) {
+          if (!rrDetectedRef.current) {
+            rrDetectedRef.current = true;
+            if (rrTimeoutRef.current) {
+              window.clearTimeout(rrTimeoutRef.current);
+              rrTimeoutRef.current = null;
+            }
+          }
           setRrDetected(true);
           if (phaseRef.current === "recording") {
             rrBufferRef.current.push(...event.rrIntervalsMs);
@@ -254,9 +264,22 @@ export function PolarMeasurement({ onPrefill }: Props) {
       sessionRef.current = session;
       deviceNameRef.current = session.deviceName;
       setConnected(true);
+      rrDetectedRef.current = false;
+      if (rrTimeoutRef.current) window.clearTimeout(rrTimeoutRef.current);
+      rrTimeoutRef.current = window.setTimeout(() => {
+        if (!rrDetectedRef.current) {
+          sessionRef.current?.disconnect();
+          sessionRef.current = null;
+          setConnected(false);
+          setPhase("error");
+          setError(
+            "This device sends heart rate but no RR intervals. A sensor that transmits beat-to-beat RR intervals is required.",
+          );
+        }
+      }, RR_DETECTION_TIMEOUT_MS);
     } catch (err) {
       setPhase("error");
-      setError(err instanceof Error ? err.message : "Could not connect to the Polar H10.");
+      setError(err instanceof Error ? err.message : "Could not connect to the heart-rate sensor.");
     }
   }, []);
 
@@ -266,6 +289,12 @@ export function PolarMeasurement({ onPrefill }: Props) {
     }
   }, [phase, connected, rrDetected, startSettling]);
 
+  useEffect(() => {
+    return () => {
+      if (rrTimeoutRef.current) window.clearTimeout(rrTimeoutRef.current);
+    };
+  }, []);
+
   const handleStop = useCallback(() => {
     finishRecording();
   }, [finishRecording]);
@@ -273,6 +302,10 @@ export function PolarMeasurement({ onPrefill }: Props) {
   const closePanel = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
+    if (rrTimeoutRef.current) {
+      window.clearTimeout(rrTimeoutRef.current);
+      rrTimeoutRef.current = null;
+    }
     sessionRef.current?.disconnect();
     sessionRef.current = null;
     setOpen(false);
@@ -301,7 +334,7 @@ export function PolarMeasurement({ onPrefill }: Props) {
       durationSeconds: RECORDING_SECONDS,
       totalBeats: result.totalBeats,
       measurement: {
-        source: "polar_h10",
+        source: "bluetooth_rr",
         deviceName: deviceNameRef.current,
         posture: "supine",
         preparationSeconds: SETTLING_SECONDS,
@@ -337,7 +370,7 @@ export function PolarMeasurement({ onPrefill }: Props) {
         onClick={() => handleOpenChange(true)}
         className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
       >
-        Measure with Polar H10 — experimental
+        Measure with heart-rate sensor
       </button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -348,26 +381,33 @@ export function PolarMeasurement({ onPrefill }: Props) {
           className="sm:max-w-md"
         >
           <DialogHeader>
-            <DialogTitle>Five-minute supine HRV analysis</DialogTitle>
+            <DialogTitle>Bluetooth HRV measurement</DialogTitle>
             <DialogDescription>
-              Optional direct measurement feature. Requires Chrome or Edge with
-              Web Bluetooth. Approximately 10 minutes including the resting
-              period.
+              Connect a Bluetooth heart-rate sensor that transmits RR intervals.
+              Polar H10 and similar compatible chest straps may be used.
             </DialogDescription>
           </DialogHeader>
 
           {phase === "prepare" && (
             <div className="space-y-4">
               <ul className="space-y-1.5 text-sm text-foreground/85">
-                <li>• Wear the Polar H10 chest strap</li>
+                <li>• Wear the heart-rate sensor</li>
                 <li>• Lie flat on your back</li>
                 <li>• Remain still</li>
                 <li>• Breathe normally</li>
                 <li>• Do not speak during the recording</li>
               </ul>
               <button type="button" onClick={handleConnect} className={actionButtonClass}>
-                Connect Polar H10
+                Connect heart-rate sensor
               </button>
+              <p className="text-xs text-muted-foreground">
+                Select your heart-rate sensor from the Bluetooth device list.
+              </p>
+              <p className="text-xs text-muted-foreground/80">
+                Compatibility requires the standard Bluetooth Heart Rate Service
+                with RR-interval transmission. Devices that provide heart rate
+                only cannot calculate HRV.
+              </p>
             </div>
           )}
 
@@ -379,10 +419,10 @@ export function PolarMeasurement({ onPrefill }: Props) {
                     aria-hidden="true"
                     className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"
                   />
-                  Connecting to Polar H10…
+                  Connecting to heart-rate sensor…
                 </p>
               )}
-              {connected && <p className="font-medium text-foreground">Polar H10 connected</p>}
+              {connected && <p className="font-medium text-foreground">Heart-rate sensor connected</p>}
               {heartRate !== null && <p>Heart rate: {heartRate} bpm</p>}
               {rrDetected && <p>RR intervals detected</p>}
             </div>

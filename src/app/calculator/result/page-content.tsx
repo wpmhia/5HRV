@@ -14,7 +14,7 @@ const RecordingSchema = z.object({
   samplingFrequencyHz: z.number().optional(),
   totalBeats: z.number().optional(),
   sourceFilename: z.string().optional(),
-  source: z.literal("polar_h10").optional(),
+  source: z.literal("bluetooth_rr").optional(),
   deviceName: z.string().optional(),
   posture: z.string().optional(),
   preparationSeconds: z.number().optional(),

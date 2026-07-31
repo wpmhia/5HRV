@@ -1,7 +1,7 @@
 export const HEART_RATE_SERVICE_UUID = 0x180d;
 export const HEART_RATE_MEASUREMENT_UUID = 0x2a37;
 
-export type PolarH10Event = {
+export type HeartRateSensorEvent = {
   heartRate: number;
   rrIntervalsMs: number[];
 };
@@ -10,7 +10,7 @@ export function isBluetoothAvailable(): boolean {
   return typeof navigator !== "undefined" && "bluetooth" in navigator;
 }
 
-export function parseHeartRateMeasurement(view: DataView): PolarH10Event {
+export function parseHeartRateMeasurement(view: DataView): HeartRateSensorEvent {
   const flags = view.getUint8(0);
   const hr16Bit = (flags & 0x01) !== 0;
   let offset = 1;
@@ -38,17 +38,17 @@ export function parseHeartRateMeasurement(view: DataView): PolarH10Event {
   return { heartRate, rrIntervalsMs };
 }
 
-export class PolarH10Session {
+export class BleHeartRateSession {
   private device: BluetoothDevice;
   private server: BluetoothRemoteGATTServer;
   private characteristic: BluetoothRemoteGATTCharacteristic;
-  private onEvent: (event: PolarH10Event) => void;
+  private onEvent: (event: HeartRateSensorEvent) => void;
 
   private constructor(
     device: BluetoothDevice,
     server: BluetoothRemoteGATTServer,
     characteristic: BluetoothRemoteGATTCharacteristic,
-    onEvent: (event: PolarH10Event) => void,
+    onEvent: (event: HeartRateSensorEvent) => void,
   ) {
     this.device = device;
     this.server = server;
@@ -56,23 +56,31 @@ export class PolarH10Session {
     this.onEvent = onEvent;
   }
 
-  static async connect(onEvent: (event: PolarH10Event) => void): Promise<PolarH10Session> {
+  static async connect(onEvent: (event: HeartRateSensorEvent) => void): Promise<BleHeartRateSession> {
     if (!isBluetoothAvailable()) {
       throw new Error("Web Bluetooth is not supported in this browser. Use Chrome or Edge.");
     }
     const device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [HEART_RATE_SERVICE_UUID] }],
+      acceptAllDevices: true,
+      optionalServices: [HEART_RATE_SERVICE_UUID],
     });
     const gatt = device.gatt;
-    if (!gatt) throw new Error("Could not connect to the Polar H10.");
-    if (!device.name?.toLowerCase().startsWith("polar h10")) {
-      throw new Error("The selected device is not a Polar H10. Please try again.");
+    if (!gatt) {
+      throw new Error("The selected device does not support a Bluetooth GATT connection.");
     }
     const server = await gatt.connect();
-    const service = await server.getPrimaryService(HEART_RATE_SERVICE_UUID);
+
+    let service: BluetoothRemoteGATTService;
+    try {
+      service = await server.getPrimaryService(HEART_RATE_SERVICE_UUID);
+    } catch {
+      server.disconnect();
+      throw new Error("The selected device does not provide the Bluetooth Heart Rate Service.");
+    }
+
     const characteristic = await service.getCharacteristic(HEART_RATE_MEASUREMENT_UUID);
     await characteristic.startNotifications();
-    const session = new PolarH10Session(device, server, characteristic, onEvent);
+    const session = new BleHeartRateSession(device, server, characteristic, onEvent);
     characteristic.addEventListener("characteristicvaluechanged", session.handleValueChanged);
     return session;
   }
@@ -86,7 +94,7 @@ export class PolarH10Session {
   };
 
   get deviceName(): string {
-    return this.device.name ?? "Polar H10";
+    return this.device.name ?? "Bluetooth HR sensor";
   }
 
   disconnect(): void {

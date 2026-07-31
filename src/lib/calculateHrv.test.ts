@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateHrv } from "@/lib/calculateHrv";
 import { correctRrIntervals, detectArtifacts } from "@/lib/rrArtifactCorrection";
-import { parseHeartRateMeasurement } from "@/lib/polarH10";
+import { parseHeartRateMeasurement } from "@/lib/bluetoothHeartRate";
 
 function generateModulatedRr(
   base: number,

@@ -1,5 +1,5 @@
-export type PolarMeasurementMetadata = {
-  source: "polar_h10";
+export type BluetoothMeasurementMetadata = {
+  source: "bluetooth_rr";
   deviceName: string;
   posture: "supine";
   preparationSeconds: number;
@@ -21,7 +21,7 @@ export type ParsedReportValues = {
   hfPower?: number;
   lfPower?: number;
   lfhfRatio?: number;
-  measurement?: PolarMeasurementMetadata;
+  measurement?: BluetoothMeasurementMetadata;
 };
 
 function normalizeNum(value: string): number | null {

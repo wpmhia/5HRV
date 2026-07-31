@@ -37,7 +37,7 @@ export type RecordingMetadata = {
   samplingFrequencyHz?: number;
   totalBeats?: number;
   sourceFilename?: string;
-  source?: "polar_h10";
+  source?: "bluetooth_rr";
   deviceName?: string;
   posture?: string;
   preparationSeconds?: number;

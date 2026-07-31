@@ -2,10 +2,10 @@
 
 import { useRef, useState } from "react";
 import type { MeasurementInput } from "@/lib/types";
-import type { ParsedReportValues, PolarMeasurementMetadata } from "@/lib/parseHrvReport";
+import type { ParsedReportValues, BluetoothMeasurementMetadata } from "@/lib/parseHrvReport";
 import { normalizeNumber } from "@/lib/interpretHrv";
 import { ReportUpload } from "@/components/ReportUpload";
-import { PolarMeasurement } from "@/components/PolarMeasurement";
+import { BluetoothMeasurement } from "@/components/BluetoothMeasurement";
 
 type Props = {
   onInterpret: (input: MeasurementInput) => void;
@@ -23,7 +23,7 @@ type FormState = {
   lfPower: string;
   lfhfRatio: string;
   lfhfSource: string;
-  measurement?: PolarMeasurementMetadata;
+  measurement?: BluetoothMeasurementMetadata;
 };
 
 const initialState: FormState = {
@@ -399,7 +399,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
               importedCount={importedCount}
               onBusyChange={setExtracting}
             />
-            <PolarMeasurement onPrefill={handlePrefill} />
+            <BluetoothMeasurement onPrefill={handlePrefill} />
           </div>
         </div>
 

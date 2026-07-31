@@ -362,8 +362,9 @@ function buildPlainText(
   if (rec?.totalBeats) {
     lines.push(`Analysed intervals: ${rec.totalBeats}`);
   }
-  if (rec?.source === "polar_h10") {
-    lines.push(`Measurement source: ${rec.deviceName ?? "Polar H10"}`);
+  if (rec?.source === "bluetooth_rr") {
+    lines.push("Measurement source: Bluetooth RR sensor");
+    lines.push(`Device: ${rec.deviceName ?? "Bluetooth HR sensor"}`);
     lines.push(`Position: ${rec.posture === "supine" ? "Supine" : rec.posture ?? ""}`);
     lines.push(`Analysed duration: ${formatDuration(rec.durationSeconds)}`);
     lines.push(`Resting period: ${formatDuration(rec.preparationSeconds)}`);
@@ -509,13 +510,13 @@ export function ResultsView({ interpretation, input }: Props) {
               {rec?.recordingDate && (
                 <span>Recording: {formatDate(rec.recordingDate)}</span>
               )}
-              {rec?.durationSeconds !== undefined && rec?.source !== "polar_h10" && (
+              {rec?.durationSeconds !== undefined && rec?.source !== "bluetooth_rr" && (
                 <span>Duration: {formatDuration(rec.durationSeconds)}</span>
               )}
               {rec?.samplingFrequencyHz && (
                 <span>{rec.samplingFrequencyHz} Hz</span>
               )}
-              {rec?.totalBeats && rec?.source !== "polar_h10" && (
+              {rec?.totalBeats && rec?.source !== "bluetooth_rr" && (
                 <span>{rec.totalBeats} intervals</span>
               )}
               <span>{formatDate()}</span>
@@ -547,14 +548,20 @@ export function ResultsView({ interpretation, input }: Props) {
           </div>
         </div>
 
-        {/* Polar H10 provenance */}
-        {rec?.source === "polar_h10" && (
+        {/* Bluetooth RR provenance */}
+        {rec?.source === "bluetooth_rr" && (
           <div className="border-b border-border px-6 py-4">
             <div className="grid grid-cols-1 gap-x-8 gap-y-1 sm:grid-cols-2">
               <div className="flex items-baseline justify-between gap-4">
                 <span className="text-sm text-muted-foreground">Measurement source</span>
                 <span className="text-sm font-medium text-foreground">
-                  {rec.deviceName ?? "Polar H10"}
+                  Bluetooth RR sensor
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-sm text-muted-foreground">Device</span>
+                <span className="text-sm font-medium text-foreground">
+                  {rec.deviceName ?? "Bluetooth HR sensor"}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-4">
