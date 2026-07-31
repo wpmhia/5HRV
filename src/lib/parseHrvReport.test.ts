@@ -106,6 +106,20 @@ pNN50 3.28%`;
     expect(result.lfhfRatio).toBeCloseTo(9.49, 1);
     expect(result.hfPower).toBeUndefined();
   });
+
+  it("extracts values from a Danish one-line report summary", () => {
+    const text = `5-Minutters EKG
+SDNN 51.01 ms, rMSSD 39.40 ms, pNN50 9.46%, Total Power 1239.40 ms², LF 288.37 ms², HF 393.42 ms², LF/HF 0.73.
+Undersøgelsen viser god samlet hjerterytmevariabilitet med parasympatisk dominans, hvilket indikerer en velreguleret autonom balance uden tegn på stress eller dysautonomi i hviletilstand.`;
+
+    const result = parseHrvReport(text);
+    expect(result.sdnn).toBeCloseTo(51.01, 1);
+    expect(result.rmssd).toBeCloseTo(39.4, 1);
+    expect(result.pnn50).toBeCloseTo(9.46, 1);
+    expect(result.lfPower).toBeCloseTo(288.37, 1);
+    expect(result.hfPower).toBeCloseTo(393.42, 1);
+    expect(result.lfhfRatio).toBeCloseTo(0.73, 1);
+  });
 });
 
 describe("hasHrvContent", () => {
