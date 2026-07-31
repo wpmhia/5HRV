@@ -1,9 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 import { parseHrvReport, hasHrvContent, type ParsedReportValues } from "@/lib/parseHrvReport";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
+
+const HRV_VALUE_KEYS = ["rmssd", "sdnn", "pnn50", "hfPower", "lfPower", "lfhfRatio"] as const;
+
+function countParsedValues(values: ParsedReportValues): number {
+  return HRV_VALUE_KEYS.filter((k) => values[k] !== undefined).length;
+}
 
 type Props = {
   onPrefill: (values: ParsedReportValues) => void;
@@ -90,6 +98,9 @@ export function ReportUpload({ onPrefill, onClearImport, imported, importedCount
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [pasteError, setPasteError] = useState<string | null>(null);
   const opCounter = useRef(0);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,10 +132,7 @@ export function ReportUpload({ onPrefill, onClearImport, imported, importedCount
         return;
       }
       const values = parseHrvReport(text);
-      const count = ["rmssd", "sdnn", "pnn50", "hfPower", "lfPower", "lfhfRatio"].filter(
-        (k) => values[k as keyof ParsedReportValues] !== undefined
-      ).length;
-      if (count === 0) {
+      if (countParsedValues(values) === 0) {
         setError("Could not extract values. Try again or enter manually.");
         return;
       }
@@ -159,6 +167,31 @@ export function ReportUpload({ onPrefill, onClearImport, imported, importedCount
     fileInputRef.current?.click();
   };
 
+  const handleFillFields = () => {
+    const values = parseHrvReport(pasteText);
+    if (countParsedValues(values) === 0) {
+      setPasteError("No recognised HRV values found. Check the pasted text and try again.");
+      return;
+    }
+    onPrefill(values);
+    setPasteOpen(false);
+    setPasteText("");
+    setPasteError(null);
+  };
+
+  const handleCancelPaste = () => {
+    setPasteOpen(false);
+    setPasteText("");
+    setPasteError(null);
+  };
+
+  const handlePasteOpenChange = (open: boolean) => {
+    setPasteOpen(open);
+    if (open) {
+      setPasteError(null);
+    }
+  };
+
   return (
     <>
       <input
@@ -191,25 +224,79 @@ export function ReportUpload({ onPrefill, onClearImport, imported, importedCount
         </div>
       ) : (
         <div className="flex flex-col items-end gap-1.5">
-          <button
-            type="button"
-            onClick={handleUploadClick}
-            disabled={uploading}
-            aria-busy={uploading}
-            className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-wait disabled:opacity-70"
-          >
-            {uploading ? (
-              <>
-                <span
-                  aria-hidden="true"
-                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"
-                />
-                Extracting…
-              </>
-            ) : (
-              "Upload report"
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleUploadClick}
+              disabled={uploading}
+              aria-busy={uploading}
+              className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-wait disabled:opacity-70"
+            >
+              {uploading ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"
+                  />
+                  Extracting…
+                </>
+              ) : (
+                "Upload report"
+              )}
+            </button>
+            <Popover open={pasteOpen} onOpenChange={handlePasteOpenChange}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={uploading}
+                  className="inline-flex min-w-[96px] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-wait disabled:opacity-70"
+                >
+                  Paste values
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Paste values</p>
+                    <p className="text-xs text-muted-foreground">
+                      Paste copied values from an HRV report
+                    </p>
+                  </div>
+                  <Textarea
+                    value={pasteText}
+                    onChange={(e) => {
+                      setPasteText(e.target.value);
+                      if (pasteError) setPasteError(null);
+                    }}
+                    placeholder={"SDNN: 39.33\nrMSSD: 23.14\npNN50: 3.28%\nLF: 416.47\nHF: 70.55\nLF/HF: 5.90"}
+                    rows={6}
+                    className="min-h-24 font-mono text-xs"
+                    aria-label="Pasted HRV report values"
+                    aria-invalid={pasteError !== null}
+                  />
+                  {pasteError && (
+                    <p role="alert" className="text-xs text-destructive">{pasteError}</p>
+                  )}
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCancelPaste}
+                      className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleFillFields}
+                      className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                      Fill fields
+                    </button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           {error && (
             <p role="alert" className="text-xs text-destructive">{error}</p>
           )}
