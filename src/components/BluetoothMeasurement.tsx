@@ -50,6 +50,8 @@ function extractWindow(rr: number[], windowMs: number): AnalysisWindow {
 
 type Phase = "prepare" | "connecting" | "settling" | "recording" | "complete" | "error";
 
+type LiveSignal = "waiting" | "good" | "acceptable" | "poor";
+
 type MeasurementResult = HrvMetrics & {
   correctedIntervals: number;
   artifactPercentage: number;
@@ -103,7 +105,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   const [settlingRemaining, setSettlingRemaining] = useState(SETTLING_SECONDS);
   const [recordingRemaining, setRecordingRemaining] = useState(RECORDING_SECONDS);
   const [beatsReceived, setBeatsReceived] = useState(0);
-  const [signal, setSignal] = useState<RecordingQuality>("good");
+  const [signal, setSignal] = useState<LiveSignal>("waiting");
   const [result, setResult] = useState<MeasurementResult | null>(null);
 
   const sessionRef = useRef<BleHeartRateSession | null>(null);
@@ -119,6 +121,8 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   const recordingStartedAtRef = useRef(0);
   const recordingEndsAtRef = useRef(0);
   const deviceNameRef = useRef("Bluetooth HR sensor");
+  const lastRrReceivedAtRef = useRef<number | null>(null);
+  const preparationSecondsRef = useRef(0);
 
   const startSettling = useCallback(() => {
     settlingStartedAtRef.current = Date.now();
@@ -127,9 +131,17 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   }, []);
 
   const startRecording = useCallback(() => {
+    const lastRrAt = lastRrReceivedAtRef.current;
+    if (!lastRrAt || Date.now() - lastRrAt > 5_000) {
+      setPhase("error");
+      setError(
+        "No live RR-interval signal is available. Check the sensor connection and try again.",
+      );
+      return;
+    }
     rrBufferRef.current = [];
     setBeatsReceived(0);
-    setSignal("good");
+    setSignal("waiting");
     recordingStartedAtRef.current = Date.now();
     recordingEndsAtRef.current = Date.now() + RECORDING_TOTAL_SECONDS * 1000;
     setRecordingRemaining(RECORDING_TOTAL_SECONDS);
@@ -205,6 +217,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         if (remaining <= 0) {
           if (timerRef.current) clearInterval(timerRef.current);
           timerRef.current = null;
+          preparationSecondsRef.current = SETTLING_SECONDS;
           startRecording();
         }
       }, 250);
@@ -239,10 +252,12 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     }
     setPhase("connecting");
     setError(null);
+    lastRrReceivedAtRef.current = null;
     try {
       const session = await BleHeartRateSession.connect((event) => {
         if (event.heartRate > 0) setHeartRate(event.heartRate);
         if (event.rrIntervalsMs.length > 0) {
+          lastRrReceivedAtRef.current = Date.now();
           if (!rrDetectedRef.current) {
             rrDetectedRef.current = true;
             if (rrTimeoutRef.current) {
@@ -299,6 +314,22 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     finishRecording();
   }, [finishRecording]);
 
+  const handleSkipRest = useCallback(() => {
+    if (!rrDetected) {
+      setError("Wait until RR intervals are detected before starting.");
+      return;
+    }
+    preparationSecondsRef.current = Math.max(
+      0,
+      Math.round((Date.now() - settlingStartedAtRef.current) / 1000),
+    );
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    startRecording();
+  }, [rrDetected, startRecording]);
+
   const closePanel = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
@@ -317,9 +348,11 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     setSettlingRemaining(SETTLING_SECONDS);
     setRecordingRemaining(RECORDING_TOTAL_SECONDS);
     setBeatsReceived(0);
-    setSignal("good");
+    setSignal("waiting");
     setResult(null);
     rrBufferRef.current = [];
+    lastRrReceivedAtRef.current = null;
+    preparationSecondsRef.current = 0;
   }, []);
 
   const handleUseValues = useCallback(() => {
@@ -337,7 +370,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         source: "bluetooth_rr",
         deviceName: deviceNameRef.current,
         posture: "supine",
-        preparationSeconds: SETTLING_SECONDS,
+        preparationSeconds: preparationSecondsRef.current,
         durationSeconds: RECORDING_SECONDS,
         totalBeats: result.totalBeats,
         correctedIntervals: result.correctedIntervals,
@@ -429,11 +462,25 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
           )}
 
           {phase === "settling" && (
-            <div className="space-y-3 py-4 text-center">
+            <div className="space-y-4 py-4 text-center">
               <p className="text-sm text-muted-foreground">Rest quietly while lying supine</p>
+              {heartRate !== null && (
+                <p className="text-3xl font-bold tabular-nums">
+                  {heartRate}
+                  <span className="ml-1 text-base font-medium text-muted-foreground">bpm</span>
+                </p>
+              )}
               <p className="text-6xl font-bold tabular-nums">{formatClock(settlingRemaining)}</p>
+              <button
+                type="button"
+                className={secondaryButtonClass}
+                onClick={handleSkipRest}
+                disabled={!rrDetected}
+              >
+                Skip resting period
+              </button>
               <p className="text-xs text-muted-foreground">
-                Measurement begins automatically after the settling period.
+                Skipping the resting period makes the recording less standardized.
               </p>
             </div>
           )}
@@ -456,7 +503,11 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Signal</p>
-                  <p className="text-lg font-semibold">{qualityLabel(signal)}</p>
+                  <p className="text-lg font-semibold">
+                    <span>
+                      {signal === "waiting" ? "Waiting" : qualityLabel(signal)}
+                    </span>
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Beats received</p>
