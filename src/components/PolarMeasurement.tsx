@@ -21,18 +21,24 @@ const SETTLING_SECONDS = 300;
 const RECORDING_SECONDS = 300;
 const RECORDING_MARGIN_SECONDS = 5;
 const RECORDING_TOTAL_SECONDS = RECORDING_SECONDS + RECORDING_MARGIN_SECONDS;
-const MIN_ANALYSED_MS = 290_000;
+const MIN_ANALYSED_MS = 296_000;
 
-function extractWindow(rr: number[], windowMs: number): number[] {
-  if (rr.length === 0) return [];
-  const result: number[] = [];
+type AnalysisWindow = {
+  completeIntervals: number[];
+  spectralIntervals: number[];
+};
+
+function extractWindow(rr: number[], windowMs: number): AnalysisWindow {
+  const completeIntervals: number[] = [];
+  const spectralIntervals: number[] = [];
   let cumulative = 0;
   for (const v of rr) {
+    spectralIntervals.push(v);
     if (cumulative + v > windowMs) break;
-    result.push(v);
+    completeIntervals.push(v);
     cumulative += v;
   }
-  return result;
+  return { completeIntervals, spectralIntervals };
 }
 
 type Phase = "prepare" | "connecting" | "settling" | "recording" | "complete" | "error";
@@ -129,27 +135,38 @@ export function PolarMeasurement({ onPrefill }: Props) {
       return;
     }
     const raw = rrBufferRef.current;
+    for (const v of raw) {
+      if (!Number.isFinite(v) || v <= 0) {
+        setPhase("error");
+        setError("Invalid RR interval data received. Please repeat the measurement.");
+        return;
+      }
+    }
     const rawMs = raw.reduce((s, v) => s + v, 0);
     if (rawMs < RECORDING_SECONDS * 1000) {
       setPhase("error");
       setError("The recording did not contain a complete five-minute analysis window. Please repeat.");
       return;
     }
-    const rr = extractWindow(raw, RECORDING_SECONDS * 1000);
-    const analysedMs = rr.reduce((s, v) => s + v, 0);
-    if (analysedMs < MIN_ANALYSED_MS) {
-      setPhase("error");
-      setError("The recording did not contain a complete five-minute analysis window. Please repeat.");
-      return;
-    }
-    const correction = correctRrIntervals(rr);
+    const correction = correctRrIntervals(raw);
     if (correction.quality === "poor") {
       setPhase("error");
       setError(correction.reason ?? "Poor signal quality. Please repeat the measurement.");
       return;
     }
-    const metrics = calculateHrv(correction.nn, {
+    const { completeIntervals, spectralIntervals } = extractWindow(
+      correction.nn,
+      RECORDING_SECONDS * 1000,
+    );
+    const analysedMs = completeIntervals.reduce((s, v) => s + v, 0);
+    if (analysedMs < MIN_ANALYSED_MS) {
+      setPhase("error");
+      setError("The recording did not contain a complete five-minute analysis window. Please repeat.");
+      return;
+    }
+    const metrics = calculateHrv(completeIntervals, {
       analysisDurationMs: RECORDING_SECONDS * 1000,
+      spectralIntervals,
     });
     setResult({
       ...metrics,

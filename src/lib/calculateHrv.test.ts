@@ -70,6 +70,21 @@ describe("calculateHrv", () => {
     const hrv = calculateHrv(rr);
     expect(hrv.lfhfRatio).toBeCloseTo(hrv.lfPower / hrv.hfPower, 2);
   });
+
+  it("uses a boundary-crossing interval as spectral support without changing time-domain metrics", () => {
+    const complete = generateModulatedRr(1000, 20, 0.1, 299);
+    const spectral = [...complete, 1000];
+    const withSupport = calculateHrv(complete, {
+      analysisDurationMs: 300000,
+      spectralIntervals: spectral,
+    });
+    const withoutSupport = calculateHrv(complete, { analysisDurationMs: 300000 });
+    expect(withSupport.totalBeats).toBe(299);
+    expectClose(withSupport.rmssd, withoutSupport.rmssd, 0.01);
+    expectClose(withSupport.sdnn, withoutSupport.sdnn, 0.01);
+    expectClose(withSupport.pnn50, withoutSupport.pnn50, 0.01);
+    expect(withSupport.lfPower).toBeGreaterThan(120);
+  });
 });
 
 describe("correctRrIntervals", () => {

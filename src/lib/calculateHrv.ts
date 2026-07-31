@@ -177,6 +177,7 @@ function welchPower(signal: number[], fs: number): { lfPower: number; hfPower: n
 
 export type CalculateHrvOptions = {
   analysisDurationMs?: number;
+  spectralIntervals?: number[];
 };
 
 export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMetrics {
@@ -184,7 +185,9 @@ export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMe
   const meanRr = mean(nn);
   const meanHr = meanRr > 0 ? 60000 / meanRr : 0;
 
-  const detrended = smoothnessPriors(nn, DETREND_LAMBDA);
+  const spectral = options?.spectralIntervals ?? nn;
+  const detrendedSpectral = smoothnessPriors(spectral, DETREND_LAMBDA);
+  const detrended = detrendedSpectral.slice(0, n);
 
   let sumSqDiff = 0;
   let nn50 = 0;
@@ -197,11 +200,11 @@ export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMe
   const sdnn = standardDeviation(detrended, mean(detrended));
   const pnn50 = detrended.length > 1 ? (nn50 / (detrended.length - 1)) * 100 : 0;
 
-  const timesMs = new Array<number>(n);
+  const timesMs = new Array<number>(spectral.length);
   timesMs[0] = 0;
-  for (let i = 1; i < n; i++) timesMs[i] = timesMs[i - 1] + nn[i - 1];
-  const durationMs = options?.analysisDurationMs ?? timesMs[n - 1] + nn[n - 1];
-  const tachogram = buildTachogram(timesMs, detrended, durationMs, RESAMPLE_FREQUENCY_HZ);
+  for (let i = 1; i < spectral.length; i++) timesMs[i] = timesMs[i - 1] + spectral[i - 1];
+  const durationMs = options?.analysisDurationMs ?? timesMs[spectral.length - 1] + spectral[spectral.length - 1];
+  const tachogram = buildTachogram(timesMs, detrendedSpectral, durationMs, RESAMPLE_FREQUENCY_HZ);
   const { lfPower, hfPower } = welchPower(tachogram, RESAMPLE_FREQUENCY_HZ);
 
   return {
