@@ -478,6 +478,26 @@ export function renderMetricDescriptions(findings: HrvFindings): MetricResult[] 
   return metrics;
 }
 
+function describeVariability(status: VariabilityStatus): string {
+  switch (status) {
+    case "markedly_reduced": return "markedly reduced overall variability";
+    case "reduced": return "reduced overall variability";
+    case "high": return "elevated overall variability";
+    case "very_high": return "markedly elevated overall variability";
+    default: return "preserved overall variability";
+  }
+}
+
+function describeParasympathetic(status: VagalStatus): string {
+  switch (status) {
+    case "markedly_reduced": return "markedly reduced parasympathetic activity";
+    case "reduced": return "reduced parasympathetic activity";
+    case "high": return "elevated parasympathetic activity";
+    case "very_high": return "markedly elevated parasympathetic activity";
+    default: return "preserved parasympathetic activity";
+  }
+}
+
 export function renderAnalysis(findings: HrvFindings): string {
   const sdnn = findings.sdnn;
   const rmssd = findings.rmssd;
@@ -518,15 +538,11 @@ export function renderAnalysis(findings: HrvFindings): string {
 
   const summaryParts: string[] = [];
   if (sdnn.value !== undefined && sdnn.band !== "unclassified") {
-    summaryParts.push(
-      bandIsLow(sdnn.band) ? "reduced overall variability" : "preserved overall variability"
-    );
+    summaryParts.push(describeVariability(sdnn.variabilityStatus));
   }
-  if (rmssd.value !== undefined && rmssd.vagalStatus !== "unclassified") {
-    const para = rmssd.vagalStatus === "reduced" || rmssd.vagalStatus === "markedly_reduced"
-      ? "reduced"
-      : "preserved";
-    summaryParts.push(`${para} parasympathetic activity`);
+  const parasympatheticShift = profile?.label.endsWith("parasympathetic-direction shift") ?? false;
+  if (rmssd.value !== undefined && rmssd.vagalStatus !== "unclassified" && !parasympatheticShift) {
+    summaryParts.push(describeParasympathetic(rmssd.vagalStatus));
   }
   if (profile) {
     summaryParts.push(`a ${profile.label.toLowerCase()}`);

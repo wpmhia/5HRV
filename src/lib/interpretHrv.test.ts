@@ -566,6 +566,37 @@ describe("renderAnalysis", () => {
     expect(text).toContain("central autonomic pattern");
   });
 
+  it("uses elevated for high-band SDNN and RMSSD", () => {
+    const input: MeasurementInput = {
+      age: 45,
+      referenceSex: "female",
+      rmssd: 81.53,
+      sdnn: 67.27,
+      lfhfRatio: 1.06,
+      lfhfSource: "manual",
+    };
+    const findings = deriveHrvFindings(input);
+    const text = renderAnalysis(findings);
+    expect(text).toContain("elevated overall variability");
+    expect(text).toContain("marked parasympathetic-direction shift");
+  });
+
+  it("avoids redundant parasympathetic phrase next to parasympathetic-direction shift", () => {
+    const input: MeasurementInput = {
+      age: 45,
+      referenceSex: "female",
+      rmssd: 81.53,
+      sdnn: 67.27,
+      lfhfRatio: 1.06,
+      lfhfSource: "manual",
+    };
+    const findings = deriveHrvFindings(input);
+    const text = renderAnalysis(findings);
+    expect(text).toContain("elevated overall variability");
+    expect(text).not.toContain("elevated parasympathetic activity");
+    expect(text).not.toContain("preserved parasympathetic activity");
+  });
+
   it("builds from autonomic profile when score is available over LF/HF", () => {
     const input: MeasurementInput = {
       ...baseInput, lfhfRatio: 9.49, rmssd: 14.53,
