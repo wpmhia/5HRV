@@ -34,28 +34,29 @@ export default function Home() {
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-                A scientific five-minute HRV calculator
+                Scientific five-minute HRV measurement and interpretation
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Interpret five-minute HRV recordings against scientific reference data.
+                Measure five-minute HRV with Polar H10 and interpret it against scientific reference data.
               </h1>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-                5HRV converts standardized short-term HRV measurements into a
-                structured analysis of parasympathetic activity, total
-                variability and autonomic direction.
+                Connect a Polar H10, complete a guided supine recording, and let
+                5HRV calculate RMSSD, SDNN, pNN50, LF, HF and LF/HF directly in
+                your browser. Existing HRV reports and manually entered values
+                are also supported.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   href="/calculator"
                   className="inline-flex items-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90"
                 >
-                  Open the calculator
+                  Measure with Polar H10
                 </Link>
                 <Link
-                  href="/method"
+                  href="/calculator"
                   className="inline-flex items-center rounded-lg border border-border px-6 py-3 text-sm font-semibold text-foreground hover:bg-muted"
                 >
-                  Explore the method
+                  Use existing HRV values
                 </Link>
               </div>
             </div>
@@ -106,10 +107,10 @@ export default function Home() {
       <section className="border-b border-border bg-card/30">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <ValueItem>Five-minute standardized protocol</ValueItem>
+            <ValueItem>Guided supine measurement protocol</ValueItem>
+            <ValueItem>Direct Polar H10 integration</ValueItem>
             <ValueItem>Age- and sex-specific reference percentiles</ValueItem>
-            <ValueItem>Structured research-based analysis</ValueItem>
-            <ValueItem>Runs locally in the browser &mdash; no data transmitted</ValueItem>
+            <ValueItem>Local browser processing &mdash; no RR data uploaded</ValueItem>
           </div>
         </div>
       </section>
@@ -137,8 +138,10 @@ export default function Home() {
             What 5HRV does
           </h2>
           <div className="mt-8 grid gap-6 sm:grid-cols-3">
-            <FeatureCard title="Standardizes">
-              Applies a defined five-minute recording and analysis framework.
+            <FeatureCard title="Measures">
+              Guides a standardized supine Polar H10 recording and calculates
+              the principal five-minute HRV parameters directly from RR
+              intervals.
             </FeatureCard>
             <FeatureCard title="Interprets">
               Places RMSSD and SDNN within age- and sex-specific reference
@@ -162,18 +165,18 @@ export default function Home() {
             {[
               {
                 step: "1",
-                title: "Record",
-                text: "Obtain a standardized five-minute HRV measurement using ECG or a validated device.",
+                title: "Prepare",
+                text: "Wear the Polar H10, lie comfortably on your back and complete the guided five-minute resting period.",
               },
               {
                 step: "2",
-                title: "Enter",
-                text: "Add RMSSD, SDNN, pNN50, HF and LF, or upload a compatible report to auto-fill.",
+                title: "Measure",
+                text: "5HRV records a complete five-minute RR-interval analysis window and calculates the HRV parameters directly in your browser.",
               },
               {
                 step: "3",
                 title: "Interpret",
-                text: "Review the Autonomic Pattern Score, reference-based metric placement and scientific analysis.",
+                text: "Review the calculated values, recording quality, age- and sex-specific reference placement and structured scientific analysis.",
               },
             ].map((item) => (
               <div key={item.step} className="flex gap-4">
@@ -187,6 +190,10 @@ export default function Home() {
               </div>
             ))}
           </div>
+          <p className="mt-8 text-sm leading-relaxed text-muted-foreground">
+            You can also upload an existing HRV report or enter previously
+            calculated values manually.
+          </p>
         </div>
       </section>
 
