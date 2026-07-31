@@ -80,10 +80,43 @@ describe("calculateHrv", () => {
     });
     const withoutSupport = calculateHrv(complete, { analysisDurationMs: 300000 });
     expect(withSupport.totalBeats).toBe(299);
-    expectClose(withSupport.rmssd, withoutSupport.rmssd, 0.01);
-    expectClose(withSupport.sdnn, withoutSupport.sdnn, 0.01);
-    expectClose(withSupport.pnn50, withoutSupport.pnn50, 0.01);
+    expect(withSupport.rmssd).toBeCloseTo(withoutSupport.rmssd, 10);
+    expect(withSupport.sdnn).toBeCloseTo(withoutSupport.sdnn, 10);
+    expect(withSupport.pnn50).toBeCloseTo(withoutSupport.pnn50, 10);
+    expect(withSupport.meanHr).toBeCloseTo(withoutSupport.meanHr, 10);
     expect(withSupport.lfPower).toBeGreaterThan(120);
+  });
+
+  it("reconstructs the spectral sample exactly from complete plus boundary support", () => {
+    const full = generateModulatedRr(1005, 20, 0.1, 300);
+    const complete: number[] = [];
+    const spectral: number[] = [];
+    let cumulative = 0;
+    for (let i = 0; i < full.length; i++) {
+      const v = full[i];
+      spectral.push(v);
+      if (cumulative + v > 300000) {
+        if (i + 1 < full.length) spectral.push(full[i + 1]);
+        break;
+      }
+      complete.push(v);
+      cumulative += v;
+    }
+
+    const reference = calculateHrv(full, { analysisDurationMs: 300000 });
+    const withSupport = calculateHrv(complete, {
+      analysisDurationMs: 300000,
+      spectralIntervals: spectral,
+    });
+    const withoutSupport = calculateHrv(complete, { analysisDurationMs: 300000 });
+
+    expect(withSupport.rmssd).toBeCloseTo(withoutSupport.rmssd, 10);
+    expect(withSupport.sdnn).toBeCloseTo(withoutSupport.sdnn, 10);
+    expect(withSupport.meanHr).toBeCloseTo(withoutSupport.meanHr, 10);
+
+    expect(withSupport.lfPower).toBeCloseTo(reference.lfPower, 3);
+    expect(withSupport.hfPower).toBeCloseTo(reference.hfPower, 3);
+    expect(Math.abs(withSupport.lfPower - withoutSupport.lfPower)).toBeGreaterThan(0.05);
   });
 });
 

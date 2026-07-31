@@ -185,20 +185,22 @@ export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMe
   const meanRr = mean(nn);
   const meanHr = meanRr > 0 ? 60000 / meanRr : 0;
 
-  const spectral = options?.spectralIntervals ?? nn;
-  const detrendedSpectral = smoothnessPriors(spectral, DETREND_LAMBDA);
-  const detrended = detrendedSpectral.slice(0, n);
+  const detrendedTime = smoothnessPriors(nn, DETREND_LAMBDA);
 
   let sumSqDiff = 0;
   let nn50 = 0;
-  for (let i = 1; i < detrended.length; i++) {
-    const d = detrended[i] - detrended[i - 1];
+  for (let i = 1; i < detrendedTime.length; i++) {
+    const d = detrendedTime[i] - detrendedTime[i - 1];
     sumSqDiff += d * d;
     if (Math.abs(d) > 50) nn50++;
   }
-  const rmssd = detrended.length > 1 ? Math.sqrt(sumSqDiff / (detrended.length - 1)) : 0;
-  const sdnn = standardDeviation(detrended, mean(detrended));
-  const pnn50 = detrended.length > 1 ? (nn50 / (detrended.length - 1)) * 100 : 0;
+  const rmssd = detrendedTime.length > 1 ? Math.sqrt(sumSqDiff / (detrendedTime.length - 1)) : 0;
+  const sdnn = standardDeviation(detrendedTime, mean(detrendedTime));
+  const pnn50 = detrendedTime.length > 1 ? (nn50 / (detrendedTime.length - 1)) * 100 : 0;
+
+  const spectral = options?.spectralIntervals ?? nn;
+  const detrendedSpectral =
+    spectral === nn ? detrendedTime : smoothnessPriors(spectral, DETREND_LAMBDA);
 
   const timesMs = new Array<number>(spectral.length);
   timesMs[0] = 0;

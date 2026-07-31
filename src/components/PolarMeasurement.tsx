@@ -32,11 +32,17 @@ function extractWindow(rr: number[], windowMs: number): AnalysisWindow {
   const completeIntervals: number[] = [];
   const spectralIntervals: number[] = [];
   let cumulative = 0;
-  for (const v of rr) {
-    spectralIntervals.push(v);
-    if (cumulative + v > windowMs) break;
-    completeIntervals.push(v);
-    cumulative += v;
+  for (let i = 0; i < rr.length; i++) {
+    const interval = rr[i];
+    spectralIntervals.push(interval);
+    if (cumulative + interval > windowMs) {
+      if (i + 1 < rr.length) {
+        spectralIntervals.push(rr[i + 1]);
+      }
+      break;
+    }
+    completeIntervals.push(interval);
+    cumulative += interval;
   }
   return { completeIntervals, spectralIntervals };
 }
