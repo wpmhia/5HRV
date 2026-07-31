@@ -1,3 +1,5 @@
+import { naturalCubicSpline } from "@/lib/cubicSpline";
+
 export type HrvMetrics = {
   rmssd: number;
   sdnn: number;
@@ -15,6 +17,7 @@ export const LF_HIGH_HZ = 0.15;
 export const HF_LOW_HZ = 0.15;
 export const HF_HIGH_HZ = 0.4;
 export const DETREND_LAMBDA = 500;
+export const WELCH_WINDOW_SECONDS = 300;
 
 function sum(values: number[]): number {
   let s = 0;
@@ -46,65 +49,6 @@ function nextPowerOfTwo(n: number): number {
   let p = 1;
   while (p < n) p <<= 1;
   return p;
-}
-
-function naturalCubicSpline(x: number[], y: number[], xOut: number[]): number[] {
-  const n = x.length;
-  if (n === 0) return [];
-  if (n === 1) return xOut.map(() => y[0]);
-  if (n === 2) return xOut.map((t) => y[0] + ((y[1] - y[0]) / (x[1] - x[0])) * (t - x[0]));
-
-  const h = new Array<number>(n - 1);
-  for (let i = 0; i < n - 1; i++) h[i] = x[i + 1] - x[i];
-
-  const alpha = new Array<number>(n).fill(0);
-  for (let i = 1; i < n - 1; i++) {
-    alpha[i] = (3 / h[i]) * (y[i + 1] - y[i]) - (3 / h[i - 1]) * (y[i] - y[i - 1]);
-  }
-
-  const l = new Array<number>(n).fill(0);
-  const mu = new Array<number>(n).fill(0);
-  const z = new Array<number>(n).fill(0);
-  l[0] = 1;
-  for (let i = 1; i < n - 1; i++) {
-    l[i] = 2 * (x[i + 1] - x[i - 1]) - h[i - 1] * mu[i - 1];
-    mu[i] = h[i] / l[i];
-    z[i] = (alpha[i] - h[i - 1] * z[i - 1]) / l[i];
-  }
-  l[n - 1] = 1;
-
-  const c = new Array<number>(n).fill(0);
-  const b = new Array<number>(n).fill(0);
-  const d = new Array<number>(n).fill(0);
-  for (let j = n - 2; j >= 0; j--) {
-    c[j] = z[j] - mu[j] * c[j + 1];
-    b[j] = (y[j + 1] - y[j]) / h[j] - (h[j] * (c[j + 1] + 2 * c[j])) / 3;
-    d[j] = (c[j + 1] - c[j]) / (3 * h[j]);
-  }
-
-  const out = new Array<number>(xOut.length);
-  let j = 0;
-  for (let k = 0; k < xOut.length; k++) {
-    const t = xOut[k];
-    while (j < n - 2 && t > x[j + 1]) j++;
-    const dx = t - x[j];
-    out[k] = y[j] + b[j] * dx + c[j] * dx * dx + d[j] * dx * dx * dx;
-  }
-  return out;
-}
-
-function buildTachogram(nn: number[], fs: number): number[] {
-  const n = nn.length;
-  if (n === 0) return [];
-  const times = new Array<number>(n);
-  times[0] = 0;
-  for (let i = 1; i < n; i++) times[i] = times[i - 1] + nn[i - 1];
-  const totalMs = times[n - 1] + nn[n - 1];
-  const dt = 1000 / fs;
-  const m = Math.max(1, Math.floor(totalMs / dt));
-  const xOut = new Array<number>(m);
-  for (let k = 0; k < m; k++) xOut[k] = k * dt;
-  return naturalCubicSpline(times, nn, xOut);
 }
 
 function smoothnessPriors(y: number[], lambda: number): number[] {
@@ -153,6 +97,17 @@ function smoothnessPriors(y: number[], lambda: number): number[] {
   return residual;
 }
 
+function buildTachogram(timesMs: number[], values: number[], fs: number): number[] {
+  const n = timesMs.length;
+  if (n === 0) return [];
+  const totalMs = timesMs[n - 1] + values[n - 1];
+  const dt = 1000 / fs;
+  const m = Math.max(1, Math.floor(totalMs / dt));
+  const xOut = new Array<number>(m);
+  for (let k = 0; k < m; k++) xOut[k] = k * dt;
+  return naturalCubicSpline(timesMs, values, xOut);
+}
+
 function fft(re: Float64Array, im: Float64Array): void {
   const n = re.length;
   for (let i = 1, j = 0; i < n; i++) {
@@ -189,14 +144,14 @@ function fft(re: Float64Array, im: Float64Array): void {
   }
 }
 
-function spectralPower(signal: number[], fs: number): { lfPower: number; hfPower: number } {
-  const n = signal.length;
+function periodogram(segment: number[], fs: number): { lfPower: number; hfPower: number } {
+  const n = segment.length;
   if (n < 4) return { lfPower: 0, hfPower: 0 };
-  const m = mean(signal);
+  const m = mean(segment);
   const nfft = nextPowerOfTwo(n);
   const re = new Float64Array(nfft);
   const im = new Float64Array(nfft);
-  for (let i = 0; i < n; i++) re[i] = signal[i] - m;
+  for (let i = 0; i < n; i++) re[i] = segment[i] - m;
   fft(re, im);
 
   let lf = 0;
@@ -211,26 +166,51 @@ function spectralPower(signal: number[], fs: number): { lfPower: number; hfPower
   return { lfPower: lf, hfPower: hf };
 }
 
+// Welch's periodogram: 300-second segments with 50% overlap, averaged.
+// A complete five-minute series therefore yields a single segment; shorter
+// series use the longest available segment length.
+function welchPower(signal: number[], fs: number): { lfPower: number; hfPower: number } {
+  const n = signal.length;
+  if (n < 4) return { lfPower: 0, hfPower: 0 };
+  const windowLength = Math.min(Math.round(WELCH_WINDOW_SECONDS * fs), n);
+  const hop = Math.max(1, Math.floor(windowLength / 2));
+  let lfTotal = 0;
+  let hfTotal = 0;
+  let segments = 0;
+  for (let start = 0; start + windowLength <= n; start += hop) {
+    const segment = signal.slice(start, start + windowLength);
+    const { lfPower, hfPower } = periodogram(segment, fs);
+    lfTotal += lfPower;
+    hfTotal += hfPower;
+    segments++;
+  }
+  if (segments === 0) return { lfPower: 0, hfPower: 0 };
+  return { lfPower: lfTotal / segments, hfPower: hfTotal / segments };
+}
+
 export function calculateHrv(nn: number[]): HrvMetrics {
   const n = nn.length;
-  const m = mean(nn);
+  const meanRr = mean(nn);
+  const meanHr = meanRr > 0 ? 60000 / meanRr : 0;
+
+  const detrended = smoothnessPriors(nn, DETREND_LAMBDA);
 
   let sumSqDiff = 0;
   let nn50 = 0;
-  for (let i = 1; i < n; i++) {
-    const d = nn[i] - nn[i - 1];
+  for (let i = 1; i < detrended.length; i++) {
+    const d = detrended[i] - detrended[i - 1];
     sumSqDiff += d * d;
     if (Math.abs(d) > 50) nn50++;
   }
+  const rmssd = detrended.length > 1 ? Math.sqrt(sumSqDiff / (detrended.length - 1)) : 0;
+  const sdnn = standardDeviation(detrended, mean(detrended));
+  const pnn50 = detrended.length > 1 ? (nn50 / (detrended.length - 1)) * 100 : 0;
 
-  const rmssd = n > 1 ? Math.sqrt(sumSqDiff / (n - 1)) : 0;
-  const sdnn = standardDeviation(nn, m);
-  const pnn50 = n > 1 ? (nn50 / (n - 1)) * 100 : 0;
-  const meanHr = m > 0 ? 60000 / m : 0;
-
-  const tachogram = buildTachogram(nn, RESAMPLE_FREQUENCY_HZ);
-  const detrended = smoothnessPriors(tachogram, DETREND_LAMBDA);
-  const { lfPower, hfPower } = spectralPower(detrended, RESAMPLE_FREQUENCY_HZ);
+  const timesMs = new Array<number>(n);
+  timesMs[0] = 0;
+  for (let i = 1; i < n; i++) timesMs[i] = timesMs[i - 1] + nn[i - 1];
+  const tachogram = buildTachogram(timesMs, detrended, RESAMPLE_FREQUENCY_HZ);
+  const { lfPower, hfPower } = welchPower(tachogram, RESAMPLE_FREQUENCY_HZ);
 
   return {
     rmssd,

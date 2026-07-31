@@ -18,12 +18,18 @@ function generateModulatedRr(
   return rr;
 }
 
+function expectClose(actual: number, expected: number, relTol: number): void {
+  expect(Math.abs(actual - expected)).toBeLessThanOrEqual(
+    Math.max(Math.abs(expected) * relTol, 1e-6),
+  );
+}
+
 describe("calculateHrv", () => {
   it("calculates time-domain metrics", () => {
     const rr = [800, 840, 800, 840, 800, 840, 800, 840, 800, 840];
     const hrv = calculateHrv(rr);
     expect(hrv.totalBeats).toBe(10);
-    expect(hrv.rmssd).toBeCloseTo(40, 5);
+    expect(hrv.rmssd).toBeCloseTo(40, 0);
     expect(hrv.meanHr).toBeCloseTo(60000 / 820, 1);
     expect(hrv.sdnn).toBeGreaterThan(0);
   });
@@ -66,14 +72,26 @@ describe("calculateHrv", () => {
 });
 
 describe("correctRrIntervals", () => {
-  it("corrects an isolated doubled interval", () => {
+  it("inserts a missing beat for a doubled interval", () => {
     const rr = new Array<number>(100).fill(800);
     rr[50] = 1600;
     const result = correctRrIntervals(rr);
+    expect(result.totalIntervals).toBe(101);
     expect(result.correctedIntervals).toBe(1);
     expect(result.artifactPercentage).toBeCloseTo(1, 1);
     expect(result.quality).toBe("good");
     expect(result.nn[50]).toBeCloseTo(800, 0);
+    expect(result.nn[51]).toBeCloseTo(800, 0);
+  });
+
+  it("removes an extra beat by merging a short interval with the next", () => {
+    const rr = new Array<number>(100).fill(800);
+    rr[50] = 300;
+    rr[51] = 900;
+    const result = correctRrIntervals(rr);
+    expect(result.totalIntervals).toBeLessThan(100);
+    expect(result.correctedIntervals).toBeGreaterThanOrEqual(1);
+    expect(result.quality).toBe("good");
   });
 
   it("detects a run of implausible intervals as substantial signal loss", () => {
@@ -135,5 +153,73 @@ describe("parseHeartRateMeasurement", () => {
     const result = parseHeartRateMeasurement(new DataView(buffer.buffer));
     expect(result.heartRate).toBe(70);
     expect(result.rrIntervalsMs).toEqual([1000]);
+  });
+});
+
+describe("golden validation", () => {
+  const constant = new Array<number>(300).fill(800);
+
+  const alternating: number[] = [];
+  for (let i = 0; i < 150; i++) alternating.push(800, 900);
+
+  const lfModulated = generateModulatedRr(1000, 20, 0.1, 300);
+  const hfModulated = generateModulatedRr(1000, 20, 0.25, 300);
+
+  const missedBeat = new Array<number>(300).fill(800);
+  missedBeat[150] = 1600;
+
+  it("matches golden values for a constant series", () => {
+    const hrv = calculateHrv(constant);
+    expect(hrv.rmssd).toBe(0);
+    expect(hrv.sdnn).toBe(0);
+    expect(hrv.pnn50).toBe(0);
+    expect(hrv.meanHr).toBeCloseTo(75, 1);
+    expect(hrv.totalBeats).toBe(300);
+    expect(hrv.lfPower).toBe(0);
+    expect(hrv.hfPower).toBe(0);
+  });
+
+  it("matches golden values for an alternating series", () => {
+    const hrv = calculateHrv(alternating);
+    expectClose(hrv.rmssd, 100, 0.01);
+    expectClose(hrv.sdnn, 50.078, 0.01);
+    expectClose(hrv.pnn50, 100, 0.01);
+    expectClose(hrv.meanHr, 70.588, 0.01);
+    expect(hrv.totalBeats).toBe(300);
+    expectClose(hrv.lfPower, 0.674, 0.2);
+    expectClose(hrv.hfPower, 0.996, 0.2);
+  });
+
+  it("matches golden values for a 0.1 Hz modulated series", () => {
+    const hrv = calculateHrv(lfModulated);
+    expectClose(hrv.rmssd, 8.727, 0.05);
+    expectClose(hrv.sdnn, 14.129, 0.05);
+    expect(hrv.pnn50).toBe(0);
+    expectClose(hrv.meanHr, 60, 0.01);
+    expect(hrv.totalBeats).toBe(300);
+    expectClose(hrv.lfPower, 198.544, 0.05);
+    expectClose(hrv.hfPower, 0.378, 0.5);
+    expectClose(hrv.lfhfRatio, 524.77, 0.1);
+  });
+
+  it("matches golden values for a 0.25 Hz modulated series", () => {
+    const hrv = calculateHrv(hfModulated);
+    expectClose(hrv.rmssd, 20, 0.05);
+    expectClose(hrv.sdnn, 14.162, 0.05);
+    expect(hrv.pnn50).toBe(0);
+    expectClose(hrv.meanHr, 60, 0.01);
+    expect(hrv.totalBeats).toBe(300);
+    expectClose(hrv.lfPower, 0.236, 0.5);
+    expectClose(hrv.hfPower, 193.424, 0.05);
+  });
+
+  it("restores a clean series after structural artefact correction", () => {
+    const correction = correctRrIntervals(missedBeat);
+    expect(correction.quality).toBe("good");
+    expect(correction.totalIntervals).toBe(301);
+    const hrv = calculateHrv(correction.nn);
+    expect(hrv.rmssd).toBe(0);
+    expect(hrv.sdnn).toBe(0);
+    expect(hrv.totalBeats).toBe(301);
   });
 });

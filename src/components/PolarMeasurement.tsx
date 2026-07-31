@@ -19,7 +19,20 @@ import { calculateHrv, type HrvMetrics } from "@/lib/calculateHrv";
 
 const SETTLING_SECONDS = 300;
 const RECORDING_SECONDS = 300;
-const MIN_RECORDING_SECONDS = 60;
+const MIN_ANALYSED_SECONDS = 295;
+
+function trimToDurationMs(rr: number[], durationMs: number): number[] {
+  if (rr.length === 0) return [];
+  const result: number[] = [];
+  let cumulative = 0;
+  for (let i = 1; i < rr.length; i++) {
+    const v = rr[i];
+    if (cumulative + v > durationMs) break;
+    result.push(v);
+    cumulative += v;
+  }
+  return result;
+}
 
 type Phase = "prepare" | "connecting" | "settling" | "recording" | "complete" | "error";
 
@@ -108,11 +121,17 @@ export function PolarMeasurement({ onPrefill }: Props) {
   }, []);
 
   const finishRecording = useCallback(() => {
-    const rr = rrBufferRef.current;
-    const durationSeconds = (Date.now() - recordingStartedAtRef.current) / 1000;
-    if (rr.length < 30 || durationSeconds < MIN_RECORDING_SECONDS) {
+    const elapsedSeconds = (Date.now() - recordingStartedAtRef.current) / 1000;
+    if (elapsedSeconds < RECORDING_SECONDS - 1) {
       setPhase("error");
-      setError("Recording was too short. Please repeat the measurement.");
+      setError("Recording stopped early. A complete five-minute recording is required.");
+      return;
+    }
+    const rr = trimToDurationMs(rrBufferRef.current, RECORDING_SECONDS * 1000);
+    const analysedSeconds = rr.reduce((s, v) => s + v, 0) / 1000;
+    if (analysedSeconds < MIN_ANALYSED_SECONDS) {
+      setPhase("error");
+      setError("The recording did not contain a complete five-minute analysis window. Please repeat.");
       return;
     }
     const correction = correctRrIntervals(rr);
