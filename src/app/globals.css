@@ -143,9 +143,7 @@ nextjs-portal {
   nav, footer,
   .no-print,
   button,
-  [role="alert"],
-  details,
-  summary {
+  [role="alert"] {
     display: none !important;
   }
 

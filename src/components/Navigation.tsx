@@ -2,19 +2,41 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
+import { Moon, Sun } from "lucide-react";
 import { Button } from "./ui/button";
 
 const navItems = [
-  { href: "/method", label: "Protocol" },
+  { href: "/method", label: "Method" },
   { href: "/methodology", label: "Methodology" },
-  { href: "/applications", label: "Clinical Use" },
+  { href: "/applications", label: "Applications" },
   { href: "/evidence", label: "Evidence" },
   { href: "/calculator", label: "Calculator" },
 ];
 
 const textItems = navItems.slice(0, 4);
-const calculatorItem = navItems[3];
+const calculatorItem = navItems[4];
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) {
+    return <span className="inline-block h-8 w-8" aria-hidden="true" />;
+  }
+  const isDark = resolvedTheme === "dark";
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="rounded-md border border-border p-1.5 text-foreground hover:bg-muted transition-colors"
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </button>
+  );
+}
 
 export function Navigation() {
   const path = usePathname();
@@ -47,17 +69,21 @@ export function Navigation() {
           <Button variant="outline" size="sm" asChild>
             <Link href={calculatorItem.href}>{calculatorItem.label}</Link>
           </Button>
+          <ThemeToggle />
         </nav>
 
-        <button
-          type="button"
-          className="rounded-md border border-border px-2 py-1 text-sm text-foreground hover:bg-muted md:hidden"
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          aria-label="Toggle navigation"
-        >
-          {open ? "Close" : "Menu"}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            className="rounded-md border border-border px-2 py-1 text-sm text-foreground hover:bg-muted"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            aria-label="Toggle navigation"
+          >
+            {open ? "Close" : "Menu"}
+          </button>
+        </div>
       </div>
 
       {open && (

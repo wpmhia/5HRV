@@ -82,7 +82,7 @@ export default function InterpretationPage() {
           HRV must be interpreted in the context of the individual and the
           recording. Factors that should be considered include age, reference
           sex, recording method, body position, heart rate, rhythm, artefacts,
-          breathing pattern, medication and clinical presentation.
+          breathing pattern and medication.
         </p>
       </section>
 
@@ -92,19 +92,30 @@ export default function InterpretationPage() {
         </h2>
         <p className="text-base leading-7 text-foreground/85">
           HRV generally decreases with age and differs between male and female
-          reference populations. The DanFunD study, based on 6,891 Danish adults
-          aged 18&ndash;72 years, provides age- and sex-specific RMSSD and SDNN
-          reference percentiles for short-term recordings. These are population
-          reference distributions, not disease thresholds.
+          reference populations. The DanFunD study, a large Danish
+          population-based cohort of adults aged 18&ndash;72 years, provides
+          age- and sex-specific RMSSD and SDNN reference percentiles for
+          short-term recordings. These are population reference distributions,
+          not disease thresholds.
         </p>
 
         <ReferenceTable metric="rmssd" title="RMSSD reference percentiles (ms)" />
         <ReferenceTable metric="sdnn" title="SDNN reference percentiles (ms)" />
 
         <p className="text-sm leading-6 text-muted-foreground">
-          For HF, LF and LF/HF, cautious descriptive interpretation is
-          recommended because spectral values are especially sensitive to
-          breathing and analysis methodology. See the{" "}
+          HF and LF power have no validated age- and sex-specific reference
+          distribution and are described without percentile placement, because
+          spectral values are especially sensitive to breathing and analysis
+          methodology. The LF/HF ratio is placed within the DanFunD age- and
+          sex-specific reference percentiles using log-domain interpolation
+          (see the{" "}
+          <Link
+            href="/methodology"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Methodology page
+          </Link>
+          ), but remains a descriptive spectral ratio. See the{" "}
           <Link
             href="/evidence"
             className="text-primary underline-offset-4 hover:underline"
@@ -122,11 +133,13 @@ export default function InterpretationPage() {
         <p className="text-base leading-7 text-foreground/85">
           RMSSD is the primary metric for short-term vagal-related assessment.
           Its interpretation is based on the age- and sex-specific percentile
-          category: values below the 5th percentile are classified as markedly
-          reduced; values between the 5th and 25th percentile as reduced; values
-          between the 25th and 75th percentile as preserved; values between the
-          75th and 95th percentile as high; and values above the 95th percentile
-          as very high.
+          category: values below the 5th percentile are classified as
+          &ldquo;Very low &middot; below P5&rdquo;; values between the 5th and
+          25th percentile as &ldquo;Low &middot; P5&ndash;P25&rdquo;; values
+          between the 25th and 75th percentile as &ldquo;Typical &middot;
+          P25&ndash;P75&rdquo;; values between the 75th and 95th percentile as
+          &ldquo;High &middot; P75&ndash;P95&rdquo;; and values above the 95th
+          percentile as &ldquo;Very high &middot; above P95&rdquo;.
         </p>
       </section>
 
@@ -136,9 +149,8 @@ export default function InterpretationPage() {
         </h2>
         <p className="text-base leading-7 text-foreground/85">
           SDNN reflects total short-term variability. The same percentile
-          classification is applied: markedly reduced, reduced, within the
-          expected range, high or very high, based on the DanFunD reference
-          distribution.
+          classification is applied: Very low, Low, Typical, High or Very high,
+          based on the DanFunD reference distribution.
         </p>
       </section>
 
@@ -224,21 +236,21 @@ export default function InterpretationPage() {
 
       <section className="mt-12 space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">
-          The 5HRV Autonomic Score
+          The 5HRV Autonomic Pattern Score
         </h2>
         <p className="text-base leading-7 text-foreground/85">
-          The 5HRV Autonomic Score combines RMSSD and the LF/HF ratio into a
-          single numerical index ranging from &minus;100 to +100. A negative
-          score indicates parasympathetic predominance, a score near zero
-          indicates a balanced or mixed pattern, and a positive score indicates
-          a sympathetic shift. The score is a directional framework aid, not a
-          diagnostic measurement.
+          The 5HRV Autonomic Pattern Score combines RMSSD and the LF/HF ratio
+          into a single numerical index ranging from &minus;100 to +100. A
+          negative score indicates a parasympathetic-direction shift, a score
+          near zero indicates a central or mixed pattern, and a positive score
+          indicates a sympathetic-direction shift. The score is a directional
+          composite, not a diagnostic measurement.
         </p>
       </section>
 
       <section className="mt-12 space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">
-          Worked clinical example
+          Worked example
         </h2>
         <p className="text-base leading-7 text-foreground/85">
           A 45-year-old male with a resting five-minute recording yields the
@@ -277,9 +289,8 @@ export default function InterpretationPage() {
           The LF/HF ratio demonstrates relative LF predominance. RMSSD and SDNN
           must be interpreted against age- and sex-specific reference
           percentiles. The result does not by itself prove sympathetic
-          overactivity or vagal failure. The 5HRV Autonomic Score for this
-          recording indicates a pattern within the balanced to mild sympathetic
-          shift range.
+          overactivity or vagal failure. The 5HRV Autonomic Pattern Score for
+          this recording is +5, classified as a central autonomic pattern.
         </p>
       </section>
 
@@ -289,8 +300,9 @@ export default function InterpretationPage() {
           The 5HRV interpretation framework is based on a single five-minute
           resting recording under standardized conditions. It does not replace
           comprehensive autonomic testing, tilt-table evaluation or
-          twenty-four-hour HRV analysis where indicated. Results must always be
-          integrated with the clinical context.
+          twenty-four-hour HRV analysis where indicated. Results describe the
+          recording and must always be interpreted together with the context
+          in which it was obtained.
         </p>
       </section>
     </div>

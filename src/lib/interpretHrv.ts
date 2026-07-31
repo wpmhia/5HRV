@@ -33,21 +33,18 @@ export function computeLfhfRatio(lfPower: number, hfPower: number): number | nul
   return lfPower / hfPower;
 }
 
-export function hasLfhfDiscrepancy(
-  enteredRatio: number,
-  lfPower: number,
-  hfPower: number
-): boolean {
-  const calculated = computeLfhfRatio(lfPower, hfPower);
-  if (calculated === null || calculated === 0) return false;
-  return Math.abs(enteredRatio - calculated) / calculated > 0.1;
-}
-
 export function describeLfhf(ratio: number): string {
   if (ratio < 0.5) return "Relative HF predominance";
   if (ratio <= 2.0) return "LF and HF are of broadly comparable magnitude";
   if (ratio <= 4.0) return "Relative LF predominance";
   return "Marked relative LF predominance";
+}
+
+function describeLfhfInSentence(ratio: number): string {
+  if (ratio < 0.5) return "relative HF predominance";
+  if (ratio <= 2.0) return "LF and HF of broadly comparable magnitude";
+  if (ratio <= 4.0) return "relative LF predominance";
+  return "marked relative LF predominance";
 }
 
 export function describeLfhfByBand(band: ReferenceBand): string | null {
@@ -106,7 +103,9 @@ export function interpolateLogPercentile(
   reference: readonly [number, number, number, number, number],
 ): number {
   const [p5, p25, p50, p75, p95] = reference;
-  if (p5 <= 0 || value <= 0) return estimatePercentile(value, reference) ?? 50;
+  if (p5 <= 0 || value <= 0) {
+    return clamp(estimatePercentile(value, reference) ?? 50, 5, 95);
+  }
 
   const cappedVal = clamp(value, p5, p95);
 
@@ -487,10 +486,13 @@ export function renderAnalysis(findings: HrvFindings): string {
 
   const clauses: string[] = [];
 
+  const pctDisplay = (pct: number): string =>
+    ordinal(clamp(Math.round(pct), 1, 99));
+
   if (sdnn.value !== undefined && sdnn.referencePercentiles && findings.ageBand) {
     const sexLabel = findings.referenceSex === "female" ? "women" : findings.referenceSex === "male" ? "men" : "the selected reference group";
     const bandLabel = sdnn.band !== "unclassified" ? percentileLabels[sdnn.band as PercentileCategory] : "";
-    const pctStr = sdnn.estimatedPercentile !== undefined ? `, at approximately the ${ordinal(Math.round(sdnn.estimatedPercentile))} percentile` : "";
+    const pctStr = sdnn.estimatedPercentile !== undefined ? `, at approximately the ${pctDisplay(sdnn.estimatedPercentile)} percentile` : "";
     clauses.push(
       `SDNN ${sdnn.value} ms is within the ${bandLabel} reference range for ${sexLabel} aged ${findings.ageBand}${pctStr}.`
     );
@@ -499,7 +501,7 @@ export function renderAnalysis(findings: HrvFindings): string {
   if (rmssd.value !== undefined && rmssd.referencePercentiles && findings.ageBand) {
     const sexLabel = findings.referenceSex === "female" ? "women" : findings.referenceSex === "male" ? "men" : "the selected reference group";
     const bandLabel = rmssd.band !== "unclassified" ? percentileLabels[rmssd.band as PercentileCategory] : "";
-    const pctStr = rmssd.estimatedPercentile !== undefined ? `, at approximately the ${ordinal(Math.round(rmssd.estimatedPercentile))} percentile` : "";
+    const pctStr = rmssd.estimatedPercentile !== undefined ? `, at approximately the ${pctDisplay(rmssd.estimatedPercentile)} percentile` : "";
     const vagalText = rmssd.vagalStatus === "reduced" || rmssd.vagalStatus === "markedly_reduced"
       ? ", indicating reduced short-term parasympathetic activity"
       : "";
@@ -509,20 +511,32 @@ export function renderAnalysis(findings: HrvFindings): string {
   }
 
   if (fd.lfhfRatio !== undefined) {
-    const patternText = describeLfhf(fd.lfhfRatio);
     clauses.push(
-      `The frequency-domain pattern shows ${patternText.toLowerCase()}, with an LF/HF ratio of ${fd.lfhfRatio}.`
+      `The frequency-domain pattern shows ${describeLfhfInSentence(fd.lfhfRatio)}, with an LF/HF ratio of ${fd.lfhfRatio}.`
     );
   }
 
-  const overallVar = sdnn.band !== "unclassified" && !bandIsLow(sdnn.band) ? "preserved" : "reduced";
-  const paraStatus = rmssd.vagalStatus === "reduced" || rmssd.vagalStatus === "markedly_reduced" ? "reduced" : "preserved";
-  const patternText = profile
-    ? ` and a ${profile.label.toLowerCase()}`
-    : "";
-  clauses.push(
-    `Overall variability is ${overallVar}, with ${paraStatus} parasympathetic activity${patternText}.`
-  );
+  const summaryParts: string[] = [];
+  if (sdnn.value !== undefined && sdnn.band !== "unclassified") {
+    summaryParts.push(
+      bandIsLow(sdnn.band) ? "reduced overall variability" : "preserved overall variability"
+    );
+  }
+  if (rmssd.value !== undefined && rmssd.vagalStatus !== "unclassified") {
+    const para = rmssd.vagalStatus === "reduced" || rmssd.vagalStatus === "markedly_reduced"
+      ? "reduced"
+      : "preserved";
+    summaryParts.push(`${para} parasympathetic activity`);
+  }
+  if (profile) {
+    summaryParts.push(`a ${profile.label.toLowerCase()}`);
+  }
+  if (summaryParts.length > 0) {
+    const last = summaryParts[summaryParts.length - 1];
+    const rest = summaryParts.slice(0, -1);
+    const body = rest.length === 0 ? last : `${rest.join(", ")} and ${last}`;
+    clauses.push(`The recording shows ${body}.`);
+  }
 
   clauses.push(
     "Serial measurements under standardised conditions are more informative than a single recording."

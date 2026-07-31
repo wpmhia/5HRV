@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import type { MeasurementInput, LfhfSource } from "@/lib/types";
+import { useRef, useState } from "react";
+import type { MeasurementInput } from "@/lib/types";
 import type { ParsedReportValues } from "@/lib/parseHrvReport";
 import { normalizeNumber } from "@/lib/interpretHrv";
 import { ReportUpload } from "@/components/ReportUpload";
@@ -213,6 +213,19 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       }
     }
 
+    const durSec = normalizeNumber(form.durationSeconds);
+    if (form.durationSeconds.trim() !== "" && (durSec === null || durSec <= 0)) {
+      nextErrors.durationSeconds = "Enter a valid duration in seconds.";
+    }
+    const sampFreq = normalizeNumber(form.samplingFrequencyHz);
+    if (form.samplingFrequencyHz.trim() !== "" && (sampFreq === null || sampFreq <= 0)) {
+      nextErrors.samplingFrequencyHz = "Enter a valid sampling frequency.";
+    }
+    const totBeats = normalizeNumber(form.totalBeats);
+    if (form.totalBeats.trim() !== "" && (totBeats === null || totBeats <= 0)) {
+      nextErrors.totalBeats = "Enter a valid beat count.";
+    }
+
     if (Object.keys(nextErrors).length > 0) return null;
 
     const result: MeasurementInput = {
@@ -224,9 +237,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     };
 
     const recDate = form.recordingDate.trim() || undefined;
-    const durSec = normalizeNumber(form.durationSeconds);
-    const sampFreq = normalizeNumber(form.samplingFrequencyHz);
-    const totBeats = normalizeNumber(form.totalBeats);
     const srcFile = form.sourceFilename.trim() || undefined;
     if (recDate || durSec !== null || sampFreq !== null || totBeats !== null || srcFile) {
       result.recording = {
@@ -356,7 +366,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-8">
-      <section aria-labelledby="section-person">
+      <section>
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <NumberField
@@ -551,6 +561,61 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
             </div>
           )}
         </div>
+      </section>
+
+      <section aria-labelledby="section-recording">
+        <details className="rounded-md border border-border bg-card/40 px-4 py-3">
+          <summary className="cursor-pointer text-base font-semibold text-foreground" id="section-recording">
+            Recording details (optional)
+          </summary>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Metadata shown on the report. Prefilled automatically when values
+            are found in an uploaded report.
+          </p>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="recordingDate" className="text-sm font-medium text-foreground">
+                Recording date
+              </label>
+              <input
+                id="recordingDate"
+                type="text"
+                autoComplete="off"
+                value={form.recordingDate}
+                onChange={(event) => set("recordingDate", event.target.value)}
+                className={`mt-1 ${inputClass}`}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                DD-MM-YYYY or YYYY-MM-DD.
+              </p>
+            </div>
+            <NumberField
+              id="durationSeconds"
+              label="Recording duration"
+              unit="s"
+              value={form.durationSeconds}
+              onChange={(v) => set("durationSeconds", v)}
+              error={errors.durationSeconds}
+              helper="Approximately 300 s for a standard five-minute recording."
+            />
+            <NumberField
+              id="samplingFrequencyHz"
+              label="Sampling frequency"
+              unit="Hz"
+              value={form.samplingFrequencyHz}
+              onChange={(v) => set("samplingFrequencyHz", v)}
+              error={errors.samplingFrequencyHz}
+            />
+            <NumberField
+              id="totalBeats"
+              label="Analysed intervals"
+              unit="beats"
+              value={form.totalBeats}
+              onChange={(v) => set("totalBeats", v)}
+              error={errors.totalBeats}
+            />
+          </div>
+        </details>
       </section>
 
       <div className="flex flex-col gap-3 sm:flex-row">

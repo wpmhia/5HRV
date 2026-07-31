@@ -3,7 +3,6 @@ import {
   interpretHrv,
   normalizeNumber,
   computeLfhfRatio,
-  hasLfhfDiscrepancy,
   describeLfhf,
   describeLfhfByBand,
   deriveLfhfPattern,
@@ -18,13 +17,11 @@ import {
 import type {
   MeasurementInput,
   HrvInterpretation,
-  HrvFindings,
 } from "@/lib/types";
 import {
   getAgeBand,
   classifyPercentile,
   hrvReferenceData,
-  percentileLabels,
 } from "@/data/hrvReferenceData";
 
 const baseInput: MeasurementInput = {
@@ -140,6 +137,12 @@ describe("interpolateLogPercentile", () => {
     expect(below).toBeGreaterThanOrEqual(5);
     expect(above).toBeLessThanOrEqual(95);
   });
+  it("a ratio of zero stays within the 5-95 clamp", () => {
+    const ref = hrvReferenceData.female["30-39"].lfhf;
+    const pct = interpolateLogPercentile(0, ref as readonly [number, number, number, number, number]);
+    expect(pct).toBeGreaterThanOrEqual(5);
+    expect(pct).toBeLessThanOrEqual(95);
+  });
   it("returns intermediate value within published anchors", () => {
     const ref = hrvReferenceData.male["40-49"].lfhf;
     const pct = interpolateLogPercentile(2.0, ref as readonly [number, number, number, number, number]);
@@ -183,12 +186,6 @@ describe("LF/HF calculation", () => {
   });
   it("returns null when HF is zero", () => {
     expect(computeLfhfRatio(400, 0)).toBeNull();
-  });
-  it("detects discrepancy above 10%", () => {
-    expect(hasLfhfDiscrepancy(3, 400, 200)).toBe(true);
-  });
-  it("accepts values within 10%", () => {
-    expect(hasLfhfDiscrepancy(2.1, 400, 200)).toBe(false);
   });
   it("auto-calculates LF/HF when LF and HF are entered without a ratio", () => {
     const result = interpretHrv({ ...baseInput, lfPower: 300, hfPower: 150 });
@@ -325,6 +322,24 @@ describe("combined interpretation patterns", () => {
     });
     expect(result.overall).toContain("preserved");
     expect(result.overall).toContain("reduced");
+  });
+});
+
+describe("missing metrics", () => {
+  it("RMSSD only: parasympathetic claim without a variability claim", () => {
+    const result = interpretHrv({ age: 33, referenceSex: "female", rmssd: 40 });
+    expect(result.overall).toContain("parasympathetic activity");
+    expect(result.overall).not.toContain("overall variability");
+  });
+  it("SDNN only: variability claim without a parasympathetic claim", () => {
+    const result = interpretHrv({ age: 45, referenceSex: "male", sdnn: 30 });
+    expect(result.overall).toContain("overall variability");
+    expect(result.overall).not.toContain("parasympathetic activity");
+  });
+  it("RMSSD and LF/HF without SDNN: no variability claim", () => {
+    const result = interpretHrv({ age: 25, referenceSex: "female", rmssd: 40, lfhfRatio: 1.5, lfhfSource: "manual" });
+    expect(result.overall).not.toContain("overall variability");
+    expect(result.overall).toContain("parasympathetic activity");
   });
 });
 

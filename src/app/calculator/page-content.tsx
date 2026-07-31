@@ -3,7 +3,6 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { MeasurementInput } from "@/lib/types";
-import { interpretHrv } from "@/lib/interpretHrv";
 import { CalculatorForm } from "@/components/CalculatorForm";
 
 export default function CalculatorPageContent() {

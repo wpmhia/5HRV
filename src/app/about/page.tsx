@@ -14,7 +14,7 @@ export default function AboutPage() {
         About the 5HRV method
       </h1>
       <p className="mt-2 text-lg leading-relaxed text-muted-foreground">
-        The clinical and scientific background of the five-minute HRV framework.
+        The scientific background of the five-minute HRV framework.
       </p>
 
       <section className="mt-12 space-y-4">
@@ -24,23 +24,21 @@ export default function AboutPage() {
         <p className="text-base leading-7 text-foreground/85">
           The 5HRV framework was developed by Willem Gielen, Cardiologist and
           Internist, as a practical approach to standardized five-minute HRV
-          assessment in clinical practice and research. It is derived from the
-          five-minute HRV teaching presentation and is intended for physicians,
-          clinical researchers, autonomic clinics, cardiologists, internists,
-          neurologists, rehabilitation physicians and allied health
-          professionals working with autonomic dysfunction.
+          analysis in research and education. It is derived from the
+          five-minute HRV teaching presentation and is intended for
+          researchers, healthcare professionals and students working with
+          autonomic function.
         </p>
       </section>
 
       <section className="mt-12 space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">Intended use</h2>
         <p className="text-base leading-7 text-foreground/85">
-          5HRV is an educational and research-oriented tool for clinicians and
-          researchers who wish to apply standardized short-term HRV measurement
-          in their practice. It provides contextual interpretation of heart rate
-          variability measurements using age- and sex-specific reference
-          percentiles. It is not a certified medical device and does not provide
-          treatment advice.
+          5HRV is an educational and research-oriented tool for users who wish
+          to apply standardized short-term HRV analysis to recordings. It
+          provides contextual interpretation of heart rate variability
+          measurements using age- and sex-specific reference percentiles. It is
+          not a certified medical device and does not provide treatment advice.
         </p>
       </section>
 
@@ -51,25 +49,24 @@ export default function AboutPage() {
         <p className="text-base leading-7 text-foreground/85">
           The 5HRV method integrates a standardized recording protocol,
           ECG-based RR-interval analysis, time-domain HRV (RMSSD, SDNN, pNN50),
-          frequency-domain HRV (HF, LF, LF/HF), age- and sex-specific reference
-          interpretation using the DanFunD population percentiles, and clinical
-          context integration.
+          frequency-domain HRV (HF, LF, LF/HF), and age- and sex-specific
+          reference interpretation using the DanFunD population percentiles.
         </p>
       </section>
 
       <section className="mt-12 space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">
-          Scope and clinical boundaries
+          Scope and boundaries
         </h2>
         <p className="text-base leading-7 text-foreground/85">
           5HRV provides contextual interpretation of heart rate variability
           measurements. It does not diagnose autonomic disorders, POTS,
           cardiovascular disease, ME/CFS, Long COVID or any other condition.
-          Results must be interpreted together with symptoms, examination
-          findings and other clinical data. POTS and other orthostatic disorders
-          require dedicated supine and upright heart-rate and blood-pressure
-          measurements; resting five-minute HRV alone cannot establish the
-          diagnosis.
+          Results describe the recording and must be interpreted together with
+          the context in which it was obtained. POTS and other orthostatic
+          disorders require dedicated supine and upright heart-rate and
+          blood-pressure measurements; resting five-minute HRV alone cannot
+          establish the diagnosis.
         </p>
         <p className="text-base leading-7 text-foreground/85">
           This application is an educational and research-oriented tool. It is
@@ -87,7 +84,7 @@ export default function AboutPage() {
           processed locally and are not transmitted to a server. They are
           temporarily retained in this browser tab so the result page can be
           displayed. Do not enter names, identification numbers, exact dates of
-          birth or other directly identifiable patient information.
+          birth or other directly identifiable personal information.
         </p>
       </section>
 

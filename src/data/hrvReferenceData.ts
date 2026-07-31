@@ -75,7 +75,7 @@ export function getAgeBand(age: number): AgeBand | null {
 }
 
 export function classifyPercentile(value: number, percentiles: readonly number[]): PercentileCategory {
-  const [p5, p25, _p50, p75, p95] = percentiles;
+  const [p5, p25, , p75, p95] = percentiles;
 
   if (value < p5) return "below_p5";
   if (value < p25) return "p5_to_p25";

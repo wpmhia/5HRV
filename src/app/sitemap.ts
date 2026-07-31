@@ -9,6 +9,7 @@ const routes = [
   "/evidence",
   "/interpretation",
   "/method",
+  "/methodology",
   "/parameters",
 ] as const;
 

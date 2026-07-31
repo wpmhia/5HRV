@@ -23,6 +23,19 @@ function ordinal(value: number): string {
   }
 }
 
+function percentileOrdinal(pct: number): string {
+  return ordinal(Math.min(99, Math.max(1, Math.round(pct))));
+}
+
+const concordanceLabels: Record<string, string> = {
+  concordant_sympathetic_shift: "Sympathetic-direction shift (concordant)",
+  concordant_parasympathetic_shift: "Parasympathetic-direction shift (concordant)",
+  single_axis_sympathetic_shift: "Single-axis sympathetic shift",
+  single_axis_parasympathetic_shift: "Single-axis parasympathetic shift",
+  mixed: "Mixed autonomic pattern",
+  central: "Central autonomic pattern",
+};
+
 function formatDuration(seconds?: number): string {
   if (seconds === undefined) return "";
   const m = Math.floor(seconds / 60);
@@ -100,7 +113,7 @@ function MetricCard({
         )}
         {approxPct !== null && (
           <span className="text-xs text-muted-foreground">
-            Approximately {ordinal(Math.round(approxPct))} percentile
+            Approximately {percentileOrdinal(approxPct)} percentile
           </span>
         )}
       </div>
@@ -132,14 +145,6 @@ function ConcordanceBadge({ concordance }: { concordance: AutonomicConcordance }
     mixed: "bg-amber-100 text-amber-800 border-amber-200",
     central: "bg-stone-100 text-stone-800 border-stone-200",
   };
-  const labels: Record<string, string> = {
-    concordant_sympathetic_shift: "Sympathetic-direction shift (concordant)",
-    concordant_parasympathetic_shift: "Parasympathetic-direction shift (concordant)",
-    single_axis_sympathetic_shift: "Single-axis sympathetic shift",
-    single_axis_parasympathetic_shift: "Single-axis parasympathetic shift",
-    mixed: "Mixed autonomic pattern",
-    central: "Central autonomic pattern",
-  };
   const tooltips: Record<string, string> = {
     concordant_sympathetic_shift:
       "RMSSD and LF/HF both point in the sympathetic direction relative to the reference population. This is a directional pattern and not a direct measurement of sympathetic activity.",
@@ -158,7 +163,7 @@ function ConcordanceBadge({ concordance }: { concordance: AutonomicConcordance }
     <Tooltip>
       <TooltipTrigger asChild>
         <span className={`inline-block rounded-md border px-2 py-0.5 text-xs font-medium cursor-help ${colors[concordance] ?? ""}`}>
-          {labels[concordance] ?? concordance}
+          {concordanceLabels[concordance] ?? concordance}
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-72">
@@ -238,15 +243,15 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
           </p>
           <div className="mt-2 space-y-0.5">
             <span className="block">
-              Vagal modulation (RMSSD): {Math.round(profile.vagal.percentile)}
-              th percentile (Z = {profile.vagal.deviationZ.toFixed(2)})
+              Vagal modulation (RMSSD): {ordinal(Math.round(profile.vagal.percentile))}
+              {" "}percentile (Z = {profile.vagal.deviationZ.toFixed(2)})
             </span>
             <span className="block">
-              Spectral pattern (LF/HF): {Math.round(profile.spectral.percentile)}
-              th percentile (Z = {profile.spectral.deviationZ.toFixed(2)})
+              Spectral pattern (LF/HF): {ordinal(Math.round(profile.spectral.percentile))}
+              {" "}percentile (Z = {profile.spectral.deviationZ.toFixed(2)})
             </span>
             <span className="block">
-              Concordance: {profile.concordance.replace(/_/g, " ")}
+              Concordance: {concordanceLabels[profile.concordance] ?? profile.concordance}
             </span>
           </div>
           <div className="mt-2 space-y-0.5">
@@ -276,12 +281,16 @@ function SecondaryMetricCard({
   label,
   value,
   unit,
+  category,
+  categoryLabel,
   description,
   limitation,
 }: {
   label: string;
   value: number;
   unit: string;
+  category?: PercentileCategory;
+  categoryLabel?: string;
   description: string;
   limitation?: string;
 }) {
@@ -296,6 +305,20 @@ function SecondaryMetricCard({
         </span>
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
+      {categoryLabel && category && (
+        <div className="mt-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground cursor-help">
+                {categoryLabel}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-72">
+              {percentileExplanations[category]}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
       <p className="mt-2 text-sm text-foreground/80">{description}</p>
       {limitation && (
         <p className="mt-2 text-xs italic text-muted-foreground/70">
@@ -337,9 +360,9 @@ function buildPlainText(
     lines.push("");
     const p = interpretation.autonomicProfile;
     lines.push(`5HRV Autonomic Pattern Score: ${p.score > 0 ? "+" : ""}${p.score} (${p.label})`);
-    lines.push(`  Vagal modulation (RMSSD): ${Math.round(p.vagal.percentile)}th percentile (Z = ${p.vagal.deviationZ.toFixed(2)})`);
-    lines.push(`  Spectral pattern (LF/HF): ${Math.round(p.spectral.percentile)}th percentile (Z = ${p.spectral.deviationZ.toFixed(2)})`);
-    lines.push(`  Concordance: ${p.concordance.replace(/_/g, " ")}`);
+    lines.push(`  Vagal modulation (RMSSD): ${ordinal(Math.round(p.vagal.percentile))} percentile (Z = ${p.vagal.deviationZ.toFixed(2)})`);
+    lines.push(`  Spectral pattern (LF/HF): ${ordinal(Math.round(p.spectral.percentile))} percentile (Z = ${p.spectral.deviationZ.toFixed(2)})`);
+    lines.push(`  Concordance: ${concordanceLabels[p.concordance] ?? p.concordance}`);
   }
 
   lines.push("");
@@ -348,7 +371,7 @@ function buildPlainText(
       const ref = m.referencePercentiles;
       const pct = ref ? estimatePercentile(m.value, ref) : null;
       lines.push(`${m.name}: ${m.value} ${m.unit}`);
-      if (m.categoryLabel) lines.push(`${m.categoryLabel}${pct !== null ? ` \u2014 approximately ${ordinal(Math.round(pct))} percentile` : ""}`);
+      if (m.categoryLabel) lines.push(`${m.categoryLabel}${pct !== null ? ` \u2014 approximately ${percentileOrdinal(pct)} percentile` : ""}`);
       lines.push(m.interpretation);
       if (ref) {
         lines.push(`Reference details: P5: ${ref[0]} \u00B7 P25: ${ref[1]} \u00B7 P50: ${ref[2]} \u00B7 P75: ${ref[3]} \u00B7 P95: ${ref[4]} ${m.unit}`);
@@ -357,6 +380,7 @@ function buildPlainText(
     } else {
       const src = m.lfhfSource === "calculated" ? " (calculated)" : m.lfhfSource === "manual" ? " (entered)" : m.lfhfSource === "imported" ? " (reported)" : "";
       lines.push(`${m.key === "lfhf" ? "LF/HF" : m.name}: ${m.value}${m.unit ? ` ${m.unit}` : ""}${src}`);
+      if (m.categoryLabel) lines.push(m.categoryLabel);
       lines.push(m.interpretation);
       if (m.limitation) lines.push(m.limitation);
       lines.push("");
@@ -364,9 +388,8 @@ function buildPlainText(
   }
 
   lines.push(interpretation.overall);
-
-  lines.push("Interpret HRV together with the ECG, symptoms and clinical context.");
-  lines.push("Interpretation assumes that the supplied values originate from a technically valid five-minute HRV analysis.");
+  lines.push("");
+  lines.push(interpretation.clinicalNote);
   if (interpretation.referenceNote) {
     lines.push("");
     lines.push(interpretation.referenceNote);
@@ -380,7 +403,6 @@ export function ResultsView({ interpretation, input }: Props) {
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const ageBand = useMemo(() => getAgeBand(input.age), [input.age]);
-  const findings = interpretation.findings;
   const rec = input.recording;
 
   const handleCopy = useCallback(async () => {
@@ -424,6 +446,14 @@ export function ResultsView({ interpretation, input }: Props) {
     return () => {
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const openDetails = () => {
+      document.querySelectorAll("details").forEach((d) => d.setAttribute("open", ""));
+    };
+    window.addEventListener("beforeprint", openDetails);
+    return () => window.removeEventListener("beforeprint", openDetails);
   }, []);
 
   const handlePrint = () => {
@@ -554,6 +584,8 @@ export function ResultsView({ interpretation, input }: Props) {
                   label={m.key === "lfhf" ? "LF/HF" : m.name}
                   value={m.value}
                   unit={m.unit}
+                  category={m.category}
+                  categoryLabel={m.categoryLabel}
                   description={m.interpretation}
                   limitation={m.limitation}
                 />

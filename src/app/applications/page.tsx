@@ -12,27 +12,26 @@ export default function ApplicationsPage() {
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <header className="mb-12">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Clinical Applications
+          Applications
         </h1>
         <p className="mt-2 text-lg leading-relaxed text-muted-foreground">
-          Translating standardized five-minute HRV into clinical practice and research.
+          Applications of standardized five-minute HRV analysis in research.
         </p>
       </header>
 
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">
-          Role of five-minute HRV in clinical assessment
+          Role of five-minute HRV in autonomic research
         </h2>
         <p className="text-base leading-7 text-foreground/85">
           Short-term HRV recording offers a practical, non-invasive window into
-          autonomic cardiovascular regulation. When interpreted within the
-          appropriate clinical context, standardized five-minute measurements
-          can support the objective characterization of autonomic function in
-          conditions where dysregulation is a known or suspected feature. HRV
-          parameters alone do not establish a diagnosis of any disorder and must
-          be interpreted within the full clinical picture, including symptoms,
-          examination findings, rhythm assessment and other clinical
-          information.
+          autonomic cardiovascular regulation. Standardized five-minute
+          measurements can support the objective characterization of autonomic
+          function in study populations where dysregulation is a known or
+          suspected feature. HRV parameters alone do not establish a diagnosis
+          of any disorder; in applied settings they must be interpreted within
+          the full context, including symptoms, examination findings, rhythm
+          assessment and other relevant information.
         </p>
       </section>
 
@@ -47,8 +46,8 @@ export default function ApplicationsPage() {
           fraction, neurodegenerative disorders including Parkinson disease and
           multiple system atrophy, post-acute infection syndromes, orthostatic
           intolerance syndromes and rehabilitation monitoring. In each context,
-          HRV findings are interpreted alongside the clinical presentation and
-          are not independently diagnostic.
+          HRV findings are interpreted alongside other study measures and the
+          recording context, and are not independently diagnostic.
         </p>
       </section>
 
@@ -114,7 +113,7 @@ export default function ApplicationsPage() {
           Reduced HRV has been associated with adverse outcomes in several
           cardiovascular conditions, although five-minute HRV must not be
           substituted for validated 24-hour risk models. In neurological
-          practice, short-term HRV may support the assessment of autonomic
+          research, short-term HRV may support the assessment of autonomic
           involvement in Parkinson disease, multiple system atrophy and other
           neurodegenerative disorders.
         </p>
@@ -126,7 +125,7 @@ export default function ApplicationsPage() {
         </h2>
         <p className="text-base leading-7 text-foreground/85">
           Standardized short-term HRV recordings can be repeated over time to
-          track changes in autonomic function in response to treatment,
+          track changes in autonomic function in response to interventions,
           rehabilitation or disease progression. Reliable longitudinal
           comparison requires consistent recording conditions, equipment and
           analysis methods across sessions.
@@ -176,7 +175,7 @@ export default function ApplicationsPage() {
           Worked case
         </h2>
 
-        <h3 className="text-lg font-semibold">Clinical presentation</h3>
+        <h3 className="text-lg font-semibold">Case background</h3>
         <p className="text-base leading-7 text-foreground/85">
           Female, 20 years old, 27 months after SARS-CoV-2 infection. Symptoms
           include palpitations, cognitive dysfunction and orthostatic dizziness.
@@ -232,10 +231,9 @@ export default function ApplicationsPage() {
           themselves.
         </p>
         <aside className="my-6 border-l-4 border-primary pl-4 text-sm leading-6 text-foreground/80">
-          Treatment and clinical outcome for this patient are described in the
-          published teaching material. This case is presented for educational
-          purposes and does not constitute a treatment recommendation generated
-          by 5HRV.
+          Management and outcome for this case are described in the published
+          teaching material. This case is presented for educational purposes
+          and does not constitute a treatment recommendation generated by 5HRV.
         </aside>
       </section>
 

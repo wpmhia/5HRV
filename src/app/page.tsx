@@ -34,10 +34,10 @@ export default function Home() {
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-                Five-minute HRV for clinicians and researchers
+                A scientific five-minute HRV calculator
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Interpret five-minute HRV with a scientific interpretation.
+                Interpret five-minute HRV recordings against scientific reference data.
               </h1>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
                 5HRV converts standardized short-term HRV measurements into a
@@ -63,13 +63,13 @@ export default function Home() {
             <div className="hidden rounded-xl border border-border bg-card p-5 shadow-sm lg:block">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">5HRV Autonomic Score</span>
-                  <span className="text-sm font-semibold text-foreground">+10</span>
+                  <span className="text-xs font-medium text-muted-foreground">5HRV Autonomic Pattern Score</span>
+                  <span className="text-sm font-semibold text-foreground">+5</span>
                 </div>
                 <div className="relative h-2 w-full rounded-full bg-muted">
                   <div
                     className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary"
-                    style={{ left: "55%" }}
+                    style={{ left: "52.5%" }}
                   />
                 </div>
                 <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -92,9 +92,9 @@ export default function Home() {
                 </div>
                 <p className="border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">
                   Time domain: SDNN 47.63 ms, RMSSD 30.40 ms; frequency domain:
-                  HF 125.95 ms&sup2;, LF 400 ms&sup2;, LF/HF 3.28. The pattern
-                  shows preserved total variability and preserved parasympathetic
-                  activity with relative sympathetic predominance.
+                  HF 125.95 ms&sup2;, LF 400 ms&sup2;, LF/HF 3.28. The recording
+                  shows preserved overall variability, preserved parasympathetic
+                  activity and a central autonomic pattern.
                 </p>
               </div>
             </div>
@@ -118,14 +118,14 @@ export default function Home() {
       <section className="border-b border-border">
         <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-            HRV reports provide numbers. Clinical interpretation requires context.
+            HRV reports provide numbers. Interpretation requires context.
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
             Exported HRV reports often contain RMSSD, SDNN, pNN50, HF and LF
             without a coherent interpretation. Values depend on age, sex,
             recording duration, rhythm, breathing and artefact handling.
             5HRV applies a defined framework to turn those measurements into a
-            structured, clinically readable report.
+            structured scientific report.
           </p>
         </div>
       </section>
@@ -173,7 +173,7 @@ export default function Home() {
               {
                 step: "3",
                 title: "Interpret",
-                text: "Review the autonomic score, reference-based metric placement and scientific analysis.",
+                text: "Review the Autonomic Pattern Score, reference-based metric placement and scientific analysis.",
               },
             ].map((item) => (
               <div key={item.step} className="flex gap-4">
@@ -198,18 +198,18 @@ export default function Home() {
               <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
                 <div className="space-y-5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">5HRV Autonomic Score</span>
-                    <span className="text-sm font-semibold text-foreground">+10</span>
+                    <span className="text-xs font-medium text-muted-foreground">5HRV Autonomic Pattern Score</span>
+                    <span className="text-sm font-semibold text-foreground">+5</span>
                   </div>
                   <div className="relative h-2 w-full rounded-full bg-gradient-to-r from-blue-400 via-neutral-200 to-orange-400">
                     <div
                       className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-foreground shadow-sm"
-                      style={{ left: "55%" }}
+                      style={{ left: "52.5%" }}
                     />
                   </div>
                   <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>Parasympathetic predominance</span>
-                    <span>Sympathetic predominance</span>
+                    <span>Parasympathetic direction</span>
+                    <span>Sympathetic direction</span>
                   </div>
                   <div className="grid grid-cols-6 gap-3 border-t border-border pt-5 text-center text-xs">
                     <div>
@@ -246,22 +246,22 @@ export default function Home() {
                   <p className="border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
                     Time domain: SDNN 47.63 ms, RMSSD 30.40 ms, pNN50 3.3%;
                     frequency domain: HF 125.95 ms&sup2;, LF 400 ms&sup2;, LF/HF
-                    3.28. The pattern shows preserved total variability and
-                    preserved parasympathetic activity with relative sympathetic
-                    predominance.
+                    3.28. The recording shows preserved overall variability,
+                    preserved parasympathetic activity and a central autonomic
+                    pattern.
                   </p>
                 </div>
               </div>
             </div>
             <div className="lg:col-span-2">
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                A result designed to be read, copied and printed as a clinical report.
+                A result designed to be read, copied and printed as a scientific report.
               </h2>
               <p className="mt-4 text-base leading-7 text-muted-foreground">
-                Every interpretation includes an autonomic score, individual
-                metric placement with percentile categories, and a clinical
-                summary paragraph&mdash;all derived from the same underlying
-                framework.
+                Every interpretation includes an Autonomic Pattern Score,
+                individual metric placement with percentile categories, and a
+                scientific analysis paragraph&mdash;all derived from the same
+                underlying framework.
               </p>
             </div>
           </div>
@@ -310,10 +310,10 @@ export default function Home() {
           </h2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2">
             {[
-              { title: "Autonomic assessment", text: "Non-invasive characterization of autonomic function in clinical practice." },
+              { title: "Autonomic assessment", text: "Non-invasive characterization of autonomic function from a standardized recording." },
               { title: "Orthostatic and post-acute infection research", text: "Standardized HRV measurement in POTS, ME/CFS and Long COVID research protocols." },
               { title: "Longitudinal monitoring", text: "Repeatable short-term recordings to track changes over time under consistent conditions." },
-              { title: "Clinical and observational studies", text: "Reproducible autonomic outcome measurement suitable for interventional and cohort studies." },
+              { title: "Interventional and observational studies", text: "Reproducible autonomic outcome measurement suitable for interventional and cohort studies." },
             ].map((item) => (
               <FeatureCard key={item.title} title={item.title}>
                 {item.text}
@@ -330,9 +330,11 @@ export default function Home() {
             Designed for practical use
           </h2>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
-            All calculations run in the browser. Entered values are not stored
-            by the calculator and no patient identifiers are required. Results
-            can be copied or printed directly from the report page.
+            All calculations run in the browser and no data is transmitted to
+            a server. Entered values are retained only temporarily in the
+            current browser tab so the result page can be displayed, and no
+            personal identifiers are required. Results can be copied or
+            printed directly from the report page.
           </p>
         </div>
       </section>
@@ -354,7 +356,7 @@ export default function Home() {
               href="/method"
               className="inline-flex items-center rounded-lg border border-border px-6 py-3 text-sm font-semibold text-foreground hover:bg-muted"
             >
-              Read the methodology
+              Explore the method
             </Link>
           </div>
         </div>

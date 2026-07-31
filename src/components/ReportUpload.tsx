@@ -15,8 +15,7 @@ type Props = {
 
 async function loadPdfJs() {
   const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   return pdfjsLib;
 }
 
@@ -38,7 +37,7 @@ async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
   for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const text = content.items.map((item: any) => item.str).join(" ");
+    const text = content.items.map((item) => ("str" in item ? item.str : "")).join(" ");
     pages.push(text);
   }
   return pages.join("\n");

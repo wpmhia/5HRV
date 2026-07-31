@@ -14,7 +14,7 @@ export default function MethodologyPage() {
       </h1>
       <p className="mt-2 text-base leading-7 text-muted-foreground">
         How 5HRV analyses five-minute HRV recordings — from reference
-        populations and percentile placement to the autonomic pattern score.
+        populations and percentile placement to the Autonomic Pattern Score.
       </p>
 
       {/* 1. Scientific foundation */}
@@ -97,7 +97,8 @@ export default function MethodologyPage() {
         <p className="text-base leading-7 text-foreground/85">
           The Danish Study of Functional Disorders (DanFunD) is a large,
           population-based cohort study conducted in Denmark. The HRV reference
-          data were published by Brinth et al. in 2022.
+          data were published by Brinth et al. (online 2022; print version
+          2024, cited throughout this site).
         </p>
 
         <table className="mt-6 w-full text-sm">
@@ -178,7 +179,10 @@ export default function MethodologyPage() {
           reference distribution using linear interpolation between the
           published P5, P25, P50, P75 and P95 anchors. The result is a
           continuous percentile estimate (0–100) that avoids the discontinuities
-          of band-based classification alone.
+          of band-based classification alone. Below P5 and above P95 the
+          estimate is a linear extrapolation rather than an interpolation, and
+          displayed percentiles are limited to the 1st–99th range; such values
+          should be read as approximate.
         </p>
         <p className="text-base leading-7 text-foreground/85">
           LF/HF percentiles are computed using logarithmic interpolation, which
@@ -189,7 +193,7 @@ export default function MethodologyPage() {
         <p className="text-sm text-muted-foreground">
           Percentile bands displayed in the report (below P5, P5–P25, P25–P75,
           P75–P95, above P95) are derived from the same reference distribution
-          using standard clinical cut-points.
+          using standard percentile cut-points.
         </p>
 
         <h3 className="mt-8 text-lg font-semibold text-foreground">
@@ -226,7 +230,7 @@ export default function MethodologyPage() {
           </li>
           <li>
             <strong>Normalization.</strong> The combined deviation is divided
-            by a normalization constant and scaled to 100. The result is
+            by the normalization constant 2.2 and scaled to 100. The result is
             clamped to the range [−100, +100].
           </li>
         </ol>
@@ -246,12 +250,14 @@ export default function MethodologyPage() {
           Pattern classification
         </h4>
         <p className="text-base leading-7 text-foreground/85">
-          The score is classified into six directional categories and one
-          central category. Concordance between the two axes (RMSSD low/high
+          The score is classified into six directional categories plus central
+          and mixed patterns. Concordance between the two axes (RMSSD low/high
           and LF/HF low/high) determines whether the pattern is concordant
           (both metrics point in the same direction), single-axis (one metric
-          outside central range while the other is within), mixed (metrics point
-          in opposite directions), or central (both within the central range).
+          outside central range while the other is within), mixed (both
+          metrics low or both high), or central (both within the central
+          range). A mixed concordance is labelled &ldquo;Mixed autonomic
+          pattern&rdquo; regardless of the numeric score.
         </p>
 
         <table className="mt-4 w-full text-sm">
@@ -280,7 +286,8 @@ export default function MethodologyPage() {
               </td>
               <td className="py-2">
                 Central autonomic pattern (when both axes are central); Mixed
-                autonomic pattern otherwise
+                autonomic pattern otherwise. A mixed concordance is labelled
+                Mixed autonomic pattern at any score.
               </td>
             </tr>
             <tr className="border-b border-border">
@@ -364,7 +371,7 @@ export default function MethodologyPage() {
             reference percentiles are applied.
           </li>
           <li>
-            <strong>LF/HF interpretation.</strong> The             LF/HF ratio does not
+            <strong>LF/HF interpretation.</strong> The LF/HF ratio does not
             directly measure sympathetic activity or sympathovagal balance. The
             LF component can contain baroreflex, respiratory and parasympathetic influences.
             It is used in the score as a directional indicator alongside RMSSD,

@@ -10,28 +10,30 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-foreground">5HRV</h3>
             <p className="mt-2 text-xs text-muted-foreground">
-              A practical clinical and research framework for assessing
-              autonomic function from a standardized five-minute HRV recording.
+              A scientific calculator that analyses standardized five-minute
+              HRV recordings using peer-reviewed research and age- and
+              sex-specific reference populations.
             </p>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">Pages</h3>
             <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
               <li><Link href="/method" className="hover:text-foreground">Method</Link></li>
-              <li><Link href="/parameters" className="hover:text-foreground">HRV Parameters</Link></li>
-              <li><Link href="/interpretation" className="hover:text-foreground">Interpretation</Link></li>
-              <li><Link href="/applications" className="hover:text-foreground">Clinical Use</Link></li>
+              <li><Link href="/methodology" className="hover:text-foreground">Methodology</Link></li>
+              <li><Link href="/parameters" className="hover:text-foreground">Parameters</Link></li>
+              <li><Link href="/interpretation" className="hover:text-foreground">Analysis</Link></li>
+              <li><Link href="/applications" className="hover:text-foreground">Applications</Link></li>
               <li><Link href="/evidence" className="hover:text-foreground">Evidence</Link></li>
               <li><Link href="/calculator" className="hover:text-foreground">Calculator</Link></li>
               <li><Link href="/about" className="hover:text-foreground">About</Link></li>
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Clinical framework</h3>
+            <h3 className="text-sm font-semibold text-foreground">Scientific framework</h3>
             <p className="mt-2 text-xs text-muted-foreground">
               Developed by Willem Gielen, Cardiologist and Internist, as a
-              practical approach to standardized five-minute HRV assessment in
-              clinical practice and research.
+              transparent approach to standardized five-minute HRV analysis in
+              research and education.
             </p>
             <p className="mt-3 text-xs text-muted-foreground">
               5HRV provides contextual interpretation of HRV measurements for

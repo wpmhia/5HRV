@@ -14,8 +14,8 @@ export default function MethodPage() {
         The 5-Minute Method
       </h1>
       <p className="mt-2 text-lg leading-relaxed text-muted-foreground">
-        A standardized clinical protocol for recording and interpreting short-term
-        heart rate variability.
+        A standardized measurement protocol for recording and interpreting
+        short-term heart rate variability.
       </p>
 
       <section className="mt-12 space-y-4">
@@ -44,7 +44,7 @@ export default function MethodPage() {
         <p className="text-base leading-7 text-foreground/85">
           ECG directly records cardiac electrical activity and identifies the R
           peak of the QRS complex, enabling precise RR-interval measurement. ECG
-          is the reference method for clinical five-minute HRV analysis.
+          is the reference method for five-minute HRV analysis.
         </p>
         <ul className="list-disc pl-6 space-y-1 text-base leading-7 text-foreground/85">
           <li>Direct detection of cardiac electrical activity</li>
@@ -97,7 +97,7 @@ export default function MethodPage() {
           Artefact and ectopic-beat handling
         </h2>
         <p className="text-base leading-7 text-foreground/85">
-          Artefact and ectopic beats must be identified beforeHRV computation.
+          Artefact and ectopic beats must be identified before HRV computation.
           Common approaches include exclusion of non-sinus beats,
           interpolation of corrected intervals, and threshold-based artefact
           rejection. The method and threshold applied should be documented

@@ -234,9 +234,21 @@ export default function EvidencePage() {
               future studies using direct HRV measurement.
             </span>
           </li>
+        </ol>
+      </section>
+
+      <section className="mt-12 space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Project documentation
+        </h2>
+        <p className="text-sm leading-6 text-muted-foreground">
+          The following is project documentation by the 5HRV author. It has not
+          been peer-reviewed.
+        </p>
+        <ol className="list-decimal space-y-4 pl-6 text-base leading-7 text-foreground/85">
           <li>
-            Gielen W. 5HRV Autonomic Score: a single numerical index for
-            five-minute heart rate variability interpretation.{" "}
+            Gielen W. 5HRV Autonomic Pattern Score: a single numerical index
+            for five-minute heart rate variability interpretation.{" "}
             <em>Zenodo</em>. 2026.{" "}
             <a
               href="https://zenodo.org/records/21558647"
@@ -248,7 +260,7 @@ export default function EvidencePage() {
             </a>
             <span className="block text-muted-foreground">
               Describes the derivation and interpretation of the 5HRV Autonomic
-              Score used in the 5HRV calculator.
+              Pattern Score used in the 5HRV calculator.
             </span>
           </li>
         </ol>
@@ -259,7 +271,7 @@ export default function EvidencePage() {
           Reference implementation and explanatory framework adapted from the
           five-minute HRV teaching material of Willem Gielen, Cardiologist and
           Internist. This reference list is not exhaustive; additional
-          peer-reviewed literature should be consulted for specific clinical
+          peer-reviewed literature should be consulted for specific study
           populations and research questions.
         </p>
       </section>
