@@ -179,7 +179,7 @@ export default function MethodologyPage() {
         </h2>
 
         <h3 className="mt-6 text-lg font-semibold text-foreground">
-          Calculation from RR intervals
+          Optional direct Polar H10 measurement
         </h3>
         <p className="text-base leading-7 text-foreground/85">
           When Polar H10 measurement is used, 5HRV calculates the HRV parameters

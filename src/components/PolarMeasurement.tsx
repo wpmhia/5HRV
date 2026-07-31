@@ -57,7 +57,6 @@ type MeasurementResult = HrvMetrics & {
 
 type Props = {
   onPrefill: (values: ParsedReportValues) => void;
-  primary?: boolean;
 };
 
 function formatClock(totalSeconds: number): string {
@@ -93,7 +92,7 @@ const actionButtonClass =
 const secondaryButtonClass =
   "inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted";
 
-export function PolarMeasurement({ onPrefill, primary = false }: Props) {
+export function PolarMeasurement({ onPrefill }: Props) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("prepare");
   const [error, setError] = useState<string | null>(null);
@@ -336,13 +335,9 @@ export function PolarMeasurement({ onPrefill, primary = false }: Props) {
       <button
         type="button"
         onClick={() => handleOpenChange(true)}
-        className={
-          primary
-            ? "inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            : "inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-        }
+        className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
       >
-        Measure with Polar H10
+        Measure with Polar H10 — experimental
       </button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -355,7 +350,9 @@ export function PolarMeasurement({ onPrefill, primary = false }: Props) {
           <DialogHeader>
             <DialogTitle>Five-minute supine HRV analysis</DialogTitle>
             <DialogDescription>
-              Approximately 10 minutes including the resting period.
+              Optional direct measurement feature. Requires Chrome or Edge with
+              Web Bluetooth. Approximately 10 minutes including the resting
+              period.
             </DialogDescription>
           </DialogHeader>
 

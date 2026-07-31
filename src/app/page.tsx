@@ -40,10 +40,9 @@ export default function Home() {
                 Calculate and interpret five-minute HRV against scientific reference data.
               </h1>
               <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-                Connect a Polar H10 for a guided supine recording, or upload an
-                existing HRV report and enter values manually. 5HRV calculates
-                RMSSD, SDNN, pNN50, LF, HF and LF/HF directly in your browser and
-                interprets them against age- and sex-specific reference data.
+                Enter HRV values manually or import an existing report. An
+                optional Polar H10 measurement feature is also available in
+                compatible browsers.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
@@ -108,7 +107,7 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <ValueItem>Five-minute standardized protocol</ValueItem>
-            <ValueItem>Direct Polar H10 measurement</ValueItem>
+            <ValueItem>Structured research-based analysis</ValueItem>
             <ValueItem>Age- and sex-specific reference percentiles</ValueItem>
             <ValueItem>Local browser processing &mdash; no RR data uploaded</ValueItem>
           </div>
@@ -138,10 +137,8 @@ export default function Home() {
             What 5HRV does
           </h2>
           <div className="mt-8 grid gap-6 sm:grid-cols-3">
-            <FeatureCard title="Measures">
-              Guides a standardized supine Polar H10 recording and calculates
-              the principal five-minute HRV parameters directly from RR
-              intervals.
+            <FeatureCard title="Standardizes">
+              Applies a defined five-minute recording and analysis framework.
             </FeatureCard>
             <FeatureCard title="Interprets">
               Places RMSSD and SDNN within age- and sex-specific reference
@@ -165,8 +162,8 @@ export default function Home() {
             {[
               {
                 step: "1",
-                title: "Measure or enter",
-                text: "Connect a Polar H10 for a guided supine measurement, or upload an existing report and enter previously calculated values.",
+                title: "Enter or measure",
+                text: "Enter HRV values manually, import an existing report, or connect a Polar H10 for a guided supine measurement.",
               },
               {
                 step: "2",

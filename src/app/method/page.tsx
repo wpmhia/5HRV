@@ -65,7 +65,7 @@ export default function MethodPage() {
 
       <section className="mt-12 space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">
-          Direct measurement with Polar H10
+          Optional direct measurement with Polar H10
         </h2>
         <p className="text-base leading-7 text-foreground/85">
           5HRV can receive beat-to-beat RR intervals directly from a Polar H10

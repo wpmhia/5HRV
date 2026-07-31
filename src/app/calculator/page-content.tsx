@@ -25,10 +25,7 @@ export default function CalculatorPageContent() {
           Calculator
         </h1>
         <p className="mt-3 text-base leading-7 text-muted-foreground">
-          Measure HRV directly with a Polar H10, import an existing report, or
-          enter values manually. Direct measurements use a standardized supine
-          protocol and calculate the HRV parameters locally from the received
-          RR intervals.
+          Enter HRV values manually or import them from an existing report.
         </p>
       </div>
 
