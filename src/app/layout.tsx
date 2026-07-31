@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { SiteBehaviour } from "@/components/SiteBehaviour";
 import { siteConfig } from "@/lib/seo";
 
 const geistSans = Geist({
@@ -81,28 +82,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <script
-          type="text/javascript"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  if(window.location && window.location.search && window.location.search.indexOf('capture-sitebehaviour-heatmap') !== -1) {
-                    sessionStorage.setItem('capture-sitebehaviour-heatmap', '_');
-                  }
-                  var sbSiteSecret = 'ac627f2a-6219-48ea-afd5-eab51c1eab0c';
-                  window.sitebehaviourTrackingSecret = sbSiteSecret;
-                  var scriptElement = document.createElement('script');
-                  scriptElement.defer = true;
-                  scriptElement.id = 'site-behaviour-script-v2';
-                  scriptElement.src = 'https://sitebehaviour-cdn.fra1.cdn.digitaloceanspaces.com/index.min.js?sitebehaviour-secret=' + sbSiteSecret;
-                  document.head.appendChild(scriptElement);
-                }
-                catch (e) {console.error(e)}
-              })()
-            `,
-          }}
-        />
+        <SiteBehaviour />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Navigation />
           <main className="flex-1">{children}</main>
