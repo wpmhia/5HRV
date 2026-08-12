@@ -194,15 +194,28 @@ export default function MethodologyPage() {
           </li>
           <li>
             Missed or additional beat detections are corrected structurally
-            where possible.
+            where the interval can be confidently classified as a technical
+            missed detection (an interval close to an integer number of local
+            beats). Long intervals that cannot be classified reliably are
+            treated as ambiguous and cause the recording to be rejected rather
+            than manufacturing NN intervals.
           </li>
           <li>
             Remaining isolated abnormal intervals are corrected using cubic-spline
             interpolation.
           </li>
           <li>
-            Recordings with excessive artefacts or substantial signal loss are
-            rejected.
+            Quality is assessed as three separate dimensions: technical artefact
+            burden (artefact percentage and signal loss), rhythm suitability
+            (ectopic-beat count, using the DanFunD exclusion of recordings with
+            more than 20 ectopic beats), and reference-cohort compatibility.
+            Recordings that fail any dimension are rejected or interpreted
+            descriptively as appropriate.
+          </li>
+          <li>
+            During live Bluetooth measurement, loss of the RR stream is detected
+            within seconds and the recording is stopped immediately rather than
+            failing after the full five minutes.
           </li>
           <li>Smoothness-priors detrending is applied with &lambda; = 500.</li>
           <li>

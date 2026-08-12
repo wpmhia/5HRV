@@ -39,7 +39,7 @@ function standardDeviation(values: number[], m: number): number {
   return Math.sqrt(s / (values.length - 1));
 }
 
-function smoothnessPriors(y: number[], lambda: number): number[] {
+export function smoothnessPriors(y: number[], lambda: number): number[] {
   const n = y.length;
   if (n < 4) return y.slice();
   const lambda2 = lambda * lambda;
@@ -96,7 +96,7 @@ function smoothnessPriors(y: number[], lambda: number): number[] {
   return residual;
 }
 
-function buildTachogram(
+export function buildTachogram(
   timesMs: number[],
   values: number[],
   durationMs: number,

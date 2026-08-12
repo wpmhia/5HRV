@@ -4,6 +4,10 @@ export const HEART_RATE_MEASUREMENT_UUID = 0x2a37;
 export type HeartRateSensorEvent = {
   heartRate: number;
   rrIntervalsMs: number[];
+  /** Whether the sensor advertises skin-contact detection. */
+  contactSupported: boolean;
+  /** Whether the sensor currently reports good skin contact. */
+  contactDetected: boolean;
 };
 
 export function isBluetoothAvailable(): boolean {
@@ -13,6 +17,9 @@ export function isBluetoothAvailable(): boolean {
 export function parseHeartRateMeasurement(view: DataView): HeartRateSensorEvent {
   const flags = view.getUint8(0);
   const hr16Bit = (flags & 0x01) !== 0;
+  // Bits 1-2: sensor contact status.
+  const contactSupported = (flags & 0x06) === 0x02 || (flags & 0x06) === 0x06;
+  const contactDetected = (flags & 0x06) === 0x06;
   let offset = 1;
 
   let heartRate: number;
@@ -35,7 +42,7 @@ export function parseHeartRateMeasurement(view: DataView): HeartRateSensorEvent 
     }
   }
 
-  return { heartRate, rrIntervalsMs };
+  return { heartRate, rrIntervalsMs, contactSupported, contactDetected };
 }
 
 export class BleHeartRateSession {
@@ -43,25 +50,35 @@ export class BleHeartRateSession {
   private server: BluetoothRemoteGATTServer;
   private characteristic: BluetoothRemoteGATTCharacteristic;
   private onEvent: (event: HeartRateSensorEvent) => void;
+  private onDisconnect: () => void;
+  private handleDisconnected: () => void;
 
   private constructor(
     device: BluetoothDevice,
     server: BluetoothRemoteGATTServer,
     characteristic: BluetoothRemoteGATTCharacteristic,
     onEvent: (event: HeartRateSensorEvent) => void,
+    onDisconnect: () => void,
   ) {
     this.device = device;
     this.server = server;
     this.characteristic = characteristic;
     this.onEvent = onEvent;
+    this.onDisconnect = onDisconnect;
+    this.handleDisconnected = () => this.onDisconnect();
   }
 
-  static async connect(onEvent: (event: HeartRateSensorEvent) => void): Promise<BleHeartRateSession> {
+  static async connect(
+    onEvent: (event: HeartRateSensorEvent) => void,
+    onDisconnect?: () => void,
+  ): Promise<BleHeartRateSession> {
     if (!isBluetoothAvailable()) {
       throw new Error("Web Bluetooth is not supported in this browser. Use Chrome or Edge.");
     }
     const device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
+      // Only show devices that advertise the standard Heart Rate Service, to
+      // avoid exposing unrelated Bluetooth devices in the chooser.
+      filters: [{ services: [HEART_RATE_SERVICE_UUID] }],
       optionalServices: [HEART_RATE_SERVICE_UUID],
     });
     const gatt = device.gatt;
@@ -80,8 +97,15 @@ export class BleHeartRateSession {
 
     const characteristic = await service.getCharacteristic(HEART_RATE_MEASUREMENT_UUID);
     await characteristic.startNotifications();
-    const session = new BleHeartRateSession(device, server, characteristic, onEvent);
+    const session = new BleHeartRateSession(
+      device,
+      server,
+      characteristic,
+      onEvent,
+      onDisconnect ?? (() => undefined),
+    );
     characteristic.addEventListener("characteristicvaluechanged", session.handleValueChanged);
+    device.addEventListener("gattserverdisconnected", session.handleDisconnected);
     return session;
   }
 
@@ -99,6 +123,7 @@ export class BleHeartRateSession {
 
   disconnect(): void {
     this.characteristic.removeEventListener("characteristicvaluechanged", this.handleValueChanged);
+    this.device.removeEventListener("gattserverdisconnected", this.handleDisconnected);
     if (this.server.connected) {
       try {
         this.server.disconnect();

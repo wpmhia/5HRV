@@ -250,6 +250,25 @@ describe("parseDurationSeconds", () => {
 });
 
 describe("LF parsing edge cases", () => {
+  it("does not treat normalized LF/HF powers as absolute ms²", () => {
+    const result = parseHrvReport("LF 60 n.u.\nHF 40 n.u.");
+    expect(result.lfPower).toBeUndefined();
+    expect(result.hfPower).toBeUndefined();
+    expect(result.lfhfRatio).toBeCloseTo(1.5, 1);
+    expect(result.lfhfUnits).toBe("nu");
+  });
+  it("records the unit for percentage-normalized spectral values", () => {
+    const result = parseHrvReport("LF: 55%\nHF: 45%");
+    expect(result.lfPower).toBeUndefined();
+    expect(result.hfPower).toBeUndefined();
+    expect(result.lfhfUnits).toBe("percent");
+  });
+  it("ignores log-transformed spectral values for absolute power", () => {
+    const result = parseHrvReport("LF (ln): 5.9\nHF (ln): 4.1");
+    expect(result.lfPower).toBeUndefined();
+    expect(result.hfPower).toBeUndefined();
+    expect(result.lfhfUnits).toBe("log");
+  });
   it("does not match LF inside VLF when VLF and LF are on the same line", () => {
     const result = parseHrvReport("VLF : 201.54 LF : 416.47 HF : 70.55");
     expect(result.lfPower).toBeCloseTo(416.47, 1);

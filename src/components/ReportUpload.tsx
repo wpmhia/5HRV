@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { parseHrvReport, hasHrvContent, type ParsedReportValues } from "@/lib/parseHrvReport";
+import { extractTextFromFileInWorker } from "@/lib/pdfProcessorClient";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
@@ -27,9 +28,17 @@ async function loadPdfJs() {
   return pdfjsLib;
 }
 
+// Self-hosted Tesseract assets (worker, WASM core and language data) so OCR
+// never depends on a third-party runtime download.
+const TESSERACT_PATHS = {
+  workerPath: "/tesseract/worker.min.js",
+  corePath: "/tesseract/tesseract-core.wasm.js",
+  langPath: "/tesseract/",
+};
+
 async function ocrWithTesseract(image: string | HTMLCanvasElement): Promise<string> {
   const { createWorker } = await import("tesseract.js");
-  const worker = await createWorker("eng");
+  const worker = await createWorker("eng", 1, TESSERACT_PATHS);
   try {
     const { data } = await worker.recognize(image);
     return data.text;
@@ -89,6 +98,14 @@ async function extractTextFromImage(file: File): Promise<string> {
 
 async function extractTextFromFile(file: File): Promise<string> {
   const ext = file.name.split(".").pop()?.toLowerCase();
+  if (ext === "pdf" || ext === "jpg" || ext === "jpeg" || ext === "png") {
+    // Prefer the Web Worker so heavy extraction/OCR never blocks the UI thread.
+    try {
+      return await extractTextFromFileInWorker(file);
+    } catch {
+      // fall back to the main-thread implementation below
+    }
+  }
   if (ext === "pdf") return await extractTextFromPdf(file);
   if (ext === "jpg" || ext === "jpeg" || ext === "png") return await extractTextFromImage(file);
   throw new Error("Unsupported file type.");

@@ -22,6 +22,7 @@ import type {
 } from "@/lib/types";
 
 export const ANALYSIS_ENGINE_VERSION = "1.0.0";
+export const REFERENCE_DATASET_VERSION = "danfund-brinth-2022";
 
 export function normalizeNumber(value: string): number | null {
   const trimmed = value.trim();
@@ -670,6 +671,7 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     referenceCompatibility: findings.referenceCompatibility,
     safetyMessage: "",
     engineVersion: ANALYSIS_ENGINE_VERSION,
+    referenceDatasetVersion: REFERENCE_DATASET_VERSION,
     autonomicProfile: findings.autonomicProfile,
     findings,
   };

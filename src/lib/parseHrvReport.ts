@@ -8,7 +8,11 @@ export type BluetoothMeasurementMetadata = {
   correctedIntervals: number;
   artifactPercentage: number;
   quality: "good" | "acceptable" | "poor";
+  engineVersion?: string;
+  protocolCompatible?: boolean;
 };
+
+export type PowerUnit = "ms2" | "nu" | "percent" | "log";
 
 export type ParsedReportValues = {
   recordingDate?: string;
@@ -21,6 +25,8 @@ export type ParsedReportValues = {
   hfPower?: number;
   lfPower?: number;
   lfhfRatio?: number;
+  /** Units detected for the reported LF/HF powers, if not absolute ms². */
+  lfhfUnits?: PowerUnit;
   measurement?: BluetoothMeasurementMetadata;
 };
 
@@ -31,6 +37,18 @@ function normalizeNum(value: string): number | null {
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed)) return null;
   return parsed;
+}
+
+function detectPowerUnit(line: string, match: RegExpMatchArray, groupIndex: number): PowerUnit {
+  const valueStart = (match.index ?? 0) + match[0].indexOf(match[groupIndex]);
+  const valueEnd = valueStart + match[groupIndex].length;
+  const label = match[0].slice(0, match[0].indexOf(match[groupIndex])).toLowerCase();
+  if (/\b(ln|log)\b/.test(label)) return "log";
+  const tail = line.slice(valueEnd, valueEnd + 16).toLowerCase();
+  if (/^\s*n\.?\s*u\b/.test(tail) || /^\s*nu\b/.test(tail)) return "nu";
+  if (/^\s*%/.test(tail)) return "percent";
+  if (/^\s*(ln|log)\b/.test(tail)) return "log";
+  return "ms2";
 }
 
 export function parseDurationSeconds(text: string): number | null {
@@ -58,6 +76,11 @@ export function parseDurationSeconds(text: string): number | null {
 export function parseHrvReport(text: string): ParsedReportValues {
   const values: ParsedReportValues = {};
   const lines = text.split("\n");
+
+  let hfRaw: number | undefined;
+  let lfRaw: number | undefined;
+  let hfUnit: PowerUnit | undefined;
+  let lfUnit: PowerUnit | undefined;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -166,7 +189,13 @@ export function parseHrvReport(text: string): ParsedReportValues {
         if (m) {
           const num = normalizeNum(m[1]);
           if (num !== null && num >= 0) {
-            values.hfPower = num;
+            const unit = detectPowerUnit(trimmed, m, 1);
+            hfUnit = unit;
+            if (unit === "ms2") {
+              values.hfPower = num;
+            } else {
+              hfRaw = num;
+            }
             break;
           }
         }
@@ -185,7 +214,13 @@ export function parseHrvReport(text: string): ParsedReportValues {
         if (m) {
           const num = normalizeNum(m[1]);
           if (num !== null && num >= 0) {
-            values.lfPower = num;
+            const unit = detectPowerUnit(trimmed, m, 1);
+            lfUnit = unit;
+            if (unit === "ms2") {
+              values.lfPower = num;
+            } else {
+              lfRaw = num;
+            }
             break;
           }
         }
@@ -211,6 +246,25 @@ export function parseHrvReport(text: string): ParsedReportValues {
       }
     }
 
+  }
+
+  // When LF and HF are both reported in a shared normalized unit (n.u. or %),
+  // the ratio is still meaningful even though the absolute powers are not.
+  if (
+    values.lfhfRatio === undefined &&
+    hfRaw !== undefined &&
+    lfRaw !== undefined &&
+    hfRaw > 0 &&
+    hfUnit !== undefined &&
+    hfUnit === lfUnit &&
+    (hfUnit === "nu" || hfUnit === "percent")
+  ) {
+    values.lfhfRatio = Math.round((lfRaw / hfRaw) * 100) / 100;
+    values.lfhfUnits = hfUnit;
+  } else if (hfUnit !== undefined && hfUnit !== "ms2") {
+    values.lfhfUnits = hfUnit;
+  } else if (lfUnit !== undefined && lfUnit !== "ms2") {
+    values.lfhfUnits = lfUnit;
   }
 
   return values;

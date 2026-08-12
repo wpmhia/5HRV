@@ -1,13 +1,23 @@
 import { naturalCubicSpline } from "@/lib/cubicSpline";
 
-export type RecordingQuality = "good" | "acceptable" | "poor";
+export type TechnicalQuality = "good" | "acceptable" | "poor";
+export type RecordingQuality = TechnicalQuality;
 
 export type CorrectionResult = {
   nn: number[];
   totalIntervals: number;
   correctedIntervals: number;
   artifactPercentage: number;
-  quality: RecordingQuality;
+  /** Technical artefact burden: artefact percentage and signal loss only. */
+  quality: TechnicalQuality;
+  /** Estimated number of rhythm events that required structural reconstruction. */
+  ectopicBeats: number;
+  /** DanFunD reference cohort excluded recordings with more than 20 ectopic beats. */
+  rhythmSuitable: boolean;
+  /** Number of long intervals that could not be confidently classified as missed detections. */
+  ambiguousIntervals: number;
+  /** Whether the recording can be used for HRV analysis at all. */
+  usable: boolean;
   reason?: string;
 };
 
@@ -20,6 +30,7 @@ const SIGNAL_LOSS_RUN = 30;
 const SIGNAL_LOSS_GAP_MS = 4000;
 const GOOD_ARTIFACT_PERCENT = 3;
 const POOR_ARTIFACT_PERCENT = 5;
+const DANFUND_MAX_ECTOPIC_BEATS = 20;
 
 function median(values: number[]): number {
   const sorted = values.slice().sort((a, b) => a - b);
@@ -69,10 +80,15 @@ export function detectArtifacts(rr: number[]): boolean[] {
   return artifact;
 }
 
-function correctBeatStructure(rr: number[]): { nn: number[]; corrections: number } {
+function correctBeatStructure(rr: number[]): {
+  nn: number[];
+  corrections: number;
+  ambiguous: number;
+} {
   const n = rr.length;
   const nn: number[] = [];
   let corrections = 0;
+  let ambiguous = 0;
   let i = 0;
   while (i < n) {
     const med = localMedian(rr, i);
@@ -87,17 +103,32 @@ function correctBeatStructure(rr: number[]): { nn: number[]; corrections: number
       corrections++;
       i += 2;
     } else if (ratio > MISSED_BEAT_RATIO) {
-      const parts = Math.max(2, Math.round(ratio));
+      const beatCount = rr[i] / med;
+      const parts = Math.max(2, Math.round(beatCount));
       const each = rr[i] / parts;
-      for (let k = 0; k < parts; k++) nn.push(each);
-      corrections += parts - 1;
+      // Splitting a long interval into artificial equal beats assumes a missed
+      // sensor detection. With RR-only data this cannot be distinguished from a
+      // genuine pause or rhythm abnormality. Only repair when the interval is
+      // close to an integer number of beats AND the reconstructed beats match
+      // the local rhythm; otherwise flag as ambiguous so the recording can be
+      // rejected instead of manufacturing NN intervals.
+      if (
+        Math.abs(beatCount - parts) > 0.2 ||
+        Math.abs(each - med) / med > ABNORMAL_RATIO
+      ) {
+        ambiguous++;
+        nn.push(rr[i]);
+      } else {
+        for (let k = 0; k < parts; k++) nn.push(each);
+        corrections += parts - 1;
+      }
       i++;
     } else {
       nn.push(rr[i]);
       i++;
     }
   }
-  return { nn, corrections };
+  return { nn, corrections, ambiguous };
 }
 
 function interpolateAbnormal(
@@ -168,6 +199,10 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
       correctedIntervals: 0,
       artifactPercentage: 0,
       quality: "good",
+      ectopicBeats: 0,
+      rhythmSuitable: true,
+      ambiguousIntervals: 0,
+      usable: true,
     };
   }
 
@@ -182,11 +217,16 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
       correctedIntervals: 0,
       artifactPercentage: 0,
       quality: "poor",
+      ectopicBeats: 0,
+      rhythmSuitable: true,
+      ambiguousIntervals: 0,
+      usable: false,
       reason: "Substantial signal loss detected.",
     };
   }
 
-  const { nn: structural, corrections: structuralCorrections } = correctBeatStructure(rr);
+  const { nn: structural, corrections: structuralCorrections, ambiguous: ambiguousIntervals } =
+    correctBeatStructure(rr);
   const flagged = detectArtifacts(structural);
   const maxRun = maxConsecutiveRun(flagged);
   let maxGap = 0;
@@ -199,7 +239,10 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
   const correctedIntervals = structuralCorrections + abnormalCorrections;
   const artifactPercentage = totalIntervals > 0 ? (correctedIntervals / totalIntervals) * 100 : 0;
 
-  let quality: RecordingQuality = "good";
+  const ectopicBeats = structuralCorrections;
+  const rhythmSuitable = ectopicBeats <= DANFUND_MAX_ECTOPIC_BEATS;
+
+  let quality: TechnicalQuality = "good";
   let reason: string | undefined;
   if (
     artifactPercentage > POOR_ARTIFACT_PERCENT ||
@@ -214,12 +257,27 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
     quality = "acceptable";
   }
 
+  const usable = quality !== "poor" && rhythmSuitable && ambiguousIntervals === 0;
+
+  if (!usable && !reason) {
+    if (ambiguousIntervals > 0) {
+      reason =
+        "Ambiguous RR intervals detected that cannot be reliably classified as technical artefacts. Repeat the measurement.";
+    } else if (!rhythmSuitable) {
+      reason = `Excessive ectopic beats (${ectopicBeats}) detected; the recording is not suitable for five-minute HRV reference interpretation.`;
+    }
+  }
+
   return {
     nn,
     totalIntervals,
     correctedIntervals,
     artifactPercentage,
     quality,
+    ectopicBeats,
+    rhythmSuitable,
+    ambiguousIntervals,
+    usable,
     reason,
   };
 }

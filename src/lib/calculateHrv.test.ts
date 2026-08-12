@@ -199,6 +199,28 @@ describe("correctRrIntervals", () => {
     expect(result.reason).toContain("signal loss");
   });
 
+  it("flags ambiguous long intervals that are not clean integer multiples", () => {
+    const rr = new Array<number>(100).fill(800);
+    rr[50] = 2000; // 2.5 beats: cannot be a confident missed detection
+    const result = correctRrIntervals(rr);
+    expect(result.ambiguousIntervals).toBeGreaterThan(0);
+    expect(result.usable).toBe(false);
+    expect(result.reason).toMatch(/ambiguous/i);
+  });
+
+  it("keeps rhythm suitability separate and rejects more than 20 ectopic beats", () => {
+    let rr = new Array<number>(600).fill(800);
+    for (let k = 0; k < 21; k++) {
+      const at = 30 + k * 10;
+      rr = rr.slice(0, at).concat([350, 450], rr.slice(at + 1));
+    }
+    const result = correctRrIntervals(rr);
+    expect(result.ectopicBeats).toBeGreaterThan(20);
+    expect(result.rhythmSuitable).toBe(false);
+    expect(result.usable).toBe(false);
+    expect(result.reason).toMatch(/ectopic/i);
+  });
+
   it("classifies recordings with more than 5% artefacts as poor", () => {
     const rr = new Array<number>(100).fill(800);
     for (const idx of [5, 15, 25, 35, 45, 55]) rr[idx] = 1600;
@@ -250,6 +272,20 @@ describe("parseHeartRateMeasurement", () => {
     const result = parseHeartRateMeasurement(new DataView(buffer.buffer));
     expect(result.heartRate).toBe(70);
     expect(result.rrIntervalsMs).toEqual([1000]);
+  });
+
+  it("parses sensor contact flags", () => {
+    const unsupported = parseHeartRateMeasurement(new DataView(new Uint8Array([0x10, 70]).buffer));
+    expect(unsupported.contactSupported).toBe(false);
+    expect(unsupported.contactDetected).toBe(false);
+
+    const supportedNoContact = parseHeartRateMeasurement(new DataView(new Uint8Array([0x12, 70]).buffer));
+    expect(supportedNoContact.contactSupported).toBe(true);
+    expect(supportedNoContact.contactDetected).toBe(false);
+
+    const contactGood = parseHeartRateMeasurement(new DataView(new Uint8Array([0x16, 70]).buffer));
+    expect(contactGood.contactSupported).toBe(true);
+    expect(contactGood.contactDetected).toBe(true);
   });
 });
 

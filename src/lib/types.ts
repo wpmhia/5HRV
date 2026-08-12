@@ -50,6 +50,8 @@ export type RecordingMetadata = {
   correctedIntervals?: number;
   artifactPercentage?: number;
   quality?: RecordingQuality;
+  engineVersion?: string;
+  protocolCompatible?: boolean;
 };
 
 export type MeasurementInput = {
@@ -164,6 +166,7 @@ export type HrvInterpretation = {
   referenceCompatibility?: ReferenceCompatibility;
   safetyMessage: string;
   engineVersion: string;
+  referenceDatasetVersion: string;
   autonomicProfile?: AutonomicProfile;
   findings: HrvFindings;
 };

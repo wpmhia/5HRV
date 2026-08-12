@@ -11,11 +11,12 @@ import {
 import type { ParsedReportValues } from "@/lib/parseHrvReport";
 import { BleHeartRateSession, isBluetoothAvailable } from "@/lib/bluetoothHeartRate";
 import {
-  correctRrIntervals,
   detectArtifacts,
   type RecordingQuality,
 } from "@/lib/rrArtifactCorrection";
-import { calculateHrv, type HrvMetrics } from "@/lib/calculateHrv";
+import type { HrvMetrics } from "@/lib/calculateHrv";
+import { analyzeHrvRecording } from "@/lib/analyzeHrvRecording";
+import { ANALYSIS_ENGINE_VERSION } from "@/lib/interpretHrv";
 
 const SETTLING_SECONDS = 300;
 const RECORDING_SECONDS = 300;
@@ -23,30 +24,8 @@ const RECORDING_MARGIN_SECONDS = 5;
 const RECORDING_TOTAL_SECONDS = RECORDING_SECONDS + RECORDING_MARGIN_SECONDS;
 const MIN_ANALYSED_MS = 296_000;
 const RR_DETECTION_TIMEOUT_MS = 15_000;
-
-type AnalysisWindow = {
-  completeIntervals: number[];
-  spectralIntervals: number[];
-};
-
-function extractWindow(rr: number[], windowMs: number): AnalysisWindow {
-  const completeIntervals: number[] = [];
-  const spectralIntervals: number[] = [];
-  let cumulative = 0;
-  for (let i = 0; i < rr.length; i++) {
-    const interval = rr[i];
-    spectralIntervals.push(interval);
-    if (cumulative + interval > windowMs) {
-      if (i + 1 < rr.length) {
-        spectralIntervals.push(rr[i + 1]);
-      }
-      break;
-    }
-    completeIntervals.push(interval);
-    cumulative += interval;
-  }
-  return { completeIntervals, spectralIntervals };
-}
+const RR_LOSS_TIMEOUT_MS = 6_000;
+const ROLLING_WINDOW_BEATS = 60;
 
 type Phase = "prepare" | "connecting" | "settling" | "recording" | "complete" | "error";
 
@@ -56,6 +35,7 @@ type MeasurementResult = HrvMetrics & {
   correctedIntervals: number;
   artifactPercentage: number;
   quality: RecordingQuality;
+  protocolCompatible: boolean;
 };
 
 type Props = {
@@ -155,54 +135,47 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       setError("Recording stopped early. A complete five-minute recording is required.");
       return;
     }
-    const raw = rrBufferRef.current;
-    for (const v of raw) {
-      if (!Number.isFinite(v) || v <= 0) {
-        setPhase("error");
-        setError("Invalid RR interval data received. Please repeat the measurement.");
-        return;
-      }
-    }
-    const rawMs = raw.reduce((s, v) => s + v, 0);
-    if (rawMs < RECORDING_SECONDS * 1000) {
-      setPhase("error");
-      setError("The recording did not contain a complete five-minute analysis window. Please repeat.");
-      return;
-    }
-    const correction = correctRrIntervals(raw);
-    if (correction.quality === "poor") {
-      setPhase("error");
-      setError(correction.reason ?? "Poor signal quality. Please repeat the measurement.");
-      return;
-    }
-    const { completeIntervals, spectralIntervals } = extractWindow(
-      correction.nn,
-      RECORDING_SECONDS * 1000,
-    );
-    const analysedMs = completeIntervals.reduce((s, v) => s + v, 0);
-    if (analysedMs < MIN_ANALYSED_MS) {
-      setPhase("error");
-      setError("The recording did not contain a complete five-minute analysis window. Please repeat.");
-      return;
-    }
-    const metrics = calculateHrv(completeIntervals, {
-      analysisDurationMs: RECORDING_SECONDS * 1000,
-      spectralIntervals,
+    const analysis = analyzeHrvRecording(rrBufferRef.current, {
+      analysisDurationSeconds: RECORDING_SECONDS,
+      minAnalysedMs: MIN_ANALYSED_MS,
+      source: "bluetooth_rr",
+      preparationSeconds: preparationSecondsRef.current,
+      posture: "supine",
+      deviceName: deviceNameRef.current,
     });
+    if (!analysis.ok || !analysis.metrics || !analysis.correction) {
+      setPhase("error");
+      setError(analysis.rejectionReason ?? "Poor signal quality. Please repeat the measurement.");
+      return;
+    }
     setResult({
-      ...metrics,
-      correctedIntervals: correction.correctedIntervals,
-      artifactPercentage: correction.artifactPercentage,
-      quality: correction.quality,
+      ...analysis.metrics,
+      correctedIntervals: analysis.correction.correctedIntervals,
+      artifactPercentage: analysis.correction.artifactPercentage,
+      quality: analysis.correction.quality,
+      protocolCompatible: analysis.protocolCompatible,
     });
     setPhase("complete");
+  }, []);
+
+  const abortRecording = useCallback((message: string) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    sessionRef.current?.disconnect();
+    sessionRef.current = null;
+    setConnected(false);
+    rrBufferRef.current = [];
+    setBeatsReceived(0);
+    setPhase("error");
+    setError(message);
   }, []);
 
   const updateLiveSignal = useCallback(() => {
     const rr = rrBufferRef.current;
     if (rr.length < 10) return;
-    const artifact = detectArtifacts(rr);
-    const pct = (artifact.filter(Boolean).length / rr.length) * 100;
+    const window = rr.slice(-ROLLING_WINDOW_BEATS);
+    const artifact = detectArtifacts(window);
+    const pct = (artifact.filter(Boolean).length / window.length) * 100;
     if (pct > 5) setSignal("poor");
     else if (pct > 3) setSignal("acceptable");
     else setSignal("good");
@@ -228,6 +201,13 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     }
     if (phase === "recording") {
       timerRef.current = setInterval(() => {
+        const lastRrAt = lastRrReceivedAtRef.current;
+        if (!lastRrAt || Date.now() - lastRrAt > RR_LOSS_TIMEOUT_MS) {
+          abortRecording(
+            "RR signal lost. The sensor stopped transmitting beat-to-beat intervals; repeat the measurement.",
+          );
+          return;
+        }
         const remaining = Math.max(0, Math.ceil((recordingEndsAtRef.current - Date.now()) / 1000));
         setRecordingRemaining(remaining);
         updateLiveSignal();
@@ -242,7 +222,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         timerRef.current = null;
       };
     }
-  }, [phase, startRecording, finishRecording, updateLiveSignal]);
+  }, [phase, startRecording, finishRecording, updateLiveSignal, abortRecording]);
 
   const handleConnect = useCallback(async () => {
     if (!isBluetoothAvailable()) {
@@ -254,24 +234,41 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     setError(null);
     lastRrReceivedAtRef.current = null;
     try {
-      const session = await BleHeartRateSession.connect((event) => {
-        if (event.heartRate > 0) setHeartRate(event.heartRate);
-        if (event.rrIntervalsMs.length > 0) {
-          lastRrReceivedAtRef.current = Date.now();
-          if (!rrDetectedRef.current) {
-            rrDetectedRef.current = true;
-            if (rrTimeoutRef.current) {
-              window.clearTimeout(rrTimeoutRef.current);
-              rrTimeoutRef.current = null;
+      const session = await BleHeartRateSession.connect(
+        (event) => {
+          if (event.heartRate > 0) setHeartRate(event.heartRate);
+          if (event.contactSupported && !event.contactDetected) {
+            if (phaseRef.current === "settling" || phaseRef.current === "recording") {
+              abortRecording(
+                "Sensor contact lost. Check the electrode contact and repeat the measurement.",
+              );
+            }
+            return;
+          }
+          if (event.rrIntervalsMs.length > 0) {
+            lastRrReceivedAtRef.current = Date.now();
+            if (!rrDetectedRef.current) {
+              rrDetectedRef.current = true;
+              if (rrTimeoutRef.current) {
+                window.clearTimeout(rrTimeoutRef.current);
+                rrTimeoutRef.current = null;
+              }
+            }
+            setRrDetected(true);
+            if (phaseRef.current === "recording") {
+              rrBufferRef.current.push(...event.rrIntervalsMs);
+              setBeatsReceived(rrBufferRef.current.length);
             }
           }
-          setRrDetected(true);
-          if (phaseRef.current === "recording") {
-            rrBufferRef.current.push(...event.rrIntervalsMs);
-            setBeatsReceived(rrBufferRef.current.length);
+        },
+        () => {
+          if (phaseRef.current === "settling" || phaseRef.current === "recording") {
+            abortRecording(
+              "Sensor disconnected. The connection was lost; repeat the measurement.",
+            );
           }
-        }
-      });
+        },
+      );
       if (!openRef.current) {
         session.disconnect();
         return;
@@ -296,7 +293,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       setPhase("error");
       setError(err instanceof Error ? err.message : "Could not connect to the heart-rate sensor.");
     }
-  }, []);
+  }, [abortRecording]);
 
   useEffect(() => {
     if (phase === "connecting" && connected && rrDetected) {
@@ -376,6 +373,8 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         correctedIntervals: result.correctedIntervals,
         artifactPercentage: round(result.artifactPercentage, 1),
         quality: result.quality,
+        engineVersion: ANALYSIS_ENGINE_VERSION,
+        protocolCompatible: result.protocolCompatible,
       },
     });
     closePanel();
@@ -546,11 +545,11 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
                   artefact rate.
                 </p>
               )}
-              {preparationSecondsRef.current < SETTLING_SECONDS && (
+              {!result.protocolCompatible && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
-                  The resting period was shorter than five minutes, so these values will be
-                  interpreted descriptively without reference-percentile placement or an
-                  Autonomic Pattern Score.
+                  This recording does not match the five-minute supine reference protocol, so the
+                  values will be interpreted descriptively without reference-percentile placement
+                  or an Autonomic Pattern Score.
                 </p>
               )}
               <button type="button" onClick={handleUseValues} className={actionButtonClass}>
