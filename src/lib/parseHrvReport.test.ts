@@ -240,6 +240,10 @@ describe("parseDurationSeconds", () => {
   it("parses Sample Length in seconds", () => {
     expect(parseDurationSeconds("Sample Length 322s")).toBe(322);
   });
+  it("parses hours into seconds", () => {
+    expect(parseDurationSeconds("Duration: 24 hours")).toBe(86400);
+    expect(parseDurationSeconds("Recording duration 2 h")).toBe(7200);
+  });
   it("returns null for unrecognised text", () => {
     expect(parseDurationSeconds("no duration here")).toBeNull();
   });

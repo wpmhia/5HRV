@@ -14,10 +14,14 @@ import type {
   AutonomicProfile,
   LfhfSource,
   ReferenceBand,
+  RecordingMetadata,
+  ReferenceCompatibility,
   VagalStatus,
   VariabilityStatus,
   FrequencyDomainPattern,
 } from "@/lib/types";
+
+export const ANALYSIS_ENGINE_VERSION = "1.0.0";
 
 export function normalizeNumber(value: string): number | null {
   const trimmed = value.trim();
@@ -26,6 +30,58 @@ export function normalizeNumber(value: string): number | null {
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed)) return null;
   return parsed;
+}
+
+const DANFUND_ANALYSIS_SECONDS = 300;
+const DANFUND_DURATION_TOLERANCE_SECONDS = 60;
+const DANFUND_REQUIRED_REST_SECONDS = 300;
+
+// The DanFunD reference distribution was derived from the final five minutes
+// of a standardized supine recording preceded by at least five minutes of
+// supine rest. Percentile placement and the Autonomic Pattern Score are only
+// meaningful when the recording matches those protocol conditions.
+export function assessReferenceCompatibility(
+  recording?: RecordingMetadata,
+): ReferenceCompatibility {
+  if (!recording) {
+    return { compatible: true, reference: "danfund", reasons: [] };
+  }
+
+  const reasons: string[] = [];
+
+  if (recording.durationSeconds !== undefined) {
+    const duration = recording.durationSeconds;
+    if (
+      duration < DANFUND_ANALYSIS_SECONDS - DANFUND_DURATION_TOLERANCE_SECONDS ||
+      duration > DANFUND_ANALYSIS_SECONDS + DANFUND_DURATION_TOLERANCE_SECONDS
+    ) {
+      reasons.push(
+        `The recording duration (${Math.round(duration / 60)} minutes) does not match the five-minute analysis window of the DanFunD reference protocol.`,
+      );
+    }
+  }
+
+  if (recording.source === "bluetooth_rr") {
+    if (
+      recording.preparationSeconds === undefined ||
+      recording.preparationSeconds < DANFUND_REQUIRED_REST_SECONDS
+    ) {
+      reasons.push(
+        "The recording was not preceded by five minutes of quiet supine rest, which the DanFunD reference protocol requires.",
+      );
+    }
+    if (recording.posture !== "supine") {
+      reasons.push(
+        "The recording was not obtained in the supine position required by the DanFunD reference protocol.",
+      );
+    }
+  }
+
+  return {
+    compatible: reasons.length === 0,
+    reference: reasons.length === 0 ? "danfund" : null,
+    reasons,
+  };
 }
 
 export function computeLfhfRatio(lfPower: number, hfPower: number): number | null {
@@ -249,7 +305,11 @@ function computeAutonomicProfile(
 
 export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
   const ageBand = getAgeBand(input.age);
-  const referenceAvailable = input.referenceSex !== "none" && ageBand !== null;
+  const referenceCompatibility = assessReferenceCompatibility(input.recording);
+  const referenceAvailable =
+    input.referenceSex !== "none" &&
+    ageBand !== null &&
+    referenceCompatibility.compatible;
 
   let referenceNote: string | undefined;
   if (input.age > 72) {
@@ -258,6 +318,10 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
   } else if (input.referenceSex === "none") {
     referenceNote =
       "No sex-specific reference distribution was selected. The values are described without reference-percentile placement.";
+  }
+  if (referenceCompatibility.reasons.length > 0) {
+    const protocolNote = referenceCompatibility.reasons.join(" ");
+    referenceNote = referenceNote ? `${protocolNote} ${referenceNote}` : protocolNote;
   }
 
   let rmssdBand: ReferenceBand = "unclassified";
@@ -328,6 +392,7 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
     ageBand,
     referenceAvailable,
     referenceNote,
+    referenceCompatibility,
 
     rmssd: {
       value: input.rmssd,
@@ -590,7 +655,9 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
   const metrics = renderMetricDescriptions(findings);
   const conclusion = findings.referenceAvailable
     ? buildConclusion(findings)
-    : "The entered values cannot be placed within an age- and sex-specific reference distribution. Interpret the values descriptively and together with the clinical context.";
+    : findings.referenceCompatibility && findings.referenceCompatibility.reasons.length > 0
+      ? "The recording does not match the five-minute supine DanFunD reference conditions, so the values are described without reference-percentile placement or an Autonomic Pattern Score. Interpret the HRV values descriptively and together with the clinical context."
+      : "The entered values cannot be placed within an age- and sex-specific reference distribution. Interpret the values descriptively and together with the clinical context.";
 
   return {
     summary: conclusion,
@@ -600,7 +667,9 @@ export function interpretHrv(input: MeasurementInput): HrvInterpretation {
     clinicalNote: CLINICAL_NOTE,
     referenceAvailable: findings.referenceAvailable,
     referenceNote: findings.referenceNote,
+    referenceCompatibility: findings.referenceCompatibility,
     safetyMessage: "",
+    engineVersion: ANALYSIS_ENGINE_VERSION,
     autonomicProfile: findings.autonomicProfile,
     findings,
   };

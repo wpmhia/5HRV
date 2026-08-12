@@ -37,7 +37,9 @@ export function parseDurationSeconds(text: string): number | null {
   const patterns = [
     { re: /(?:sample\s*length|duration|recording\s*duration)\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*(?:min(?:ute)?s?)\b/i, multiplier: 60 },
     { re: /(?:sample\s*length|duration|recording\s*duration)\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*s(?:ec(?:onds?)?)?\b/i, multiplier: 1 },
+    { re: /(?:sample\s*length|duration|recording\s*duration)\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*h(?:ours?)?\b/i, multiplier: 3600 },
     { re: /(\d+(?:[.,]\d+)?)\s*(?:min(?:ute)?s?)\b/i, multiplier: 60 },
+    { re: /(\d+(?:[.,]\d+)?)\s*h(?:ours?)?\b/i, multiplier: 3600 },
     { re: /(\d+)\s*s\b(?!hz)/i, multiplier: 1 },
   ];
   for (const { re, multiplier } of patterns) {

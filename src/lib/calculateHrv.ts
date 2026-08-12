@@ -182,6 +182,18 @@ export type CalculateHrvOptions = {
 
 export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMetrics {
   const n = nn.length;
+  if (n === 0 || !nn.every((v) => Number.isFinite(v))) {
+    return {
+      rmssd: 0,
+      sdnn: 0,
+      pnn50: 0,
+      meanHr: 0,
+      totalBeats: 0,
+      hfPower: 0,
+      lfPower: 0,
+      lfhfRatio: 0,
+    };
+  }
   const meanRr = mean(nn);
   const meanHr = meanRr > 0 ? 60000 / meanRr : 0;
 
@@ -204,7 +216,7 @@ export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMe
 
   let lfPower = 0;
   let hfPower = 0;
-  if (spectral.length > 0) {
+  if (spectral.length > 0 && spectral.every((v) => Number.isFinite(v))) {
     const timesMs = new Array<number>(spectral.length);
     timesMs[0] = 0;
     for (let i = 1; i < spectral.length; i++) timesMs[i] = timesMs[i - 1] + spectral[i - 1];

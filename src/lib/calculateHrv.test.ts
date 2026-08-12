@@ -37,6 +37,15 @@ describe("calculateHrv", () => {
     expect(hrv.hfPower).toBe(0);
   });
 
+  it("returns zeroed metrics for non-finite input", () => {
+    const hrv = calculateHrv([800, NaN, 820, Infinity]);
+    expect(hrv.totalBeats).toBe(0);
+    expect(hrv.rmssd).toBe(0);
+    expect(hrv.sdnn).toBe(0);
+    expect(hrv.lfPower).toBe(0);
+    expect(hrv.hfPower).toBe(0);
+  });
+
   it("calculates time-domain metrics", () => {
     const rr = [800, 840, 800, 840, 800, 840, 800, 840, 800, 840];
     const hrv = calculateHrv(rr);

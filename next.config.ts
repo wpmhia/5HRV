@@ -17,12 +17,6 @@ const nextConfig: NextConfig = {
     ],
   },
   allowedDevOrigins: ['*.e2b.app', '*.ideavo.app', '*.ideavo.ai'],
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   turbopack: {
     rules: {
       "*.{jsx,tsx}": {

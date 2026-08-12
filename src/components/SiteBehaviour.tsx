@@ -1,9 +1,20 @@
+"use client";
+
 import Script from "next/script";
+import { usePathname } from "next/navigation";
+
+const TRACKING_FREE_PATHS = ["/calculator", "/calculator/result"];
 
 export function SiteBehaviour() {
+  const pathname = usePathname();
   const secret = process.env.NEXT_PUBLIC_SITEBEHAVIOUR_SECRET;
 
   if (!secret) return null;
+
+  // Calculation and result pages are tracking-free zones: never load the
+  // third-party script on them, so entered HRV data and results are never
+  // exposed to the analytics provider.
+  if (TRACKING_FREE_PATHS.includes(pathname)) return null;
 
   return (
     <>

@@ -546,6 +546,13 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
                   artefact rate.
                 </p>
               )}
+              {preparationSecondsRef.current < SETTLING_SECONDS && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  The resting period was shorter than five minutes, so these values will be
+                  interpreted descriptively without reference-percentile placement or an
+                  Autonomic Pattern Score.
+                </p>
+              )}
               <button type="button" onClick={handleUseValues} className={actionButtonClass}>
                 Use these values
               </button>

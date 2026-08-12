@@ -13,6 +13,7 @@ import {
   estimatePercentile,
   interpolateLogPercentile,
   percentileToZ,
+  assessReferenceCompatibility,
 } from "@/lib/interpretHrv";
 import type {
   MeasurementInput,
@@ -287,6 +288,87 @@ describe("reference availability", () => {
     const result = interpretHrv({ ...baseInput, age: 72, rmssd: 17.02 });
     const rmssd = result.metrics.find((m) => m.key === "rmssd");
     expect(rmssd!.category).toBe("p25_to_p75");
+  });
+  it("no percentile for an imported recording with a non-five-minute duration", () => {
+    const result = interpretHrv({
+      ...baseInput,
+      recording: { durationSeconds: 86400 },
+    });
+    const rmssd = result.metrics.find((m) => m.key === "rmssd");
+    expect(rmssd!.category).toBeUndefined();
+    expect(result.referenceAvailable).toBe(false);
+    expect(result.autonomicProfile).toBeUndefined();
+    expect(result.referenceNote).toContain("five-minute");
+  });
+  it("no percentile when the bluetooth rest period was skipped", () => {
+    const result = interpretHrv({
+      ...baseInput,
+      recording: {
+        source: "bluetooth_rr",
+        durationSeconds: 300,
+        preparationSeconds: 0,
+        posture: "supine",
+      },
+    });
+    expect(result.referenceAvailable).toBe(false);
+    expect(result.autonomicProfile).toBeUndefined();
+    expect(result.overall).toContain("descriptively");
+  });
+});
+
+describe("assessReferenceCompatibility", () => {
+  it("treats manual entries without recording metadata as compatible", () => {
+    expect(assessReferenceCompatibility()).toEqual({
+      compatible: true,
+      reference: "danfund",
+      reasons: [],
+    });
+  });
+  it("accepts a five-minute recording", () => {
+    expect(assessReferenceCompatibility({ durationSeconds: 300 })).toEqual({
+      compatible: true,
+      reference: "danfund",
+      reasons: [],
+    });
+  });
+  it("rejects a 24-hour recording", () => {
+    const result = assessReferenceCompatibility({ durationSeconds: 86400 });
+    expect(result.compatible).toBe(false);
+    expect(result.reference).toBeNull();
+    expect(result.reasons.join(" ")).toMatch(/five-minute/i);
+  });
+  it("rejects a two-minute recording", () => {
+    expect(assessReferenceCompatibility({ durationSeconds: 120 }).compatible).toBe(false);
+  });
+  it("accepts a full-protocol bluetooth recording", () => {
+    expect(
+      assessReferenceCompatibility({
+        source: "bluetooth_rr",
+        durationSeconds: 300,
+        preparationSeconds: 300,
+        posture: "supine",
+      }).compatible,
+    ).toBe(true);
+  });
+  it("rejects a bluetooth recording with a shortened rest period", () => {
+    const result = assessReferenceCompatibility({
+      source: "bluetooth_rr",
+      durationSeconds: 300,
+      preparationSeconds: 45,
+      posture: "supine",
+    });
+    expect(result.compatible).toBe(false);
+    expect(result.reasons.join(" ")).toMatch(/supine rest/i);
+  });
+  it("rejects a bluetooth recording in a non-supine position", () => {
+    const result = assessReferenceCompatibility({
+      source: "bluetooth_rr",
+      durationSeconds: 300,
+      preparationSeconds: 300,
+      posture: "seated",
+    });
+    expect(result.compatible).toBe(false);
+    expect(result.reasons.join(" ")).toMatch(/supine/i);
   });
 });
 
