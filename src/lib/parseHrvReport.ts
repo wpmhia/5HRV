@@ -78,7 +78,7 @@ export function parseHrvReport(text: string): ParsedReportValues {
     // Sampling frequency
     if (values.samplingFrequency === undefined) {
       const freqMatch = trimmed.match(
-        /(?:sampling\s*freq|frequency|sample\s*rate|freq)\s*[:=]?\s*(\d+)\s*hz\b/i
+        /(?:sampling\s*freq|frequency|sample\s*rate|freq)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+)\s*hz\b/i
       );
       if (freqMatch) {
         const num = Number(freqMatch[1]);
@@ -89,7 +89,7 @@ export function parseHrvReport(text: string): ParsedReportValues {
     // Total beats / RR intervals
     if (values.totalBeats === undefined) {
       const beatsMatch = trimmed.match(
-        /(?:total\s*beats|total\s*rr\s*intervals?|aantal\s*rr\s*totaal)\s*[:=]?\s*(\d+)/i
+        /(?:total\s*beats|total\s*rr\s*intervals?|aantal\s*rr\s*totaal)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+)/i
       );
       if (beatsMatch) {
         const num = Number(beatsMatch[1]);
@@ -100,8 +100,8 @@ export function parseHrvReport(text: string): ParsedReportValues {
     // SDNN
     if (values.sdnn === undefined) {
       const sdnnPatterns = [
-        /sd\s*nn\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /sdnn\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /sd\s*nn\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /sdnn\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
       ];
       for (const pat of sdnnPatterns) {
         const m = trimmed.match(pat);
@@ -118,8 +118,8 @@ export function parseHrvReport(text: string): ParsedReportValues {
     // RMSSD / rMSSD
     if (values.rmssd === undefined) {
       const rmssdPatterns = [
-        /rms\s*sd\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /r?mssd\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /rms\s*sd\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /r?mssd\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
       ];
       for (const pat of rmssdPatterns) {
         const m = trimmed.match(pat);
@@ -136,8 +136,8 @@ export function parseHrvReport(text: string): ParsedReportValues {
     // pNN50 / PNN50
     if (values.pnn50 === undefined) {
       const pnnPatterns = [
-        /pnn50\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /pnn50\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*%/i,
+        /pnn50\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /pnn50\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*%/i,
         /percent\s*of\s*nn\s*>\s*50\s*ms\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
       ];
       for (const pat of pnnPatterns) {
@@ -155,9 +155,9 @@ export function parseHrvReport(text: string): ParsedReportValues {
     // HF power
     if (values.hfPower === undefined) {
       const hfPatterns = [
-        /hf\s*power\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /(?<![a-z/])hf\b(?!\s*\/\s*hf)(?!\s*power)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /high\s*frequency\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /hf\s*power\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /(?<![a-z/])hf\b(?!\s*\/\s*hf)(?!\s*power)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /high\s*frequency\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
       ];
       for (const pat of hfPatterns) {
         const m = trimmed.match(pat);
@@ -174,9 +174,9 @@ export function parseHrvReport(text: string): ParsedReportValues {
     // LF power
     if (values.lfPower === undefined) {
       const lfPatterns = [
-        /lf\s*power\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /(?<![a-z])lf\b(?!\s*\/\s*hf)(?!\s*power)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /low\s*frequency\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /lf\s*power\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /(?<![a-z])lf\b(?!\s*\/\s*hf)(?!\s*power)\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /low\s*frequency\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
       ];
       for (const pat of lfPatterns) {
         const m = trimmed.match(pat);
@@ -193,9 +193,9 @@ export function parseHrvReport(text: string): ParsedReportValues {
     // LF/HF ratio
     if (values.lfhfRatio === undefined) {
       const lfhfPatterns = [
-        /lf\s*\/\s*hf\s*(?:ratio)?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /lf-hf\s*ratio\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
-        /lf\/hf\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /lf\s*\/\s*hf\s*(?:ratio)?\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /lf-hf\s*ratio\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
+        /lf\/hf\s*(?:\([^)]*\))?\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i,
       ];
       for (const pat of lfhfPatterns) {
         const m = trimmed.match(pat);
@@ -216,12 +216,12 @@ export function parseHrvReport(text: string): ParsedReportValues {
 
 export function hasHrvContent(text: string): boolean {
   const markers = [
-    /\brmssd\s*[:=]?\s*\d/i,
-    /\bsdnn\s*[:=]?\s*\d/i,
-    /\bpnn50\s*[:=]?\s*\d/i,
-    /\blf\s*\/\s*hf\s*[:=]?\s*\d/i,
-    /(?<!\/)\bhf(?:\s+power)?\s*[:=]?\s*\d/i,
-    /(?<!\/)\blf(?:\s+power)?\s*[:=]?\s*\d/i,
+    /\brmssd\s*(?:\([^)]*\))?\s*[:=]?\s*\d/i,
+    /\bsdnn\s*(?:\([^)]*\))?\s*[:=]?\s*\d/i,
+    /\bpnn50\s*(?:\([^)]*\))?\s*[:=]?\s*\d/i,
+    /\blf\s*\/\s*hf\s*(?:\([^)]*\))?\s*[:=]?\s*\d/i,
+    /(?<!\/)\bhf(?:\s+power)?\s*(?:\([^)]*\))?\s*[:=]?\s*\d/i,
+    /(?<!\/)\blf(?:\s+power)?\s*(?:\([^)]*\))?\s*[:=]?\s*\d/i,
   ];
   return markers.filter((p) => p.test(text)).length >= 2;
 }

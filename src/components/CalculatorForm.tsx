@@ -23,6 +23,10 @@ type FormState = {
   lfPower: string;
   lfhfRatio: string;
   lfhfSource: string;
+  recordingDate?: string;
+  durationSeconds?: number;
+  samplingFrequencyHz?: number;
+  totalBeats?: number;
   measurement?: BluetoothMeasurementMetadata;
 };
 
@@ -218,6 +222,18 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
 
     if (form.measurement) {
       result.recording = { ...form.measurement };
+    } else if (
+      form.recordingDate ||
+      form.durationSeconds !== undefined ||
+      form.samplingFrequencyHz !== undefined ||
+      form.totalBeats !== undefined
+    ) {
+      result.recording = {
+        recordingDate: form.recordingDate,
+        durationSeconds: form.durationSeconds,
+        samplingFrequencyHz: form.samplingFrequencyHz,
+        totalBeats: form.totalBeats,
+      };
     }
 
     if (form.freqMode === "powers") {
@@ -293,6 +309,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       lfhfRatio: "",
       lfhfSource: "",
       freqMode: "powers",
+      recordingDate: undefined,
+      durationSeconds: undefined,
+      samplingFrequencyHz: undefined,
+      totalBeats: undefined,
       measurement: undefined,
     }));
     setErrors({});
@@ -326,6 +346,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       base.freqMode = "powers";
     }
     if (values.measurement) base.measurement = values.measurement;
+    if (values.recordingDate) base.recordingDate = values.recordingDate;
+    if (values.durationSeconds !== undefined) base.durationSeconds = values.durationSeconds;
+    if (values.samplingFrequency !== undefined) base.samplingFrequencyHz = values.samplingFrequency;
+    if (values.totalBeats !== undefined) base.totalBeats = values.totalBeats;
     setForm(base);
     setErrors({});
     const fieldKeys: (keyof FormState)[] = ["rmssd", "sdnn", "pnn50", "hfPower", "lfPower", "lfhfRatio"];

@@ -75,11 +75,6 @@ function correctBeatStructure(rr: number[]): { nn: number[]; corrections: number
   let corrections = 0;
   let i = 0;
   while (i < n) {
-    if (i === 0) {
-      nn.push(rr[0]);
-      i++;
-      continue;
-    }
     const med = localMedian(rr, i);
     if (!Number.isFinite(med)) {
       nn.push(rr[i]);

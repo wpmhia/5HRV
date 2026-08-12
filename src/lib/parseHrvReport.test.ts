@@ -2,6 +2,22 @@ import { describe, it, expect } from "vitest";
 import { parseHrvReport, hasHrvContent, parseDurationSeconds } from "@/lib/parseHrvReport";
 
 describe("parseHrvReport", () => {
+  it("extracts values from reports with parenthesised units", () => {
+    const text = `SDNN (ms): 39.33
+RMSSD (ms): 23.14
+pNN50 (%): 3.28
+LF (ms²): 416.47
+HF (ms²): 70.55
+LF/HF: 5.90`;
+    const result = parseHrvReport(text);
+    expect(result.sdnn).toBeCloseTo(39.33, 1);
+    expect(result.rmssd).toBeCloseTo(23.14, 1);
+    expect(result.pnn50).toBeCloseTo(3.28, 1);
+    expect(result.lfPower).toBeCloseTo(416.47, 1);
+    expect(result.hfPower).toBeCloseTo(70.55, 1);
+    expect(result.lfhfRatio).toBeCloseTo(5.9, 1);
+  });
+
   it("extracts all values from example report", () => {
     const text = `Sample Length 322s
 Frequency: 1000Hz

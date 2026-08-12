@@ -351,8 +351,9 @@ export default function MethodologyPage() {
                 −24 to +24
               </td>
               <td className="py-2">
-                Central autonomic pattern (when both axes are central); Mixed
-                autonomic pattern otherwise. A mixed concordance is labelled
+                Central autonomic pattern when both axes are central; otherwise
+                a mild sympathetic- or parasympathetic-direction shift following
+                the concordance direction. A mixed concordance is labelled
                 Mixed autonomic pattern at any score.
               </td>
             </tr>

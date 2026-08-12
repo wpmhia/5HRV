@@ -26,6 +26,17 @@ function expectClose(actual: number, expected: number, relTol: number): void {
 }
 
 describe("calculateHrv", () => {
+  it("handles an empty input without crashing", () => {
+    const hrv = calculateHrv([]);
+    expect(hrv.totalBeats).toBe(0);
+    expect(hrv.rmssd).toBe(0);
+    expect(hrv.sdnn).toBe(0);
+    expect(hrv.pnn50).toBe(0);
+    expect(hrv.meanHr).toBe(0);
+    expect(hrv.lfPower).toBe(0);
+    expect(hrv.hfPower).toBe(0);
+  });
+
   it("calculates time-domain metrics", () => {
     const rr = [800, 840, 800, 840, 800, 840, 800, 840, 800, 840];
     const hrv = calculateHrv(rr);
@@ -121,6 +132,16 @@ describe("calculateHrv", () => {
 });
 
 describe("correctRrIntervals", () => {
+  it("corrects a missed beat at the start of the series", () => {
+    const rr = new Array<number>(100).fill(800);
+    rr[0] = 1600;
+    const result = correctRrIntervals(rr);
+    expect(result.totalIntervals).toBe(101);
+    expect(result.correctedIntervals).toBe(1);
+    expect(result.nn[0]).toBeCloseTo(800, 0);
+    expect(result.nn[1]).toBeCloseTo(800, 0);
+  });
+
   it("inserts a missing beat for a doubled interval", () => {
     const rr = new Array<number>(100).fill(800);
     rr[50] = 1600;

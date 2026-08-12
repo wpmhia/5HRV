@@ -26,11 +26,11 @@ test.describe("Caroline PDF upload", () => {
     await expect(page).toHaveURL(/\/calculator\/result/);
 
     await expect(page.getByRole("heading", { name: "5HRV Scientific Analysis" })).toBeVisible();
-    await expect(page.getByText("+55")).toBeVisible();
+    await expect(page.getByText("+55", { exact: true })).toBeVisible();
     await expect(page.getByText("Marked sympathetic-direction shift").first()).toBeVisible();
-    await expect(page.getByText("low (P5–P25)")).toBeVisible();
-    await expect(page.getByText("typical (P25–P75)")).toBeVisible();
-    await expect(page.getByText(/15th percentile/).first()).toBeVisible();
-    await expect(page.getByText(/45th percentile/).first()).toBeVisible();
+    await expect(page.getByText("low (P5–P25)", { exact: true })).toBeVisible();
+    await expect(page.getByText("typical (P25–P75)", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Approximately 15th percentile/)).toBeVisible();
+    await expect(page.getByText(/Approximately 45th percentile/)).toBeVisible();
   });
 });

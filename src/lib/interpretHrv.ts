@@ -213,6 +213,8 @@ function computeAutonomicProfile(
     if (score <= -25) return "Mild parasympathetic-direction shift";
     if (score < 25) {
       if (concordance === "central") return "Central autonomic pattern";
+      if (concordance.includes("parasympathetic")) return "Mild parasympathetic-direction shift";
+      if (concordance.includes("sympathetic")) return "Mild sympathetic-direction shift";
       return "Mixed autonomic pattern";
     }
     if (score < 50) return "Mild sympathetic-direction shift";

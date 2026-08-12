@@ -202,12 +202,17 @@ export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMe
   const detrendedSpectral =
     spectral === nn ? detrendedTime : smoothnessPriors(spectral, DETREND_LAMBDA);
 
-  const timesMs = new Array<number>(spectral.length);
-  timesMs[0] = 0;
-  for (let i = 1; i < spectral.length; i++) timesMs[i] = timesMs[i - 1] + spectral[i - 1];
-  const durationMs = options?.analysisDurationMs ?? timesMs[spectral.length - 1] + spectral[spectral.length - 1];
-  const tachogram = buildTachogram(timesMs, detrendedSpectral, durationMs, RESAMPLE_FREQUENCY_HZ);
-  const { lfPower, hfPower } = welchPower(tachogram, RESAMPLE_FREQUENCY_HZ);
+  let lfPower = 0;
+  let hfPower = 0;
+  if (spectral.length > 0) {
+    const timesMs = new Array<number>(spectral.length);
+    timesMs[0] = 0;
+    for (let i = 1; i < spectral.length; i++) timesMs[i] = timesMs[i - 1] + spectral[i - 1];
+    const durationMs =
+      options?.analysisDurationMs ?? timesMs[spectral.length - 1] + spectral[spectral.length - 1];
+    const tachogram = buildTachogram(timesMs, detrendedSpectral, durationMs, RESAMPLE_FREQUENCY_HZ);
+    ({ lfPower, hfPower } = welchPower(tachogram, RESAMPLE_FREQUENCY_HZ));
+  }
 
   return {
     rmssd,

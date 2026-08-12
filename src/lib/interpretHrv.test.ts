@@ -863,6 +863,20 @@ describe("age/sex normalisation", () => {
 });
 
 describe("concordance", () => {
+  it("single-axis direction keeps its label for low-magnitude scores", () => {
+    const result = interpretHrv({
+      age: 45,
+      referenceSex: "male",
+      rmssd: 50,
+      sdnn: 35,
+      lfhfRatio: 3,
+      lfhfSource: "manual",
+    });
+    expect(result.autonomicProfile?.concordance).toBe("single_axis_parasympathetic_shift");
+    expect(result.autonomicProfile?.label).toBe("Mild parasympathetic-direction shift");
+    expect(result.overall).not.toContain("mixed");
+  });
+
   function makeInput(overrides: Partial<MeasurementInput>): MeasurementInput {
     return {
       age: 40,
