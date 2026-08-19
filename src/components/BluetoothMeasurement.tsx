@@ -304,6 +304,9 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   useEffect(() => {
     return () => {
       if (rrTimeoutRef.current) window.clearTimeout(rrTimeoutRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
+      sessionRef.current?.disconnect();
+      sessionRef.current = null;
     };
   }, []);
 
@@ -433,7 +436,8 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
                 Connect heart-rate sensor
               </button>
               <p className="text-xs text-muted-foreground">
-                Select your heart-rate sensor from the Bluetooth device list.
+                Select <strong>Polar H10</strong> from the Bluetooth device list. The strap must be
+                worn with the electrodes moistened and not connected to another app.
               </p>
               <p className="text-xs text-muted-foreground/80">
                 Compatibility requires the standard Bluetooth Heart Rate Service

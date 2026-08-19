@@ -124,6 +124,10 @@ export class BleHeartRateSession {
   disconnect(): void {
     this.characteristic.removeEventListener("characteristicvaluechanged", this.handleValueChanged);
     this.device.removeEventListener("gattserverdisconnected", this.handleDisconnected);
+    // Stop notifications before closing the GATT link. This matters for the H10,
+    // which can otherwise keep the browser-side notification subscription alive
+    // when the measurement dialog is closed or the user starts a new capture.
+    void this.characteristic.stopNotifications().catch(() => undefined);
     if (this.server.connected) {
       try {
         this.server.disconnect();
