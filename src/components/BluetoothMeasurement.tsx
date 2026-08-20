@@ -104,6 +104,23 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   const lastRrReceivedAtRef = useRef<number | null>(null);
   const preparationSecondsRef = useRef(0);
   const autoPrefilledResultRef = useRef<MeasurementResult | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
+  const requestScreenWakeLock = useCallback(async () => {
+    if (!("wakeLock" in navigator) || document.visibilityState !== "visible") return;
+    if (wakeLockRef.current && !wakeLockRef.current.released) return;
+    try {
+      wakeLockRef.current = await navigator.wakeLock.request("screen");
+    } catch {
+      // Screen Wake Lock is optional; capture can continue without it.
+    }
+  }, []);
+
+  const releaseScreenWakeLock = useCallback(() => {
+    const lock = wakeLockRef.current;
+    wakeLockRef.current = null;
+    if (lock) void lock.release().catch(() => undefined);
+  }, []);
 
   const startSettling = useCallback(() => {
     settlingStartedAtRef.current = Date.now();
@@ -234,6 +251,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     setPhase("connecting");
     setError(null);
     lastRrReceivedAtRef.current = null;
+    void requestScreenWakeLock();
     try {
       const session = await BleHeartRateSession.connect(
         (event) => {
@@ -294,7 +312,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       setPhase("error");
       setError(err instanceof Error ? err.message : "Could not connect to the heart-rate sensor.");
     }
-  }, [abortRecording]);
+  }, [abortRecording, requestScreenWakeLock]);
 
   useEffect(() => {
     if (phase === "connecting" && connected && rrDetected) {
@@ -308,8 +326,22 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       if (timerRef.current) clearInterval(timerRef.current);
       sessionRef.current?.disconnect();
       sessionRef.current = null;
+      releaseScreenWakeLock();
     };
-  }, []);
+  }, [releaseScreenWakeLock]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        (phaseRef.current === "settling" || phaseRef.current === "recording")
+      ) {
+        void requestScreenWakeLock();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [requestScreenWakeLock]);
 
   const handleStop = useCallback(() => {
     finishRecording();
@@ -340,6 +372,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     }
     sessionRef.current?.disconnect();
     sessionRef.current = null;
+    releaseScreenWakeLock();
     setOpen(false);
     setPhase("prepare");
     setError(null);
@@ -355,7 +388,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     rrBufferRef.current = [];
     lastRrReceivedAtRef.current = null;
     preparationSecondsRef.current = 0;
-  }, []);
+  }, [releaseScreenWakeLock]);
 
   const prefillValues = useCallback(() => {
     if (!result) return;
@@ -532,6 +565,9 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
               </div>
               <p className="text-center text-xs text-muted-foreground">
                 Remain still and breathe normally.
+              </p>
+              <p className="text-center text-xs text-muted-foreground">
+                Keep this page open. The phone screen will be kept awake when supported.
               </p>
               <button type="button" onClick={handleStop} className={secondaryButtonClass}>
                 Stop measurement
