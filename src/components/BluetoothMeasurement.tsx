@@ -18,7 +18,7 @@ import type { HrvMetrics } from "@/lib/calculateHrv";
 import { analyzeHrvRecording } from "@/lib/analyzeHrvRecording";
 import { ANALYSIS_ENGINE_VERSION } from "@/lib/interpretHrv";
 
-const SETTLING_SECONDS = 300;
+const SETTLING_SECONDS = 120;
 const RECORDING_SECONDS = 300;
 const RECORDING_MARGIN_SECONDS = 5;
 const RECORDING_TOTAL_SECONDS = RECORDING_SECONDS + RECORDING_MARGIN_SECONDS;

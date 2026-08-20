@@ -164,11 +164,12 @@ export default function MethodologyPage() {
           per metric.
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
-          The direct 5HRV workflow uses five minutes of supine rest followed by
+          The direct 5HRV workflow uses two minutes of supine rest followed by
           an exact five-minute analysis window. DanFunD recorded seven minutes
           after the resting period and analysed the final five minutes. The
-          posture, resting period and analysed duration are aligned, but the
-          acquisition workflow is not identical.
+          posture and analysed duration are aligned, but the shorter direct
+          measurement rest period means the acquisition workflow is not
+          identical.
         </p>
       </section>
 
