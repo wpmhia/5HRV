@@ -54,9 +54,11 @@ export default function MethodPage() {
           <li>Appropriate time resolution</li>
         </ul>
         <p className="text-base leading-7 text-foreground/85">
-          Validated ECG chest straps may also provide accurate RR intervals
+          Validated chest-strap sensors may also provide accurate RR intervals
           when the recording can be reviewed and artefacts are handled
-          appropriately. Photoplethysmography and wearable measurements may be
+          appropriately. The Polar H10 supplies RR intervals over the standard
+          Bluetooth Heart Rate Service; it does not provide a diagnostic ECG
+          trace in this workflow. Photoplethysmography and wearable measurements may be
           useful for screening or exploratory applications, but require
           attention to motion, pulse-transit effects, device algorithms and
           artefact correction.
@@ -69,10 +71,10 @@ export default function MethodPage() {
         </h2>
         <p className="text-base leading-7 text-foreground/85">
           5HRV can receive beat-to-beat RR intervals directly from a Polar H10
-          chest strap using Bluetooth. The user first rests quietly for five
-          minutes in the supine position. The application then records slightly
-          longer than five minutes to ensure that a complete 300-second analysis
-          window and sufficient boundary data are available.
+           chest strap using Bluetooth. The H10 remains connected while the user
+           rests quietly for five minutes in the supine position, completes two
+           minutes of stabilization, and then provides five minutes of RR data
+           for analysis. The final five minutes are the analysis window.
         </p>
         <p className="text-base leading-7 text-foreground/85">
           The received RR intervals are checked for implausible values, missed
@@ -157,8 +159,8 @@ export default function MethodPage() {
               <tr>
                 <td className="py-2 pr-4 align-top font-medium">Rest</td>
                 <td className="py-2 pr-4 text-foreground/85">
-                  Five minutes of quiet supine rest before direct Polar H10
-                  measurement
+                   Five minutes of quiet supine rest, followed by two minutes of
+                   stabilization before the analysed recording
                 </td>
               </tr>
               <tr>
@@ -171,9 +173,8 @@ export default function MethodPage() {
               <tr>
                 <td className="py-2 pr-4 align-top font-medium">Duration</td>
                 <td className="py-2 pr-4 text-foreground/85">
-                  An exact 300-second analysis window. Direct Polar measurements
-                  collect a short additional margin to ensure full spectral
-                  interpolation support
+                   An exact 300-second RR analysis window after the seven-minute
+                   rest and stabilization sequence
                 </td>
               </tr>
               <tr>

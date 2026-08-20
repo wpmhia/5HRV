@@ -164,12 +164,10 @@ export default function MethodologyPage() {
           per metric.
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
-          The direct 5HRV workflow uses two minutes of supine rest followed by
-          an exact five-minute analysis window. DanFunD recorded seven minutes
-          after the resting period and analysed the final five minutes. The
-          posture and analysed duration are aligned, but the shorter direct
-          measurement rest period means the acquisition workflow is not
-          identical.
+          The direct Polar H10 workflow follows the DanFunD sequence: five minutes
+          of quiet supine rest, two minutes of stabilization, and five minutes of
+          RR data used for analysis. DanFunD recorded seven minutes after the
+          preceding rest and analysed the final five minutes.
         </p>
       </section>
 
