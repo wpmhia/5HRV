@@ -75,17 +75,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          defer
+          src="https://gstat.up.railway.app/recorder.js"
+          data-website-id="a9cecbc6-7ed6-4816-9590-51fd9581d943"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-screen flex-col`}
       >
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-        <script
-          defer
-          src="https://gstat.up.railway.app/script.js"
-          data-website-id="a9cecbc6-7ed6-4816-9590-51fd9581d943"
         />
         <SiteBehaviour />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
