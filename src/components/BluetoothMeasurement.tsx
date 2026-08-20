@@ -100,7 +100,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   const settlingStartedAtRef = useRef(0);
   const recordingStartedAtRef = useRef(0);
   const recordingEndsAtRef = useRef(0);
-  const deviceNameRef = useRef("Bluetooth HR sensor");
+  const deviceNameRef = useRef("Polar H10");
   const lastRrReceivedAtRef = useRef<number | null>(null);
   const preparationSecondsRef = useRef(0);
   const autoPrefilledResultRef = useRef<MeasurementResult | null>(null);
@@ -310,7 +310,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       }, RR_DETECTION_TIMEOUT_MS);
     } catch (err) {
       setPhase("error");
-      setError(err instanceof Error ? err.message : "Could not connect to the heart-rate sensor.");
+      setError(err instanceof Error ? err.message : "Could not connect to the Polar H10.");
     }
   }, [abortRecording, requestScreenWakeLock]);
 
@@ -451,7 +451,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         onClick={() => handleOpenChange(true)}
         className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
       >
-        Measure with heart-rate sensor
+         Measure with Polar H10
       </button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -462,24 +462,23 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
           className="sm:max-w-md"
         >
           <DialogHeader>
-            <DialogTitle>Bluetooth HRV measurement</DialogTitle>
+            <DialogTitle>Polar H10 HRV measurement</DialogTitle>
             <DialogDescription>
-              Connect a Bluetooth heart-rate sensor that transmits RR intervals.
-              Polar H10 and similar compatible chest straps may be used.
+              Connect your Polar H10 to capture beat-to-beat RR intervals.
             </DialogDescription>
           </DialogHeader>
 
           {phase === "prepare" && (
             <div className="space-y-4">
               <ul className="space-y-1.5 text-sm text-foreground/85">
-                <li>• Wear the heart-rate sensor</li>
+                 <li>• Wear the Polar H10 chest strap</li>
                 <li>• Lie flat on your back</li>
                 <li>• Remain still</li>
                 <li>• Breathe normally</li>
                 <li>• Do not speak during the recording</li>
               </ul>
               <button type="button" onClick={handleConnect} className={actionButtonClass}>
-                Connect heart-rate sensor
+                 Connect Polar H10
               </button>
               <p className="text-xs text-muted-foreground">
                 Select <strong>Polar H10</strong> from the Bluetooth device list. The strap must be
@@ -501,7 +500,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
                     aria-hidden="true"
                     className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"
                   />
-                  Connecting to heart-rate sensor…
+                   Connecting to Polar H10…
                 </p>
               )}
               {connected && <p className="font-medium text-foreground">Heart-rate sensor connected</p>}
