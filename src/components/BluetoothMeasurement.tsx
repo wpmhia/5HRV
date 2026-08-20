@@ -103,6 +103,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   const deviceNameRef = useRef("Bluetooth HR sensor");
   const lastRrReceivedAtRef = useRef<number | null>(null);
   const preparationSecondsRef = useRef(0);
+  const autoPrefilledResultRef = useRef<MeasurementResult | null>(null);
 
   const startSettling = useCallback(() => {
     settlingStartedAtRef.current = Date.now();
@@ -350,12 +351,13 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     setBeatsReceived(0);
     setSignal("waiting");
     setResult(null);
+    autoPrefilledResultRef.current = null;
     rrBufferRef.current = [];
     lastRrReceivedAtRef.current = null;
     preparationSecondsRef.current = 0;
   }, []);
 
-  const handleUseValues = useCallback(() => {
+  const prefillValues = useCallback(() => {
     if (!result) return;
     onPrefill({
       rmssd: round(result.rmssd, 2),
@@ -378,10 +380,21 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         quality: result.quality,
         engineVersion: ANALYSIS_ENGINE_VERSION,
         protocolCompatible: result.protocolCompatible,
-      },
-    });
+        },
+      });
+  }, [onPrefill, result]);
+
+  useEffect(() => {
+    if (phase === "complete" && result && autoPrefilledResultRef.current !== result) {
+      autoPrefilledResultRef.current = result;
+      prefillValues();
+    }
+  }, [phase, result, prefillValues]);
+
+  const handleUseValues = useCallback(() => {
+    prefillValues();
     closePanel();
-  }, [onPrefill, result, closePanel]);
+  }, [prefillValues, closePanel]);
 
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     if (!nextOpen) {
@@ -529,6 +542,9 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
           {phase === "complete" && result && (
             <div className="space-y-4">
               <p className="text-sm font-semibold text-foreground">Measurement complete</p>
+              <p className="text-sm text-muted-foreground">
+                The calculated values have been transferred to the calculator.
+              </p>
               <div className="space-y-1 rounded-md border border-border bg-muted/50 p-3 text-sm">
                 <MetricRow label="RMSSD" value={`${result.rmssd.toFixed(2)} ms`} />
                 <MetricRow label="SDNN" value={`${result.sdnn.toFixed(2)} ms`} />
