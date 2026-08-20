@@ -8,7 +8,7 @@ export type HrvMetrics = {
   totalBeats: number;
   hfPower: number;
   lfPower: number;
-  lfhfRatio: number;
+  lfhfRatio?: number;
 };
 
 export const RESAMPLE_FREQUENCY_HZ = 4;
@@ -120,11 +120,19 @@ function periodogram(segment: number[], fs: number): { lfPower: number; hfPower:
   if (n < 4) return { lfPower: 0, hfPower: 0 };
   const m = mean(segment);
   const x = new Float64Array(n);
-  for (let i = 0; i < n; i++) x[i] = segment[i] - m;
+  let windowPower = 0;
+  for (let i = 0; i < n; i++) {
+    const window = n > 1 ? 0.5 * (1 - Math.cos((2 * Math.PI * i) / (n - 1))) : 1;
+    windowPower += window * window;
+    x[i] = (segment[i] - m) * window;
+  }
 
   // FFT point density equals the Welch window width (no zero-padding), matching
   // the Kubios default frequency grid. Only bins in the LF/HF bands are needed.
-  const scale = 2 / (n * n);
+  // Integrated one-sided PSD scaling with a Hann taper. The factor of two
+  // accounts for the omitted negative-frequency bins; band powers are sums of
+  // bin-integrated power rather than raw FFT magnitudes.
+  const scale = 2 / (n * windowPower);
   const kMin = Math.max(1, Math.ceil((LF_LOW_HZ * n) / fs));
   const kMax = Math.floor((HF_HIGH_HZ * n) / fs);
   let lf = 0;
@@ -191,7 +199,7 @@ export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMe
       totalBeats: 0,
       hfPower: 0,
       lfPower: 0,
-      lfhfRatio: 0,
+      lfhfRatio: undefined,
     };
   }
   const meanRr = mean(nn);
@@ -234,6 +242,6 @@ export function calculateHrv(nn: number[], options?: CalculateHrvOptions): HrvMe
     totalBeats: n,
     hfPower,
     lfPower,
-    lfhfRatio: hfPower > 0 ? lfPower / hfPower : 0,
+    lfhfRatio: hfPower > 0 ? lfPower / hfPower : undefined,
   };
 }

@@ -30,6 +30,7 @@ const baseInput: MeasurementInput = {
   referenceSex: "male",
   rmssd: 30,
   sdnn: 35,
+  recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
 };
 
 function allText(result: HrvInterpretation): string {
@@ -317,11 +318,11 @@ describe("reference availability", () => {
 });
 
 describe("assessReferenceCompatibility", () => {
-  it("treats manual entries without recording metadata as compatible", () => {
+  it("does not treat missing recording metadata as compatible", () => {
     expect(assessReferenceCompatibility()).toEqual({
-      compatible: true,
-      reference: "danfund",
-      reasons: [],
+      compatible: false,
+      reference: null,
+      reasons: ["Recording protocol metadata is missing, so DanFunD reference compatibility cannot be established."],
     });
   });
   it("accepts a five-minute recording", () => {
@@ -409,17 +410,17 @@ describe("combined interpretation patterns", () => {
 
 describe("missing metrics", () => {
   it("RMSSD only: parasympathetic claim without a variability claim", () => {
-    const result = interpretHrv({ age: 33, referenceSex: "female", rmssd: 40 });
+    const result = interpretHrv({ age: 33, referenceSex: "female", rmssd: 40, recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" } });
     expect(result.overall).toContain("parasympathetic activity");
     expect(result.overall).not.toContain("overall variability");
   });
   it("SDNN only: variability claim without a parasympathetic claim", () => {
-    const result = interpretHrv({ age: 45, referenceSex: "male", sdnn: 30 });
+    const result = interpretHrv({ age: 45, referenceSex: "male", sdnn: 30, recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" } });
     expect(result.overall).toContain("overall variability");
     expect(result.overall).not.toContain("parasympathetic activity");
   });
   it("RMSSD and LF/HF without SDNN: no variability claim", () => {
-    const result = interpretHrv({ age: 25, referenceSex: "female", rmssd: 40, lfhfRatio: 1.5, lfhfSource: "manual" });
+    const result = interpretHrv({ age: 25, referenceSex: "female", rmssd: 40, lfhfRatio: 1.5, lfhfSource: "manual", recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" } });
     expect(result.overall).not.toContain("overall variability");
     expect(result.overall).toContain("parasympathetic activity");
   });
@@ -435,6 +436,7 @@ describe("deriveHrvFindings", () => {
       pnn50: 3.28,
       hfPower: 70.55,
       lfPower: 416.47,
+      recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
     };
     const f = deriveHrvFindings(input);
     expect(f.rmssd.band).toBe("p5_to_p25");
@@ -453,6 +455,7 @@ describe("deriveHrvFindings", () => {
       referenceSex: "female",
       rmssd: 23.14,
       sdnn: 39.33,
+      recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
     };
     const f = deriveHrvFindings(input);
     expect(Math.round(f.rmssd.estimatedPercentile!)).toBe(15);
@@ -465,6 +468,7 @@ describe("deriveHrvFindings", () => {
       referenceSex: "female",
       rmssd: 23.14,
       lfhfRatio: 5.9,
+      recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
     };
     const f = deriveHrvFindings(input);
     expect(f.autonomicProfile).toBeDefined();
@@ -481,6 +485,7 @@ describe("seed example 1", () => {
     sdnn: 23,
     hfPower: 213,
     lfhfRatio: 2.6,
+    recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
   };
   it("classifies RMSSD below the fifth percentile", () => {
     const result = interpretHrv(example1);
@@ -521,6 +526,7 @@ describe("seed example 2", () => {
     sdnn: 47.63,
     hfPower: 125.95,
     lfhfRatio: 3.28,
+    recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
   };
   it("classifies RMSSD within the central range around the median", () => {
     const result = interpretHrv(example2);
@@ -570,6 +576,7 @@ describe("renderAnalysis", () => {
       pnn50: 3.28,
       hfPower: 70.55,
       lfPower: 416.47,
+      recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
     };
     const findings = deriveHrvFindings(input);
     const text = renderAnalysis(findings);
@@ -656,6 +663,7 @@ describe("renderAnalysis", () => {
       sdnn: 67.27,
       lfhfRatio: 1.06,
       lfhfSource: "manual",
+      recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
     };
     const findings = deriveHrvFindings(input);
     const text = renderAnalysis(findings);
@@ -671,6 +679,7 @@ describe("renderAnalysis", () => {
       sdnn: 67.27,
       lfhfRatio: 1.06,
       lfhfSource: "manual",
+      recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
     };
     const findings = deriveHrvFindings(input);
     const text = renderAnalysis(findings);
@@ -817,6 +826,7 @@ describe("patient regression fixture", () => {
     pnn50: 3.28,
     hfPower: 70.55,
     lfPower: 416.47,
+    recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
   };
 
   it("classifies bands correctly", () => {
@@ -915,7 +925,7 @@ describe("continuous percentile estimation", () => {
   const p25 = maleRef[1];
 
   it("profile score changes continuously across RMSSD P25", () => {
-    const input: MeasurementInput = { age: 35, referenceSex: "male", sdnn: 40, lfhfRatio: 1.5 };
+    const input: MeasurementInput = { age: 35, referenceSex: "male", sdnn: 40, lfhfRatio: 1.5, recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" } };
     const below = interpretHrv({ ...input, rmssd: p25 - 0.01 });
     const above = interpretHrv({ ...input, rmssd: p25 + 0.01 });
     expect(
@@ -953,6 +963,7 @@ describe("concordance", () => {
       sdnn: 35,
       lfhfRatio: 3,
       lfhfSource: "manual",
+      recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
     });
     expect(result.autonomicProfile?.concordance).toBe("single_axis_parasympathetic_shift");
     expect(result.autonomicProfile?.label).toBe("Mild parasympathetic-direction shift");
@@ -966,6 +977,7 @@ describe("concordance", () => {
       rmssd: 30,
       sdnn: 35,
       lfhfRatio: 1.5,
+      recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
       ...overrides,
     };
   }
@@ -1010,6 +1022,7 @@ describe("no misleading cancellation", () => {
       rmssd: 3,
       sdnn: 35,
       lfhfRatio: 20,
+      recording: { durationSeconds: 300, preparationSeconds: 300, posture: "supine" },
     });
     expect(result.findings.autonomicProfile?.concordance).not.toBe("central");
     expect(result.findings.autonomicProfile?.concordance).toBe("concordant_sympathetic_shift");

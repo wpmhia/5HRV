@@ -194,11 +194,11 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground cursor-help w-fit">
-            5HRV Scientific Autonomic Pattern Score
+            Experimental 5HRV Autonomic Pattern Score
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-72">
-          A directional composite derived from RMSSD and LF/HF percentiles. Positive values indicate a shift toward the sympathetic side; negative values indicate a shift toward the parasympathetic side.
+            A provisional directional composite derived from RMSSD and LF/HF percentiles. It is not externally validated. Positive values indicate a shift toward the sympathetic side; negative values indicate a shift toward the parasympathetic side.
         </TooltipContent>
       </Tooltip>
 
@@ -247,7 +247,7 @@ function AutonomicScoreDisplay({ profile }: { profile: AutonomicProfile }) {
         </summary>
         <div className="mt-2 space-y-1 text-xs text-muted-foreground">
           <p>
-            The 5HRV Autonomic Pattern Score is a directional composite derived from RMSSD and LF/HF percentiles. Positive values indicate a shift toward the sympathetic side; negative values indicate a shift toward the parasympathetic side.
+            The Experimental 5HRV Autonomic Pattern Score is a provisional directional composite derived from RMSSD and LF/HF percentiles. It is not externally validated. Positive values indicate a shift toward the sympathetic side; negative values indicate a shift toward the parasympathetic side.
           </p>
           <div className="mt-2 space-y-0.5">
             <span className="block">
@@ -381,7 +381,7 @@ function buildPlainText(
   if (interpretation.autonomicProfile) {
     lines.push("");
     const p = interpretation.autonomicProfile;
-    lines.push(`5HRV Autonomic Pattern Score: ${p.score > 0 ? "+" : ""}${p.score} (${p.label})`);
+    lines.push(`Experimental 5HRV Autonomic Pattern Score: ${p.score > 0 ? "+" : ""}${p.score} (${p.label})`);
     lines.push(`  Vagal modulation (RMSSD): ${ordinal(Math.round(p.vagal.percentile))} percentile (Z = ${p.vagal.deviationZ.toFixed(2)})`);
     lines.push(`  Spectral pattern (LF/HF): ${ordinal(Math.round(p.spectral.percentile))} percentile (Z = ${p.spectral.deviationZ.toFixed(2)})`);
     lines.push(`  Concordance: ${concordanceLabels[p.concordance] ?? p.concordance}`);

@@ -136,7 +136,7 @@ describe("calculateHrv", () => {
 
     expect(withSupport.lfPower).toBeCloseTo(reference.lfPower, 3);
     expect(withSupport.hfPower).toBeCloseTo(reference.hfPower, 3);
-    expect(Math.abs(withSupport.lfPower - withoutSupport.lfPower)).toBeGreaterThan(0.05);
+    expect(Math.abs(withSupport.lfPower - withoutSupport.lfPower)).toBeLessThan(0.001);
   });
 });
 
@@ -218,7 +218,7 @@ describe("correctRrIntervals", () => {
     expect(result.ectopicBeats).toBeGreaterThan(20);
     expect(result.rhythmSuitable).toBe(false);
     expect(result.usable).toBe(false);
-    expect(result.reason).toMatch(/ectopic/i);
+    expect(result.reason).toMatch(/structural RR corrections/i);
   });
 
   it("classifies recordings with more than 5% artefacts as poor", () => {
@@ -321,8 +321,8 @@ describe("golden validation", () => {
     expectClose(hrv.pnn50, 100, 0.01);
     expectClose(hrv.meanHr, 70.588, 0.01);
     expect(hrv.totalBeats).toBe(300);
-    expectClose(hrv.lfPower, 13.689, 0.05);
-    expectClose(hrv.hfPower, 4.225, 0.05);
+    expectClose(hrv.lfPower, 1.018, 0.05);
+    expectClose(hrv.hfPower, 0.425, 0.05);
   });
 
   it("matches golden values for a 0.1 Hz modulated series", () => {
@@ -333,8 +333,8 @@ describe("golden validation", () => {
     expectClose(hrv.meanHr, 60.012, 0.01);
     expect(hrv.totalBeats).toBe(300);
     expectClose(hrv.lfPower, 199.287, 0.05);
-    expectClose(hrv.hfPower, 0.028, 0.5);
-    expectClose(hrv.lfhfRatio, 7195.06, 0.1);
+    expectClose(hrv.hfPower, 0.000000041, 0.5);
+    expect(hrv.lfhfRatio!).toBeGreaterThan(1_000_000);
   });
 
   it("matches golden values for a 0.25 Hz modulated series", () => {
@@ -344,8 +344,8 @@ describe("golden validation", () => {
     expect(hrv.pnn50).toBe(0);
     expectClose(hrv.meanHr, 60.009, 0.01);
     expect(hrv.totalBeats).toBe(300);
-    expectClose(hrv.lfPower, 0.017, 0.5);
-    expectClose(hrv.hfPower, 194.361, 0.05);
+    expectClose(hrv.lfPower, 0.000000054, 0.5);
+    expectClose(hrv.hfPower, 194.252, 0.05);
   });
 
   it("restores a clean series after structural artefact correction", () => {

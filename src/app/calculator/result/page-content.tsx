@@ -26,7 +26,7 @@ const RecordingSchema = z.object({
 });
 
 const MeasurementInputSchema = z.object({
-  age: z.number().finite().min(18).max(120),
+  age: z.number().finite().int().min(18).max(120),
   referenceSex: referenceSexSchema,
   rmssd: z.number().finite().positive().optional(),
   sdnn: z.number().finite().positive().optional(),

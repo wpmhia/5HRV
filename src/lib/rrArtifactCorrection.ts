@@ -10,9 +10,11 @@ export type CorrectionResult = {
   artifactPercentage: number;
   /** Technical artefact burden: artefact percentage and signal loss only. */
   quality: TechnicalQuality;
-  /** Estimated number of rhythm events that required structural reconstruction. */
+  /** Number of RR sequences that required structural reconstruction. This is not an ECG ectopy count. */
+  structuralCorrections: number;
+  /** @deprecated Use structuralCorrections; RR-only data cannot establish ectopy. */
   ectopicBeats: number;
-  /** DanFunD reference cohort excluded recordings with more than 20 ectopic beats. */
+  /** Technical suitability gate; it must not be interpreted as an ECG ectopy result. */
   rhythmSuitable: boolean;
   /** Number of long intervals that could not be confidently classified as missed detections. */
   ambiguousIntervals: number;
@@ -199,6 +201,7 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
       correctedIntervals: 0,
       artifactPercentage: 0,
       quality: "good",
+      structuralCorrections: 0,
       ectopicBeats: 0,
       rhythmSuitable: true,
       ambiguousIntervals: 0,
@@ -217,6 +220,7 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
       correctedIntervals: 0,
       artifactPercentage: 0,
       quality: "poor",
+      structuralCorrections: 0,
       ectopicBeats: 0,
       rhythmSuitable: true,
       ambiguousIntervals: 0,
@@ -239,8 +243,7 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
   const correctedIntervals = structuralCorrections + abnormalCorrections;
   const artifactPercentage = totalIntervals > 0 ? (correctedIntervals / totalIntervals) * 100 : 0;
 
-  const ectopicBeats = structuralCorrections;
-  const rhythmSuitable = ectopicBeats <= DANFUND_MAX_ECTOPIC_BEATS;
+  const rhythmSuitable = structuralCorrections <= DANFUND_MAX_ECTOPIC_BEATS;
 
   let quality: TechnicalQuality = "good";
   let reason: string | undefined;
@@ -264,7 +267,7 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
       reason =
         "Ambiguous RR intervals detected that cannot be reliably classified as technical artefacts. Repeat the measurement.";
     } else if (!rhythmSuitable) {
-      reason = `Excessive ectopic beats (${ectopicBeats}) detected; the recording is not suitable for five-minute HRV reference interpretation.`;
+      reason = `Excessive structural RR corrections (${structuralCorrections}) detected; the recording is not suitable for five-minute HRV reference interpretation.`;
     }
   }
 
@@ -274,7 +277,8 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
     correctedIntervals,
     artifactPercentage,
     quality,
-    ectopicBeats,
+    structuralCorrections,
+    ectopicBeats: structuralCorrections,
     rhythmSuitable,
     ambiguousIntervals,
     usable,

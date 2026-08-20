@@ -395,9 +395,9 @@
       "pnn50": 0,
       "meanHr": 75.24790783465473,
       "totalBeats": 376,
-      "hfPower": 205.30508180262174,
-      "lfPower": 1.332785300527421,
-      "lfhfRatio": 0.006491730690859117
+      "hfPower": 205.65368137737616,
+      "lfPower": 0.9946968822259853,
+      "lfhfRatio": 0.004836756996344298
     },
     "quality": "good",
     "ectopicBeats": 0,

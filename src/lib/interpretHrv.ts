@@ -34,7 +34,7 @@ export function normalizeNumber(value: string): number | null {
 }
 
 const DANFUND_ANALYSIS_SECONDS = 300;
-const DANFUND_DURATION_TOLERANCE_SECONDS = 60;
+const DANFUND_DURATION_TOLERANCE_SECONDS = 1;
 const DANFUND_REQUIRED_REST_SECONDS = 300;
 
 // The DanFunD reference distribution was derived from the final five minutes
@@ -45,7 +45,11 @@ export function assessReferenceCompatibility(
   recording?: RecordingMetadata,
 ): ReferenceCompatibility {
   if (!recording) {
-    return { compatible: true, reference: "danfund", reasons: [] };
+    return {
+      compatible: false,
+      reference: null,
+      reasons: ["Recording protocol metadata is missing, so DanFunD reference compatibility cannot be established."],
+    };
   }
 
   const reasons: string[] = [];

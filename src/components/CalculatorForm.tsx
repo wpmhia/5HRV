@@ -128,8 +128,8 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     const age = normalizeNumber(form.age);
     if (age === null) {
       nextErrors.age = "Age is required.";
-    } else if (age < 18 || age > 120) {
-      nextErrors.age = "Age must be between 18 and 120 years.";
+    } else if (!Number.isInteger(age) || age < 18 || age > 120) {
+      nextErrors.age = "Age must be a whole number between 18 and 120 years.";
     }
 
     if (form.referenceSex === "unselected") {

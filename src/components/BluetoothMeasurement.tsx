@@ -431,7 +431,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       pnn50: round(result.pnn50, 1),
       hfPower: round(result.hfPower, 1),
       lfPower: round(result.lfPower, 1),
-      lfhfRatio: round(result.lfhfRatio, 2),
+      ...(result.lfhfRatio !== undefined ? { lfhfRatio: round(result.lfhfRatio, 2) } : {}),
       durationSeconds: RECORDING_SECONDS,
       totalBeats: result.totalBeats,
       measurement: {
@@ -627,7 +627,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
                 <MetricRow label="pNN50" value={`${result.pnn50.toFixed(1)}%`} />
                 <MetricRow label="HF power" value={`${result.hfPower.toFixed(1)} ms²`} />
                 <MetricRow label="LF power" value={`${result.lfPower.toFixed(1)} ms²`} />
-                <MetricRow label="LF/HF" value={result.lfhfRatio.toFixed(2)} />
+                <MetricRow label="LF/HF" value={result.lfhfRatio === undefined ? "Undefined (HF = 0)" : result.lfhfRatio.toFixed(2)} />
               </div>
               <p className="text-xs text-muted-foreground">
                 Recording quality: {qualityLabel(result.quality)}
