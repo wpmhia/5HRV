@@ -10,7 +10,7 @@ test.describe("Bluetooth HRV measurement", () => {
     await expect(page.getByText("Wear the Polar H10 chest strap")).toBeVisible();
     await expect(page.getByText("Lie flat on your back")).toBeVisible();
     await expect(page.getByRole("button", { name: "Connect Polar H10" })).toBeVisible();
-    await expect(page.getByText("Select your heart-rate sensor from the Bluetooth device list.")).toBeVisible();
+    await expect(page.getByText("Select Polar H10 from the Bluetooth device list.")).toBeVisible();
   });
 
   test("shows the error phase when the device cannot be connected", async ({ page }) => {
