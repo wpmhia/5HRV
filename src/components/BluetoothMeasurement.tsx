@@ -20,8 +20,6 @@ import { ANALYSIS_ENGINE_VERSION } from "@/lib/interpretHrv";
 
 const SETTLING_SECONDS = 120;
 const RECORDING_SECONDS = 300;
-const RECORDING_MARGIN_SECONDS = 5;
-const RECORDING_TOTAL_SECONDS = RECORDING_SECONDS + RECORDING_MARGIN_SECONDS;
 const MIN_ANALYSED_MS = 296_000;
 const RR_DETECTION_TIMEOUT_MS = 15_000;
 const RR_LOSS_TIMEOUT_MS = 6_000;
@@ -98,8 +96,9 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   openRef.current = open;
   const rrBufferRef = useRef<number[]>([]);
   const settlingStartedAtRef = useRef(0);
-  const recordingStartedAtRef = useRef(0);
-  const recordingEndsAtRef = useRef(0);
+  const recordingDurationMsRef = useRef(0);
+  const recordingFlushUntilRef = useRef(0);
+  const recordingCompleteRef = useRef(false);
   const deviceNameRef = useRef("Polar H10");
   const lastRrReceivedAtRef = useRef<number | null>(null);
   const preparationSecondsRef = useRef(0);
@@ -135,22 +134,28 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       setError(
         "No live RR-interval signal is available. Check the sensor connection and try again.",
       );
+      sessionRef.current?.disconnect();
+      sessionRef.current = null;
+      setConnected(false);
       return;
     }
     rrBufferRef.current = [];
     setBeatsReceived(0);
     setSignal("waiting");
-    recordingStartedAtRef.current = Date.now();
-    recordingEndsAtRef.current = Date.now() + RECORDING_TOTAL_SECONDS * 1000;
-    setRecordingRemaining(RECORDING_TOTAL_SECONDS);
+    recordingDurationMsRef.current = 0;
+    recordingCompleteRef.current = false;
+    recordingFlushUntilRef.current = Date.now() + 5_000;
+    setRecordingRemaining(RECORDING_SECONDS);
     setPhase("recording");
   }, []);
 
   const finishRecording = useCallback(() => {
-    const elapsedSeconds = (Date.now() - recordingStartedAtRef.current) / 1000;
-    if (elapsedSeconds < RECORDING_TOTAL_SECONDS - 0.5) {
+    if (recordingDurationMsRef.current < MIN_ANALYSED_MS) {
+      sessionRef.current?.disconnect();
+      sessionRef.current = null;
+      setConnected(false);
       setPhase("error");
-      setError("Recording stopped early. A complete five-minute recording is required.");
+      setError("The recording did not contain a complete five-minute RR sequence.");
       return;
     }
     const analysis = analyzeHrvRecording(rrBufferRef.current, {
@@ -162,6 +167,9 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       deviceName: deviceNameRef.current,
     });
     if (!analysis.ok || !analysis.metrics || !analysis.correction) {
+      sessionRef.current?.disconnect();
+      sessionRef.current = null;
+      setConnected(false);
       setPhase("error");
       setError(analysis.rejectionReason ?? "Poor signal quality. Please repeat the measurement.");
       return;
@@ -182,11 +190,17 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     sessionRef.current?.disconnect();
     sessionRef.current = null;
     setConnected(false);
+    setRrDetected(false);
+    setHeartRate(null);
     rrBufferRef.current = [];
+    recordingDurationMsRef.current = 0;
+    recordingCompleteRef.current = false;
+    lastRrReceivedAtRef.current = null;
+    releaseScreenWakeLock();
     setBeatsReceived(0);
     setPhase("error");
     setError(message);
-  }, []);
+  }, [releaseScreenWakeLock]);
 
   const updateLiveSignal = useCallback(() => {
     const rr = rrBufferRef.current;
@@ -226,14 +240,12 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
           );
           return;
         }
-        const remaining = Math.max(0, Math.ceil((recordingEndsAtRef.current - Date.now()) / 1000));
+        const remaining = Math.max(
+          0,
+          Math.ceil((RECORDING_SECONDS * 1000 - recordingDurationMsRef.current) / 1000),
+        );
         setRecordingRemaining(remaining);
         updateLiveSignal();
-        if (remaining <= 0) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          timerRef.current = null;
-          finishRecording();
-        }
       }, 250);
       return () => {
         if (timerRef.current) clearInterval(timerRef.current);
@@ -274,9 +286,20 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
               }
             }
             setRrDetected(true);
-            if (phaseRef.current === "recording") {
+            if (phaseRef.current === "recording" && Date.now() >= recordingFlushUntilRef.current) {
               rrBufferRef.current.push(...event.rrIntervalsMs);
+              recordingDurationMsRef.current += event.rrIntervalsMs.reduce((sum, rr) => sum + rr, 0);
               setBeatsReceived(rrBufferRef.current.length);
+              setRecordingRemaining(
+                Math.max(0, Math.ceil((RECORDING_SECONDS * 1000 - recordingDurationMsRef.current) / 1000)),
+              );
+              if (
+                recordingDurationMsRef.current >= RECORDING_SECONDS * 1000 &&
+                !recordingCompleteRef.current
+              ) {
+                recordingCompleteRef.current = true;
+                finishRecording();
+              }
             }
           }
         },
@@ -343,10 +366,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [requestScreenWakeLock]);
 
-  const handleStop = useCallback(() => {
-    finishRecording();
-  }, [finishRecording]);
-
   const handleSkipRest = useCallback(() => {
     if (!rrDetected) {
       setError("Wait until RR intervals are detected before starting.");
@@ -380,7 +399,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     setRrDetected(false);
     setHeartRate(null);
     setSettlingRemaining(SETTLING_SECONDS);
-    setRecordingRemaining(RECORDING_TOTAL_SECONDS);
+    setRecordingRemaining(RECORDING_SECONDS);
     setBeatsReceived(0);
     setSignal("waiting");
     setResult(null);
@@ -389,6 +408,10 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     lastRrReceivedAtRef.current = null;
     preparationSecondsRef.current = 0;
   }, [releaseScreenWakeLock]);
+
+  const handleStop = useCallback(() => {
+    closePanel();
+  }, [closePanel]);
 
   const prefillValues = useCallback(() => {
     if (!result) return;
@@ -440,9 +463,9 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   }, [closePanel]);
 
   const handleRetry = useCallback(() => {
-    setError(null);
-    setPhase("prepare");
-  }, []);
+    closePanel();
+    setOpen(true);
+  }, [closePanel]);
 
   return (
     <>
@@ -550,7 +573,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
                   <p className="text-lg font-semibold tabular-nums">{heartRate ?? "—"} bpm</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Signal</p>
+                  <p className="text-xs text-muted-foreground">RR plausibility</p>
                   <p className="text-lg font-semibold">
                     <span>
                       {signal === "waiting" ? "Waiting" : qualityLabel(signal)}
@@ -569,7 +592,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
                 Keep this page open. The phone screen will be kept awake when supported.
               </p>
               <button type="button" onClick={handleStop} className={secondaryButtonClass}>
-                Stop measurement
+                Cancel measurement
               </button>
             </div>
           )}

@@ -279,7 +279,7 @@ describe("parseHeartRateMeasurement", () => {
     expect(unsupported.contactSupported).toBe(false);
     expect(unsupported.contactDetected).toBe(false);
 
-    const supportedNoContact = parseHeartRateMeasurement(new DataView(new Uint8Array([0x12, 70]).buffer));
+    const supportedNoContact = parseHeartRateMeasurement(new DataView(new Uint8Array([0x14, 70]).buffer));
     expect(supportedNoContact.contactSupported).toBe(true);
     expect(supportedNoContact.contactDetected).toBe(false);
 

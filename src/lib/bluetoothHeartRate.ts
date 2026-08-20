@@ -17,9 +17,9 @@ export function isBluetoothAvailable(): boolean {
 export function parseHeartRateMeasurement(view: DataView): HeartRateSensorEvent {
   const flags = view.getUint8(0);
   const hr16Bit = (flags & 0x01) !== 0;
-  // Bits 1-2: sensor contact status.
-  const contactSupported = (flags & 0x06) === 0x02 || (flags & 0x06) === 0x06;
-  const contactDetected = (flags & 0x06) === 0x06;
+  // Bit 2 advertises contact detection; bit 1 reports the contact state.
+  const contactSupported = (flags & 0x04) !== 0;
+  const contactDetected = contactSupported && (flags & 0x02) !== 0;
   let offset = 1;
 
   let heartRate: number;
@@ -78,7 +78,7 @@ export class BleHeartRateSession {
     const device = await navigator.bluetooth.requestDevice({
       // Only show devices that advertise the standard Heart Rate Service, to
       // avoid exposing unrelated Bluetooth devices in the chooser.
-      filters: [{ services: [HEART_RATE_SERVICE_UUID] }],
+       filters: [{ namePrefix: "Polar H10", services: [HEART_RATE_SERVICE_UUID] }],
       optionalServices: [HEART_RATE_SERVICE_UUID],
     });
     const gatt = device.gatt;
