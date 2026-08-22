@@ -164,7 +164,7 @@ function main(): void {
           ok: true,
           metrics: analysis.metrics,
           quality: analysis.correction.quality,
-          ectopicBeats: analysis.correction.ectopicBeats,
+          structuralCorrections: analysis.correction.structuralCorrections,
           correctedIntervals: analysis.correction.correctedIntervals,
           protocolCompatible: analysis.protocolCompatible,
         }

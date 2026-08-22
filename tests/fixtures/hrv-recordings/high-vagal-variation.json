@@ -400,8 +400,8 @@
       "lfhfRatio": 0.02725495232741269
     },
     "quality": "good",
-    "ectopicBeats": 0,
     "correctedIntervals": 0,
-    "protocolCompatible": true
+    "protocolCompatible": true,
+    "structuralCorrections": 0
   }
 }

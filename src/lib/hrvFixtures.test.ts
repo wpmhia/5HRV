@@ -22,7 +22,7 @@ type Fixture = {
       lfhfRatio: number;
     };
     quality?: string;
-    ectopicBeats?: number;
+    structuralCorrections?: number;
     correctedIntervals?: number;
     protocolCompatible?: boolean;
   };
@@ -66,7 +66,7 @@ describe("HRV differential fixture suite", () => {
       expect(metrics.lfPower).toBeCloseTo(expected.lfPower, 4);
       expect(metrics.lfhfRatio).toBeCloseTo(expected.lfhfRatio, 4);
       expect(analysis.correction!.quality).toBe(fixture.expected.quality);
-      expect(analysis.correction!.ectopicBeats).toBe(fixture.expected.ectopicBeats);
+      expect(analysis.correction!.structuralCorrections).toBe(fixture.expected.structuralCorrections);
       expect(analysis.correction!.correctedIntervals).toBe(fixture.expected.correctedIntervals);
     },
   );

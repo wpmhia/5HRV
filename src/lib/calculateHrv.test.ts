@@ -208,14 +208,14 @@ describe("correctRrIntervals", () => {
     expect(result.reason).toMatch(/ambiguous/i);
   });
 
-  it("keeps rhythm suitability separate and rejects more than 20 ectopic beats", () => {
+  it("keeps rhythm suitability separate and rejects more than 20 structural corrections", () => {
     let rr = new Array<number>(600).fill(800);
     for (let k = 0; k < 21; k++) {
       const at = 30 + k * 10;
       rr = rr.slice(0, at).concat([350, 450], rr.slice(at + 1));
     }
     const result = correctRrIntervals(rr);
-    expect(result.ectopicBeats).toBeGreaterThan(20);
+    expect(result.structuralCorrections).toBeGreaterThan(20);
     expect(result.rhythmSuitable).toBe(false);
     expect(result.usable).toBe(false);
     expect(result.reason).toMatch(/structural RR corrections/i);

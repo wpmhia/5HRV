@@ -12,8 +12,6 @@ export type CorrectionResult = {
   quality: TechnicalQuality;
   /** Number of RR sequences that required structural reconstruction. This is not an ECG ectopy count. */
   structuralCorrections: number;
-  /** @deprecated Use structuralCorrections; RR-only data cannot establish ectopy. */
-  ectopicBeats: number;
   /** Technical suitability gate; it must not be interpreted as an ECG ectopy result. */
   rhythmSuitable: boolean;
   /** Number of long intervals that could not be confidently classified as missed detections. */
@@ -202,7 +200,6 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
       artifactPercentage: 0,
       quality: "good",
       structuralCorrections: 0,
-      ectopicBeats: 0,
       rhythmSuitable: true,
       ambiguousIntervals: 0,
       usable: true,
@@ -221,7 +218,6 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
       artifactPercentage: 0,
       quality: "poor",
       structuralCorrections: 0,
-      ectopicBeats: 0,
       rhythmSuitable: true,
       ambiguousIntervals: 0,
       usable: false,
@@ -278,7 +274,6 @@ export function correctRrIntervals(rr: number[]): CorrectionResult {
     artifactPercentage,
     quality,
     structuralCorrections,
-    ectopicBeats: structuralCorrections,
     rhythmSuitable,
     ambiguousIntervals,
     usable,
