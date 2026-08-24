@@ -318,12 +318,24 @@ describe("reference availability", () => {
 });
 
 describe("assessReferenceCompatibility", () => {
-  it("does not treat missing recording metadata as compatible", () => {
+  it("uses age/sex reference for manual calculator input without recording metadata", () => {
     expect(assessReferenceCompatibility()).toEqual({
-      compatible: false,
-      reference: null,
-      reasons: ["Recording protocol metadata is missing, so DanFunD reference compatibility cannot be established."],
+      compatible: true,
+      reference: "danfund",
+      reasons: [],
     });
+    const result = interpretHrv({
+      age: 33,
+      referenceSex: "female",
+      rmssd: 69.67,
+      sdnn: 72.54,
+      pnn50: 49.76,
+      lfhfRatio: 0.84,
+      lfhfSource: "manual",
+    });
+    expect(result.referenceAvailable).toBe(true);
+    expect(result.findings.rmssd.band).toBe("p75_to_p95");
+    expect(result.findings.sdnn.band).toBe("p75_to_p95");
   });
   it("accepts a five-minute recording", () => {
     expect(assessReferenceCompatibility({ durationSeconds: 300 })).toEqual({

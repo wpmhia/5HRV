@@ -39,17 +39,18 @@ const DANFUND_REQUIRED_REST_SECONDS = 300;
 
 // The DanFunD reference distribution was derived from the final five minutes
 // of a standardized supine recording preceded by at least five minutes of
-// supine rest. Percentile placement and the Autonomic Pattern Score are only
-// meaningful when the recording matches those protocol conditions.
+// supine rest. Recording metadata is supplementary: it can only block the
+// reference comparison when a known protocol incompatibility is demonstrated.
+// Manual values without metadata are compared against the selected reference
+// population directly (see the clinical note on assumed input validity).
 export function assessReferenceCompatibility(
   recording?: RecordingMetadata,
 ): ReferenceCompatibility {
   if (!recording) {
-    return {
-      compatible: false,
-      reference: null,
-      reasons: ["Recording protocol metadata is missing, so DanFunD reference compatibility cannot be established."],
-    };
+    // Manual calculator input carries no acquisition metadata. The reference
+    // comparison applies; the clinical note states that the supplied values
+    // are assumed to come from a technically valid five-minute HRV analysis.
+    return { compatible: true, reference: "danfund", reasons: [] };
   }
 
   const reasons: string[] = [];
