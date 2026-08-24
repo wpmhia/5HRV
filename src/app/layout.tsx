@@ -78,6 +78,11 @@ export default function RootLayout({
       <head>
         <script
           defer
+          src="https://gstat.up.railway.app/script.js"
+          data-website-id="a9cecbc6-7ed6-4816-9590-51fd9581d943"
+        />
+        <script
+          defer
           src="https://gstat.up.railway.app/recorder.js"
           data-website-id="a9cecbc6-7ed6-4816-9590-51fd9581d943"
         />
