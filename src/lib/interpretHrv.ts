@@ -69,7 +69,7 @@ export function assessReferenceCompatibility(
 
   if (recording.source === "bluetooth_rr") {
     if (
-      recording.preparationSeconds === undefined ||
+      recording.preparationSeconds !== undefined &&
       recording.preparationSeconds < DANFUND_REQUIRED_REST_SECONDS
     ) {
       reasons.push(

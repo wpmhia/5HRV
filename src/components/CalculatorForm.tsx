@@ -429,7 +429,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
 
         {importedFromReport && (
           <p className="mt-3 text-xs text-muted-foreground">
-            Report values are prefilled. Editing fields will update the values for this calculation only.
+            Values are prefilled from an import or Polar H10 capture. Editing fields will update the values for this calculation only.
           </p>
         )}
 

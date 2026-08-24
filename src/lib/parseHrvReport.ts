@@ -2,7 +2,7 @@ export type BluetoothMeasurementMetadata = {
   source: "bluetooth_rr";
   deviceName: string;
   posture: "supine";
-  preparationSeconds: number;
+  preparationSeconds?: number;
   durationSeconds: number;
   totalBeats: number;
   correctedIntervals: number;

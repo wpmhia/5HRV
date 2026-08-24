@@ -159,8 +159,8 @@ export default function MethodPage() {
               <tr>
                 <td className="py-2 pr-4 align-top font-medium">Rest</td>
                 <td className="py-2 pr-4 text-foreground/85">
-                   Five minutes of quiet supine rest, followed by two minutes of
-                   stabilization before the analysed recording
+                   Two minutes of stabilization before the five-minute analysed
+                   recording; this convenience flow is not full DanFunD capture
                 </td>
               </tr>
               <tr>
@@ -173,8 +173,7 @@ export default function MethodPage() {
               <tr>
                 <td className="py-2 pr-4 align-top font-medium">Duration</td>
                 <td className="py-2 pr-4 text-foreground/85">
-                   An exact 300-second RR analysis window after the seven-minute
-                   rest and stabilization sequence
+                   An exact 300-second RR analysis window after stabilization
                 </td>
               </tr>
               <tr>

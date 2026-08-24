@@ -18,7 +18,6 @@ import type { HrvMetrics } from "@/lib/calculateHrv";
 import { analyzeHrvRecording } from "@/lib/analyzeHrvRecording";
 import { ANALYSIS_ENGINE_VERSION } from "@/lib/interpretHrv";
 
-const REST_SECONDS = 300;
 const SETTLING_SECONDS = 120;
 const RECORDING_SECONDS = 300;
 const MIN_ANALYSED_MS = 296_000;
@@ -26,7 +25,7 @@ const RR_DETECTION_TIMEOUT_MS = 15_000;
 const RR_LOSS_TIMEOUT_MS = 6_000;
 const ROLLING_WINDOW_BEATS = 60;
 
-type Phase = "prepare" | "connecting" | "resting" | "settling" | "recording" | "complete" | "error";
+type Phase = "prepare" | "connecting" | "settling" | "recording" | "complete" | "error";
 
 type LiveSignal = "waiting" | "good" | "acceptable" | "poor";
 
@@ -81,7 +80,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   const [connected, setConnected] = useState(false);
   const [rrDetected, setRrDetected] = useState(false);
   const [heartRate, setHeartRate] = useState<number | null>(null);
-  const [restRemaining, setRestRemaining] = useState(REST_SECONDS);
   const [settlingRemaining, setSettlingRemaining] = useState(SETTLING_SECONDS);
   const [recordingRemaining, setRecordingRemaining] = useState(RECORDING_SECONDS);
   const [beatsReceived, setBeatsReceived] = useState(0);
@@ -97,7 +95,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   const openRef = useRef(false);
   openRef.current = open;
   const rrBufferRef = useRef<number[]>([]);
-  const restStartedAtRef = useRef(0);
   const settlingStartedAtRef = useRef(0);
   const recordingDurationMsRef = useRef(0);
   const recordingFlushUntilRef = useRef(0);
@@ -122,12 +119,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     const lock = wakeLockRef.current;
     wakeLockRef.current = null;
     if (lock) void lock.release().catch(() => undefined);
-  }, []);
-
-  const startRest = useCallback(() => {
-    restStartedAtRef.current = Date.now();
-    setRestRemaining(REST_SECONDS);
-    setPhase("resting");
   }, []);
 
   const startSettling = useCallback(() => {
@@ -171,7 +162,9 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       analysisDurationSeconds: RECORDING_SECONDS,
       minAnalysedMs: MIN_ANALYSED_MS,
       source: "bluetooth_rr",
-      preparationSeconds: preparationSecondsRef.current,
+         // This convenience capture does not claim to document the preceding
+         // DanFunD rest period; unknown metadata must not block calculator use.
+         preparationSeconds: undefined,
       posture: "supine",
       deviceName: deviceNameRef.current,
     });
@@ -223,22 +216,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
   }, []);
 
   useEffect(() => {
-    if (phase === "resting") {
-      timerRef.current = setInterval(() => {
-        const elapsed = (Date.now() - restStartedAtRef.current) / 1000;
-        const remaining = Math.max(0, Math.ceil(REST_SECONDS - elapsed));
-        setRestRemaining(remaining);
-        if (remaining <= 0) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          timerRef.current = null;
-          startSettling();
-        }
-      }, 250);
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-        timerRef.current = null;
-      };
-    }
     if (phase === "settling") {
       timerRef.current = setInterval(() => {
         const elapsed = (Date.now() - settlingStartedAtRef.current) / 1000;
@@ -247,7 +224,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         if (remaining <= 0) {
           if (timerRef.current) clearInterval(timerRef.current);
           timerRef.current = null;
-          preparationSecondsRef.current = REST_SECONDS + SETTLING_SECONDS;
+          preparationSecondsRef.current = SETTLING_SECONDS;
           startRecording();
         }
       }, 250);
@@ -294,7 +271,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         (event) => {
           if (event.heartRate > 0) setHeartRate(event.heartRate);
           if (event.contactSupported && !event.contactDetected) {
-            if (phaseRef.current === "resting" || phaseRef.current === "settling" || phaseRef.current === "recording") {
+            if (phaseRef.current === "settling" || phaseRef.current === "recording") {
               abortRecording(
                 "Sensor contact lost. Check the electrode contact and repeat the measurement.",
               );
@@ -329,7 +306,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
           }
         },
         () => {
-          if (phaseRef.current === "resting" || phaseRef.current === "settling" || phaseRef.current === "recording") {
+          if (phaseRef.current === "settling" || phaseRef.current === "recording") {
             abortRecording(
               "Sensor disconnected. The connection was lost; repeat the measurement.",
             );
@@ -364,9 +341,9 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
 
   useEffect(() => {
     if (phase === "connecting" && connected && rrDetected) {
-      startRest();
+      startSettling();
     }
-  }, [phase, connected, rrDetected, startRest]);
+  }, [phase, connected, rrDetected, startSettling]);
 
   useEffect(() => {
     return () => {
@@ -382,7 +359,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     const handleVisibilityChange = () => {
       if (
         document.visibilityState === "visible" &&
-        (phaseRef.current === "resting" || phaseRef.current === "settling" || phaseRef.current === "recording")
+        (phaseRef.current === "settling" || phaseRef.current === "recording")
       ) {
         void requestScreenWakeLock();
       }
@@ -407,7 +384,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
     setConnected(false);
     setRrDetected(false);
     setHeartRate(null);
-    setRestRemaining(REST_SECONDS);
     setSettlingRemaining(SETTLING_SECONDS);
     setRecordingRemaining(RECORDING_SECONDS);
     setBeatsReceived(0);
@@ -438,7 +414,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         source: "bluetooth_rr",
         deviceName: deviceNameRef.current,
         posture: "supine",
-        preparationSeconds: preparationSecondsRef.current,
+         preparationSeconds: undefined,
         durationSeconds: RECORDING_SECONDS,
         totalBeats: result.totalBeats,
         correctedIntervals: result.correctedIntervals,
@@ -542,22 +518,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
             </div>
           )}
 
-          {phase === "resting" && (
-            <div className="space-y-4 py-4 text-center">
-              <p className="text-sm text-muted-foreground">Remain quietly supine for the DanFunD rest period</p>
-              {heartRate !== null && (
-                <p className="text-3xl font-bold tabular-nums">
-                  {heartRate}
-                  <span className="ml-1 text-base font-medium text-muted-foreground">bpm</span>
-                </p>
-              )}
-              <p className="text-6xl font-bold tabular-nums">{formatClock(restRemaining)}</p>
-              <p className="text-xs text-muted-foreground">
-                Do not speak during stabilization or recording. Breathe spontaneously.
-              </p>
-            </div>
-          )}
-
           {phase === "settling" && (
             <div className="space-y-4 py-4 text-center">
               <p className="text-sm text-muted-foreground">Stabilization — remain quietly supine</p>
@@ -569,7 +529,7 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
               )}
               <p className="text-6xl font-bold tabular-nums">{formatClock(settlingRemaining)}</p>
               <p className="text-xs text-muted-foreground">
-                This two-minute stabilization follows the five-minute supine rest period.
+                Keep still and breathe normally during the two-minute stabilization.
               </p>
             </div>
           )}

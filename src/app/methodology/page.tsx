@@ -164,10 +164,10 @@ export default function MethodologyPage() {
           per metric.
         </p>
         <p className="mt-4 text-sm text-muted-foreground">
-          The direct Polar H10 workflow follows the DanFunD sequence: five minutes
-          of quiet supine rest, two minutes of stabilization, and five minutes of
-          RR data used for analysis. DanFunD recorded seven minutes after the
-          preceding rest and analysed the final five minutes.
+          The direct Polar H10 workflow is a convenience capture: two minutes of
+          stabilization followed by five minutes of RR data used for analysis.
+          This is not a complete DanFunD acquisition, which requires at least
+          five minutes of preceding supine rest.
         </p>
       </section>
 
