@@ -7,6 +7,9 @@ test.describe("Caroline PDF upload", () => {
   test("uploads the Caroline PDF, verifies extracted values and the resulting report", async ({ page }) => {
     await page.goto("/calculator");
 
+    await page.getByRole("textbox", { name: /Age/ }).fill("33");
+    await page.getByLabel("Reference sex").selectOption("female");
+
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(CAROLINE_PDF);
 
@@ -17,10 +20,9 @@ test.describe("Caroline PDF upload", () => {
     await expect(page.getByRole("textbox", { name: /pNN50/ })).toHaveValue("3.28");
     await expect(page.getByRole("textbox", { name: /HF power/ })).toHaveValue("70.55");
     await expect(page.getByRole("textbox", { name: /LF power/ })).toHaveValue("416.47");
+    await expect(page.getByRole("textbox", { name: /Age/ })).toHaveValue("33");
+    await expect(page.getByLabel("Reference sex")).toHaveValue("female");
     await expect(page.getByText(/Calculated LF\/HF/)).toContainText("5.90");
-
-    await page.getByRole("textbox", { name: /Age/ }).fill("33");
-    await page.getByLabel("Reference sex").selectOption("female");
 
     await page.getByRole("button", { name: "Interpret" }).click();
     await expect(page).toHaveURL(/\/calculator\/result/);

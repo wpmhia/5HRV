@@ -320,40 +320,46 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   };
 
   const handlePrefill = (values: ParsedReportValues) => {
-    const base: FormState = {
-      ...initialState,
-      freqMode: "powers",
-      age: form.age,
-      referenceSex: form.referenceSex,
-    };
-    if (values.rmssd !== undefined) base.rmssd = String(values.rmssd);
-    if (values.sdnn !== undefined) base.sdnn = String(values.sdnn);
-    if (values.pnn50 !== undefined) base.pnn50 = String(values.pnn50);
-    const hasLfAndHf = values.lfPower !== undefined && values.hfPower !== undefined;
-    if (hasLfAndHf) {
-      base.hfPower = String(values.hfPower!);
-      base.lfPower = String(values.lfPower!);
-      base.freqMode = "powers";
-    } else if (values.lfhfRatio !== undefined) {
-      base.freqMode = "ratio";
-      base.lfhfRatio = String(values.lfhfRatio);
-      base.lfhfSource = "imported";
-    } else if (values.lfPower !== undefined) {
-      base.lfPower = String(values.lfPower);
-      base.freqMode = "powers";
-    } else if (values.hfPower !== undefined) {
-      base.hfPower = String(values.hfPower);
-      base.freqMode = "powers";
-    }
-    if (values.measurement) base.measurement = values.measurement;
-    if (values.recordingDate) base.recordingDate = values.recordingDate;
-    if (values.durationSeconds !== undefined) base.durationSeconds = values.durationSeconds;
-    if (values.samplingFrequency !== undefined) base.samplingFrequencyHz = values.samplingFrequency;
-    if (values.totalBeats !== undefined) base.totalBeats = values.totalBeats;
-    setForm(base);
+    setForm((prev) => {
+      const base: FormState = {
+        ...prev,
+        rmssd: values.rmssd !== undefined ? String(values.rmssd) : "",
+        sdnn: values.sdnn !== undefined ? String(values.sdnn) : "",
+        pnn50: values.pnn50 !== undefined ? String(values.pnn50) : "",
+        hfPower: "",
+        lfPower: "",
+        lfhfRatio: "",
+        lfhfSource: "",
+        freqMode: "powers",
+        recordingDate: undefined,
+        durationSeconds: undefined,
+        samplingFrequencyHz: undefined,
+        totalBeats: undefined,
+        measurement: undefined,
+      };
+      const hasLfAndHf = values.lfPower !== undefined && values.hfPower !== undefined;
+      if (hasLfAndHf) {
+        base.hfPower = String(values.hfPower);
+        base.lfPower = String(values.lfPower);
+      } else if (values.lfhfRatio !== undefined) {
+        base.freqMode = "ratio";
+        base.lfhfRatio = String(values.lfhfRatio);
+        base.lfhfSource = "imported";
+      } else if (values.lfPower !== undefined) {
+        base.lfPower = String(values.lfPower);
+      } else if (values.hfPower !== undefined) {
+        base.hfPower = String(values.hfPower);
+      }
+      if (values.measurement) base.measurement = values.measurement;
+      if (values.recordingDate) base.recordingDate = values.recordingDate;
+      if (values.durationSeconds !== undefined) base.durationSeconds = values.durationSeconds;
+      if (values.samplingFrequency !== undefined) base.samplingFrequencyHz = values.samplingFrequency;
+      if (values.totalBeats !== undefined) base.totalBeats = values.totalBeats;
+      return base;
+    });
     setErrors({});
-    const fieldKeys: (keyof FormState)[] = ["rmssd", "sdnn", "pnn50", "hfPower", "lfPower", "lfhfRatio"];
-    const actualCount = fieldKeys.filter((k) => base[k] !== "").length;
+    const actualCount = [values.rmssd, values.sdnn, values.pnn50, values.hfPower, values.lfPower, values.lfhfRatio]
+      .filter((value) => value !== undefined).length;
     setImportedCount(actualCount);
     setImportedFromReport(true);
   };
