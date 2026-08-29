@@ -415,7 +415,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           >
             HRV values
           </h2>
-          <div className="flex flex-wrap items-center justify-end gap-2">
+        </div>
+        <div className="flex flex-wrap items-center gap-2" aria-label="Optional ways to fill HRV values">
+          <span className="mr-1 text-xs text-muted-foreground">Optional:</span>
+          <div className="flex flex-wrap items-center gap-2">
             <ReportUpload
               onPrefill={handlePrefill}
               onClearImport={handleClearImport}
