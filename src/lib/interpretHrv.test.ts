@@ -319,7 +319,6 @@ describe("reference availability", () => {
 describe("assessReferenceCompatibility", () => {
   it("uses age/sex reference for manual calculator input without recording metadata", () => {
     expect(assessReferenceCompatibility()).toEqual({
-      status: "standard",
       compatible: true,
       reference: "danfund",
       reasons: [],
@@ -339,7 +338,6 @@ describe("assessReferenceCompatibility", () => {
   });
   it("accepts a five-minute recording", () => {
     expect(assessReferenceCompatibility({ durationSeconds: 300 })).toEqual({
-      status: "standard",
       compatible: true,
       reference: "danfund",
       reasons: [],
@@ -349,7 +347,6 @@ describe("assessReferenceCompatibility", () => {
     const result = assessReferenceCompatibility({ durationSeconds: 353 });
     expect(result.compatible).toBe(true);
     expect(result.reference).toBe("danfund");
-    expect(result.status).toBe("standard");
     expect(result.reasons).toEqual([]);
   });
   it("does not apply the acquisition gate to manual duration metadata", () => {

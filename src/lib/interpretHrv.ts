@@ -34,7 +34,6 @@ export function normalizeNumber(value: string): number | null {
 }
 
 const DANFUND_ANALYSIS_SECONDS = 300;
-const DANFUND_DURATION_TOLERANCE_SECONDS = 1;
 
 function formatDuration(seconds: number): string {
   const rounded = Math.max(0, Math.round(seconds));
@@ -55,23 +54,20 @@ export function assessReferenceCompatibility(
     // Manual calculator input carries no acquisition metadata. The reference
     // comparison applies; the clinical note states that the supplied values
     // are assumed to come from a technically valid five-minute HRV analysis.
-    return { status: "standard", compatible: true, reference: "danfund", reasons: [] };
+    return { compatible: true, reference: "danfund", reasons: [] };
   }
 
   // Manual values and imported reports contain already-calculated HRV values.
   // Their provenance is informative only; the Polar acquisition gate applies
   // exclusively to recordings captured and timed by this application.
   if (recording.source !== "bluetooth_rr") {
-    return { status: "standard", compatible: true, reference: "danfund", reasons: [] };
+    return { compatible: true, reference: "danfund", reasons: [] };
   }
 
   const reasons: string[] = [];
-  let status: ReferenceCompatibility["status"] = "standard";
-
   if (recording.durationSeconds !== undefined) {
     const duration = recording.durationSeconds;
-    if (Math.abs(duration - DANFUND_ANALYSIS_SECONDS) > DANFUND_DURATION_TOLERANCE_SECONDS) {
-      status = "incompatible";
+    if (duration !== DANFUND_ANALYSIS_SECONDS) {
       reasons.push(`The Polar H10 recording duration (${formatDuration(duration)}) does not match the required five-minute capture window.`);
     }
   }
@@ -84,20 +80,17 @@ export function assessReferenceCompatibility(
       reasons.push(
         "The recording was not preceded by five minutes of quiet supine rest, which the DanFunD reference protocol requires.",
       );
-      status = "incompatible";
     }
     if (recording.posture !== "supine") {
       reasons.push(
         "The recording was not obtained in the supine position required by the DanFunD reference protocol.",
       );
-      status = "incompatible";
     }
   }
 
   return {
-    status,
-    compatible: status === "standard",
-    reference: status === "incompatible" ? null : "danfund",
+    compatible: reasons.length === 0,
+    reference: reasons.length === 0 ? "danfund" : null,
     reasons,
   };
 }
@@ -327,7 +320,7 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
   const referenceAvailable =
     input.referenceSex !== "none" &&
     ageBand !== null &&
-    referenceCompatibility.status !== "incompatible";
+    referenceCompatibility.compatible;
 
   let referenceNote: string | undefined;
   if (input.age > 72) {
