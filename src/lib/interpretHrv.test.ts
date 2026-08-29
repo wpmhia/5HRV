@@ -272,6 +272,28 @@ describe("LF/HF calculation", () => {
 });
 
 describe("reference availability", () => {
+  it("gives manual and imported values the identical interpretation", () => {
+    const values: MeasurementInput = {
+      age: 56,
+      referenceSex: "female",
+      rmssd: 89.4,
+      sdnn: 65.03,
+      pnn50: 7.75,
+      lfhfRatio: 0.39,
+      lfhfSource: "manual",
+    };
+    const manual = interpretHrv(values);
+    const imported = interpretHrv({
+      ...values,
+      recording: {
+        durationSeconds: 353,
+        samplingFrequencyHz: 1000,
+        totalBeats: 374,
+      },
+    });
+    expect(imported).toEqual(manual);
+  });
+
   it("no percentile when reference sex is not used", () => {
     const result = interpretHrv({ ...baseInput, referenceSex: "none" });
     const rmssd = result.metrics.find((m) => m.key === "rmssd");
