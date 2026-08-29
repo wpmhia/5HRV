@@ -22,7 +22,6 @@ const RecordingSchema = z.object({
   artifactPercentage: z.number().optional(),
   quality: z.enum(["good", "acceptable", "poor"]).optional(),
   engineVersion: z.string().optional(),
-  protocolCompatible: z.boolean().optional(),
 });
 
 const MeasurementInputSchema = z.object({

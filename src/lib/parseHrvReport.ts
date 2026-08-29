@@ -9,7 +9,6 @@ export type BluetoothMeasurementMetadata = {
   artifactPercentage: number;
   quality: "good" | "acceptable" | "poor";
   engineVersion?: string;
-  protocolCompatible?: boolean;
 };
 
 export type PowerUnit = "ms2" | "nu" | "percent" | "log";

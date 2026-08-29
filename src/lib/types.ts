@@ -45,7 +45,6 @@ export type RecordingMetadata = {
   artifactPercentage?: number;
   quality?: RecordingQuality;
   engineVersion?: string;
-  protocolCompatible?: boolean;
 };
 
 export type MeasurementInput = {

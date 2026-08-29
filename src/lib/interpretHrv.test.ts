@@ -14,7 +14,6 @@ import {
   interpolateLogPercentile,
   percentileToZ,
 } from "@/lib/interpretHrv";
-import { validatePolarAcquisition } from "@/lib/analyzeHrvRecording";
 import type {
   MeasurementInput,
   HrvInterpretation,

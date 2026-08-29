@@ -24,7 +24,6 @@ type Fixture = {
     quality?: string;
     structuralCorrections?: number;
     correctedIntervals?: number;
-    protocolCompatible?: boolean;
   };
 };
 
@@ -52,7 +51,6 @@ describe("HRV differential fixture suite", () => {
         return;
       }
 
-      expect(analysis.protocolCompatible).toBe(fixture.expected.protocolCompatible);
       expect(analysis.metrics).toBeDefined();
       expect(analysis.correction).toBeDefined();
       const metrics = analysis.metrics!;

@@ -401,7 +401,6 @@
     },
     "quality": "good",
     "correctedIntervals": 0,
-    "protocolCompatible": true,
     "structuralCorrections": 0
   }
 }

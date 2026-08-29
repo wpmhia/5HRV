@@ -20,7 +20,6 @@ describe("analyzeHrvRecording", () => {
     });
     expect(analysis.ok).toBe(true);
     expect(analysis.metrics).toBeDefined();
-    expect(analysis.protocolCompatible).toBe(true);
     expect(analysis.engineVersion).toBeDefined();
   });
 
@@ -36,7 +35,7 @@ describe("analyzeHrvRecording", () => {
     expect(analysis.rejectionReason).toMatch(/invalid/i);
   });
 
-  it("still analyses a skip-rest recording but marks it protocol-incompatible", () => {
+  it("still analyses a recording without preparation metadata", () => {
     const analysis = analyzeHrvRecording(makeSeries(385), {
       ...options,
       source: "bluetooth_rr",
@@ -45,8 +44,6 @@ describe("analyzeHrvRecording", () => {
     });
     expect(analysis.ok).toBe(true);
     expect(analysis.metrics).toBeDefined();
-    expect(analysis.protocolCompatible).toBe(false);
-    expect(analysis.compatibilityReasons.length).toBeGreaterThan(0);
   });
 
   it("rejects a recording with ambiguous long intervals", () => {

@@ -166,7 +166,6 @@ function main(): void {
           quality: analysis.correction.quality,
           structuralCorrections: analysis.correction.structuralCorrections,
           correctedIntervals: analysis.correction.correctedIntervals,
-          protocolCompatible: analysis.protocolCompatible,
         }
       : { ok: false, rejectionReason: analysis.rejectionReason };
     writeFileSync(

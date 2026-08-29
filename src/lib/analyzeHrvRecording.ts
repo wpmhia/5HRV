@@ -1,7 +1,6 @@
 import { correctRrIntervals, type CorrectionResult } from "@/lib/rrArtifactCorrection";
 import { calculateHrv, type HrvMetrics } from "@/lib/calculateHrv";
 import { ANALYSIS_ENGINE_VERSION } from "@/lib/interpretHrv";
-import type { RecordingMetadata } from "@/lib/types";
 
 export type HrvRecordingOptions = {
   /** Length of the exact analysis window in seconds (DanFunD uses 300). */
@@ -24,9 +23,6 @@ export type HrvRecordingAnalysis = {
   completeIntervals: number[];
   spectralIntervals: number[];
   analysedDurationMs: number;
-  /** Whether the recording protocol matches the five-minute supine DanFunD conditions. */
-  protocolCompatible: boolean;
-  compatibilityReasons: string[];
   engineVersion: string;
 };
 
@@ -34,20 +30,6 @@ export type AnalysisWindow = {
   completeIntervals: number[];
   spectralIntervals: number[];
 };
-
-export function validatePolarAcquisition(recording: RecordingMetadata): { compatible: boolean; reasons: string[] } {
-  const reasons: string[] = [];
-  if (recording.durationSeconds !== undefined && recording.durationSeconds !== 300) {
-    reasons.push("The Polar H10 recording must contain exactly five minutes of RR data.");
-  }
-  if (recording.preparationSeconds !== undefined && recording.preparationSeconds < 300) {
-    reasons.push("The Polar H10 recording was not preceded by five minutes of quiet supine rest.");
-  }
-  if (recording.posture !== undefined && recording.posture !== "supine") {
-    reasons.push("The Polar H10 recording was not obtained in the supine position.");
-  }
-  return { compatible: reasons.length === 0, reasons };
-}
 
 export function extractWindow(rr: number[], windowMs: number): AnalysisWindow {
   const completeIntervals: number[] = [];
@@ -70,16 +52,12 @@ export function extractWindow(rr: number[], windowMs: number): AnalysisWindow {
 
 const failure = (
   rejectionReason: string,
-  protocolCompatible = false,
-  compatibilityReasons: string[] = [],
 ): HrvRecordingAnalysis => ({
   ok: false,
   rejectionReason,
   completeIntervals: [],
   spectralIntervals: [],
   analysedDurationMs: 0,
-  protocolCompatible,
-  compatibilityReasons,
   engineVersion: ANALYSIS_ENGINE_VERSION,
 });
 
@@ -116,17 +94,6 @@ export function analyzeHrvRecording(
     spectralIntervals,
   });
 
-  const recordingMetadata: RecordingMetadata = {
-    source: options.source === "imported" ? undefined : options.source,
-    durationSeconds: options.analysisDurationSeconds,
-    preparationSeconds: options.preparationSeconds,
-    posture: options.posture,
-    deviceName: options.deviceName,
-    recordingDate: options.recordingDate,
-    samplingFrequencyHz: options.samplingFrequencyHz,
-  };
-  const compatibility = validatePolarAcquisition(recordingMetadata);
-
   return {
     ok: true,
     metrics,
@@ -134,8 +101,6 @@ export function analyzeHrvRecording(
     completeIntervals,
     spectralIntervals,
     analysedDurationMs,
-    protocolCompatible: compatibility.compatible,
-    compatibilityReasons: compatibility.reasons,
     engineVersion: ANALYSIS_ENGINE_VERSION,
   };
 }

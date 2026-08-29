@@ -33,7 +33,6 @@ type MeasurementResult = HrvMetrics & {
   correctedIntervals: number;
   artifactPercentage: number;
   quality: RecordingQuality;
-  protocolCompatible: boolean;
 };
 
 type Props = {
@@ -181,7 +180,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
       correctedIntervals: analysis.correction.correctedIntervals,
       artifactPercentage: analysis.correction.artifactPercentage,
       quality: analysis.correction.quality,
-      protocolCompatible: analysis.protocolCompatible,
     });
     setPhase("complete");
   }, []);
@@ -421,7 +419,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
         artifactPercentage: round(result.artifactPercentage, 1),
         quality: result.quality,
         engineVersion: ANALYSIS_ENGINE_VERSION,
-        protocolCompatible: result.protocolCompatible,
         },
       });
   }, [onPrefill, result]);
@@ -599,13 +596,6 @@ export function BluetoothMeasurement({ onPrefill }: Props) {
                 <p className="text-xs text-amber-600 dark:text-amber-400">
                   Acceptable recording quality. Values are prefilled, but review the detected
                   artefact rate.
-                </p>
-              )}
-              {!result.protocolCompatible && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  This recording does not match the five-minute supine reference protocol, so the
-                  values will be interpreted descriptively without reference-percentile placement
-                  or an Autonomic Pattern Score.
                 </p>
               )}
               <button type="button" onClick={handleUseValues} className={actionButtonClass}>
