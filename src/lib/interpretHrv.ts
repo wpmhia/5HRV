@@ -63,10 +63,7 @@ export function assessReferenceCompatibility(
 
   if (recording.durationSeconds !== undefined) {
     const duration = recording.durationSeconds;
-    if (duration < 180 || duration > 900) {
-      status = "incompatible";
-      reasons.push(`The recording duration (${formatDuration(duration)}) is not suitable for comparison with the five-minute DanFunD reference window.`);
-    } else if (Math.abs(duration - DANFUND_ANALYSIS_SECONDS) > DANFUND_DURATION_TOLERANCE_SECONDS) {
+    if (Math.abs(duration - DANFUND_ANALYSIS_SECONDS) > DANFUND_DURATION_TOLERANCE_SECONDS) {
       status = "nonstandard_but_interpretable";
       reasons.push(`The recording duration (${formatDuration(duration)}) differs from the five-minute DanFunD reference window; percentile placement is approximate.`);
     }

@@ -290,15 +290,14 @@ describe("reference availability", () => {
     const rmssd = result.metrics.find((m) => m.key === "rmssd");
     expect(rmssd!.category).toBe("p25_to_p75");
   });
-  it("no percentile for an imported recording with a non-five-minute duration", () => {
+  it("keeps approximate percentiles for an imported five-minute report", () => {
     const result = interpretHrv({
       ...baseInput,
-      recording: { durationSeconds: 86400 },
+      recording: { durationSeconds: 353 },
     });
     const rmssd = result.metrics.find((m) => m.key === "rmssd");
-    expect(rmssd!.category).toBeUndefined();
-    expect(result.referenceAvailable).toBe(false);
-    expect(result.autonomicProfile).toBeUndefined();
+    expect(rmssd!.category).toBeDefined();
+    expect(result.referenceAvailable).toBe(true);
     expect(result.referenceNote).toContain("five-minute");
   });
   it("no percentile when the bluetooth rest period was skipped", () => {
@@ -346,10 +345,11 @@ describe("assessReferenceCompatibility", () => {
       reasons: [],
     });
   });
-  it("rejects a 24-hour recording", () => {
-    const result = assessReferenceCompatibility({ durationSeconds: 86400 });
+  it("keeps a non-exact five-minute recording interpretable", () => {
+    const result = assessReferenceCompatibility({ durationSeconds: 353 });
     expect(result.compatible).toBe(false);
-    expect(result.reference).toBeNull();
+    expect(result.reference).toBe("danfund");
+    expect(result.status).toBe("nonstandard_but_interpretable");
     expect(result.reasons.join(" ")).toMatch(/five-minute/i);
   });
   it("rejects a two-minute recording", () => {
