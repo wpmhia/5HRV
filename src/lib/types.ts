@@ -31,12 +31,6 @@ export type FrequencyDomainPattern =
 
 export type RecordingQuality = "good" | "acceptable" | "poor";
 
-export type ReferenceCompatibility = {
-  compatible: boolean;
-  reference: "danfund" | null;
-  reasons: string[];
-};
-
 export type RecordingMetadata = {
   recordingDate?: string;
   durationSeconds?: number;
@@ -73,7 +67,6 @@ export type HrvFindings = {
   ageBand: string | null;
   referenceAvailable: boolean;
   referenceNote?: string;
-  referenceCompatibility?: ReferenceCompatibility;
 
   rmssd: {
     value?: number;
@@ -163,7 +156,6 @@ export type HrvInterpretation = {
   clinicalNote: string;
   referenceAvailable: boolean;
   referenceNote?: string;
-  referenceCompatibility?: ReferenceCompatibility;
   safetyMessage: string;
   engineVersion: string;
   referenceDatasetVersion: string;

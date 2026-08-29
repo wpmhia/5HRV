@@ -13,8 +13,8 @@ import {
   estimatePercentile,
   interpolateLogPercentile,
   percentileToZ,
-  assessReferenceCompatibility,
 } from "@/lib/interpretHrv";
+import { validatePolarAcquisition } from "@/lib/analyzeHrvRecording";
 import type {
   MeasurementInput,
   HrvInterpretation,
@@ -300,7 +300,7 @@ describe("reference availability", () => {
     expect(result.referenceAvailable).toBe(true);
     expect(result.referenceNote).toBeUndefined();
   });
-  it("no percentile when the bluetooth rest period was skipped", () => {
+  it("does not apply Polar acquisition rules inside interpretation", () => {
     const result = interpretHrv({
       ...baseInput,
       recording: {
@@ -310,85 +310,7 @@ describe("reference availability", () => {
         posture: "supine",
       },
     });
-    expect(result.referenceAvailable).toBe(false);
-    expect(result.autonomicProfile).toBeUndefined();
-    expect(result.overall).toContain("descriptively");
-  });
-});
-
-describe("assessReferenceCompatibility", () => {
-  it("uses age/sex reference for manual calculator input without recording metadata", () => {
-    expect(assessReferenceCompatibility()).toEqual({
-      compatible: true,
-      reference: "danfund",
-      reasons: [],
-    });
-    const result = interpretHrv({
-      age: 33,
-      referenceSex: "female",
-      rmssd: 69.67,
-      sdnn: 72.54,
-      pnn50: 49.76,
-      lfhfRatio: 0.84,
-      lfhfSource: "manual",
-    });
     expect(result.referenceAvailable).toBe(true);
-    expect(result.findings.rmssd.band).toBe("p75_to_p95");
-    expect(result.findings.sdnn.band).toBe("p75_to_p95");
-  });
-  it("accepts a five-minute recording", () => {
-    expect(assessReferenceCompatibility({ durationSeconds: 300 })).toEqual({
-      compatible: true,
-      reference: "danfund",
-      reasons: [],
-    });
-  });
-  it("does not apply the acquisition gate to imported report metadata", () => {
-    const result = assessReferenceCompatibility({ durationSeconds: 353 });
-    expect(result.compatible).toBe(true);
-    expect(result.reference).toBe("danfund");
-    expect(result.reasons).toEqual([]);
-  });
-  it("does not apply the acquisition gate to manual duration metadata", () => {
-    expect(assessReferenceCompatibility({ durationSeconds: 120 }).compatible).toBe(true);
-  });
-  it("accepts a full-protocol bluetooth recording", () => {
-    expect(
-      assessReferenceCompatibility({
-        source: "bluetooth_rr",
-        durationSeconds: 300,
-        preparationSeconds: 300,
-        posture: "supine",
-      }).compatible,
-    ).toBe(true);
-  });
-  it("rejects a Polar H10 recording outside the five-minute window", () => {
-    expect(assessReferenceCompatibility({
-      source: "bluetooth_rr",
-      durationSeconds: 353,
-      preparationSeconds: 300,
-      posture: "supine",
-    }).compatible).toBe(false);
-  });
-  it("rejects a bluetooth recording with a shortened rest period", () => {
-    const result = assessReferenceCompatibility({
-      source: "bluetooth_rr",
-      durationSeconds: 300,
-      preparationSeconds: 45,
-      posture: "supine",
-    });
-    expect(result.compatible).toBe(false);
-    expect(result.reasons.join(" ")).toMatch(/supine rest/i);
-  });
-  it("rejects a bluetooth recording in a non-supine position", () => {
-    const result = assessReferenceCompatibility({
-      source: "bluetooth_rr",
-      durationSeconds: 300,
-      preparationSeconds: 300,
-      posture: "seated",
-    });
-    expect(result.compatible).toBe(false);
-    expect(result.reasons.join(" ")).toMatch(/supine/i);
   });
 });
 

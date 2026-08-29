@@ -1,6 +1,6 @@
 import { correctRrIntervals, type CorrectionResult } from "@/lib/rrArtifactCorrection";
 import { calculateHrv, type HrvMetrics } from "@/lib/calculateHrv";
-import { assessReferenceCompatibility, ANALYSIS_ENGINE_VERSION } from "@/lib/interpretHrv";
+import { ANALYSIS_ENGINE_VERSION } from "@/lib/interpretHrv";
 import type { RecordingMetadata } from "@/lib/types";
 
 export type HrvRecordingOptions = {
@@ -34,6 +34,20 @@ export type AnalysisWindow = {
   completeIntervals: number[];
   spectralIntervals: number[];
 };
+
+export function validatePolarAcquisition(recording: RecordingMetadata): { compatible: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+  if (recording.durationSeconds !== undefined && recording.durationSeconds !== 300) {
+    reasons.push("The Polar H10 recording must contain exactly five minutes of RR data.");
+  }
+  if (recording.preparationSeconds !== undefined && recording.preparationSeconds < 300) {
+    reasons.push("The Polar H10 recording was not preceded by five minutes of quiet supine rest.");
+  }
+  if (recording.posture !== undefined && recording.posture !== "supine") {
+    reasons.push("The Polar H10 recording was not obtained in the supine position.");
+  }
+  return { compatible: reasons.length === 0, reasons };
+}
 
 export function extractWindow(rr: number[], windowMs: number): AnalysisWindow {
   const completeIntervals: number[] = [];
@@ -111,7 +125,7 @@ export function analyzeHrvRecording(
     recordingDate: options.recordingDate,
     samplingFrequencyHz: options.samplingFrequencyHz,
   };
-  const compatibility = assessReferenceCompatibility(recordingMetadata);
+  const compatibility = validatePolarAcquisition(recordingMetadata);
 
   return {
     ok: true,
