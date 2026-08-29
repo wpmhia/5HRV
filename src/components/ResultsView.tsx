@@ -576,12 +576,12 @@ export function ResultsView({ interpretation, input }: Props) {
                   {formatDuration(rec.durationSeconds)}
                 </span>
               </div>
-              <div className="flex items-baseline justify-between gap-4">
+              {rec.preparationSeconds !== undefined && <div className="flex items-baseline justify-between gap-4">
                 <span className="text-sm text-muted-foreground">Resting period</span>
                 <span className="font-mono text-sm font-medium tabular-nums text-foreground">
                   {formatDuration(rec.preparationSeconds)}
                 </span>
-              </div>
+              </div>}
               <div className="flex items-baseline justify-between gap-4">
                 <span className="text-sm text-muted-foreground">Recording quality</span>
                 <span className="text-sm font-medium text-foreground">

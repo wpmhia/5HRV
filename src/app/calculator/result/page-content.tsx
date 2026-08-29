@@ -39,15 +39,7 @@ const MeasurementInputSchema = z.object({
   if (data.rmssd === undefined && data.sdnn === undefined) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least RMSSD or SDNN is required." });
   }
-  const hasLf = data.lfPower !== undefined;
-  const hasHf = data.hfPower !== undefined;
-  if ((hasLf && !hasHf) || (!hasLf && hasHf)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "LF and HF must be provided together." });
-  }
   const hasLfhfRatio = data.lfhfRatio !== undefined;
-  if (data.lfhfSource === "calculated" && !(hasLf && hasHf)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Calculated source requires both LF and HF." });
-  }
   if ((data.lfhfSource === "manual" || data.lfhfSource === "imported") && !hasLfhfRatio) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Manual or imported source requires a ratio value." });
   }

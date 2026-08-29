@@ -15,10 +15,8 @@ function countParsedValues(values: ParsedReportValues): number {
 }
 
 type Props = {
-  onPrefill: (values: ParsedReportValues) => void;
-  onClearImport: () => void;
+  onPrefill: (values: ParsedReportValues, source: "report" | "paste") => void;
   imported: boolean;
-  importedCount: number;
   onBusyChange?: (busy: boolean) => void;
 };
 
@@ -111,9 +109,10 @@ async function extractTextFromFile(file: File): Promise<string> {
   throw new Error("Unsupported file type.");
 }
 
-export function ReportUpload({ onPrefill, onClearImport, imported, importedCount, onBusyChange }: Props) {
+export function ReportUpload({ onPrefill, imported, onBusyChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState("");
@@ -153,7 +152,8 @@ export function ReportUpload({ onPrefill, onClearImport, imported, importedCount
         setError("Could not extract values. Try again or enter manually.");
         return;
       }
-      onPrefill(values);
+      onPrefill(values, "report");
+      setUploaded(true);
     } catch {
       if (opId === opCounter.current) {
         setError("Could not extract values. Try again or enter manually.");
@@ -169,13 +169,8 @@ export function ReportUpload({ onPrefill, onClearImport, imported, importedCount
 
   const handleChangeFile = () => {
     opCounter.current += 1;
-    onClearImport();
     setError(null);
     fileInputRef.current?.click();
-  };
-
-  const handleUndo = () => {
-    onClearImport();
   };
 
   const handleUploadClick = () => {
@@ -190,7 +185,8 @@ export function ReportUpload({ onPrefill, onClearImport, imported, importedCount
       setPasteError("No recognised HRV values found. Check the pasted text and try again.");
       return;
     }
-    onPrefill(values);
+    onPrefill(values, "paste");
+    setUploaded(false);
     setPasteOpen(false);
     setPasteText("");
     setPasteError(null);
@@ -220,25 +216,15 @@ export function ReportUpload({ onPrefill, onClearImport, imported, importedCount
         aria-label="Upload HRV report"
       />
       {imported ? (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-xs text-muted-foreground">
-            {importedCount} values imported — please review
-          </span>
-          <button
-            type="button"
-            onClick={handleChangeFile}
-            className="text-xs text-primary underline-offset-4 hover:underline"
-          >
-            Change file
-          </button>
-          <button
-            type="button"
-            onClick={handleUndo}
-            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Undo import
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleChangeFile}
+          disabled={uploading}
+          aria-busy={uploading}
+          className="inline-flex min-w-[132px] items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-wait disabled:opacity-70"
+        >
+          {uploaded ? "Report uploaded" : "Upload report"}
+        </button>
       ) : (
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex items-center gap-2">

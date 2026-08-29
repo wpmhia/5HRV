@@ -13,7 +13,7 @@ test.describe("Caroline PDF upload", () => {
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(CAROLINE_PDF);
 
-    await expect(page.getByText(/values imported/)).toBeVisible({ timeout: 45000 });
+    await expect(page.getByRole("button", { name: "Report uploaded" })).toBeVisible({ timeout: 45000 });
 
     await expect(page.getByRole("textbox", { name: /RMSSD/ })).toHaveValue("23.14");
     await expect(page.getByRole("textbox", { name: /SDNN/ })).toHaveValue("39.33");

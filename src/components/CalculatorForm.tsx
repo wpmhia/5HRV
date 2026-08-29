@@ -108,7 +108,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
   const [form, setForm] = useState<FormState>(initialState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [importedFromReport, setImportedFromReport] = useState(false);
-  const [importedCount, setImportedCount] = useState(0);
   const [extracting, setExtracting] = useState(false);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
@@ -176,11 +175,6 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
         nextErrors.lfPower = "Enter a valid number.";
       } else if (lfPower !== null && lfPower < 0) {
         nextErrors.lfPower = "LF power cannot be negative.";
-      }
-      if (hfPower !== null && lfPower === null) {
-        nextErrors.lfPower = "LF power is required when HF power is entered.";
-      } else if (lfPower !== null && hfPower === null) {
-        nextErrors.hfPower = "HF power is required when LF power is entered.";
       }
     } else {
       if (form.hfPower.trim() !== "" && hfPower === null) {
@@ -298,28 +292,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
     setErrors({});
   };
 
-  const handleClearImport = () => {
-    setForm((prev) => ({
-      ...prev,
-      rmssd: "",
-      sdnn: "",
-      pnn50: "",
-      hfPower: "",
-      lfPower: "",
-      lfhfRatio: "",
-      lfhfSource: "",
-      freqMode: "powers",
-      recordingDate: undefined,
-      durationSeconds: undefined,
-      samplingFrequencyHz: undefined,
-      totalBeats: undefined,
-      measurement: undefined,
-    }));
-    setErrors({});
-    setImportedFromReport(false);
-  };
-
-  const handlePrefill = (values: ParsedReportValues) => {
+  const handlePrefill = (values: ParsedReportValues, source: "report" | "paste" | "polar" = "report") => {
     setForm((prev) => {
       const base: FormState = {
         ...prev,
@@ -358,10 +331,7 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
       return base;
     });
     setErrors({});
-    const actualCount = [values.rmssd, values.sdnn, values.pnn50, values.hfPower, values.lfPower, values.lfhfRatio]
-      .filter((value) => value !== undefined).length;
-    setImportedCount(actualCount);
-    setImportedFromReport(true);
+    setImportedFromReport(source === "report");
   };
 
   return (
@@ -427,12 +397,10 @@ export function CalculatorForm({ onInterpret, onClear }: Props) {
           <div className="flex flex-wrap items-center gap-2">
             <ReportUpload
               onPrefill={handlePrefill}
-              onClearImport={handleClearImport}
               imported={importedFromReport}
-              importedCount={importedCount}
               onBusyChange={setExtracting}
             />
-            <BluetoothMeasurement onPrefill={handlePrefill} />
+            <BluetoothMeasurement onPrefill={(values) => handlePrefill(values, "polar")} />
           </div>
         </div>
 

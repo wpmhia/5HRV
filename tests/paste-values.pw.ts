@@ -10,7 +10,7 @@ test.describe("Paste values", () => {
     await page.getByRole("textbox", { name: "Pasted HRV report values" }).fill(EXAMPLE_TEXT);
     await page.getByRole("button", { name: "Fill fields" }).click();
 
-    await expect(page.getByText(/values imported/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Upload report" })).toBeVisible();
 
     await expect(page.getByRole("textbox", { name: /RMSSD/ })).toHaveValue("23.14");
     await expect(page.getByRole("textbox", { name: /SDNN/ })).toHaveValue("39.33");
@@ -29,7 +29,7 @@ test.describe("Paste values", () => {
       .fill("SDNN: 39,33\nrMSSD: 23,14\nLF/HF: 5,90");
     await page.getByRole("button", { name: "Fill fields" }).click();
 
-    await expect(page.getByText(/values imported/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Upload report" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: /RMSSD/ })).toHaveValue("23.14");
     await expect(page.getByRole("textbox", { name: /SDNN/ })).toHaveValue("39.33");
     await expect(page.getByRole("textbox", { name: /LF\/HF ratio/ })).toHaveValue("5.9");
