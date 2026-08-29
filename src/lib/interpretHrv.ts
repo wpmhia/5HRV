@@ -58,14 +58,21 @@ export function assessReferenceCompatibility(
     return { status: "standard", compatible: true, reference: "danfund", reasons: [] };
   }
 
+  // Manual values and imported reports contain already-calculated HRV values.
+  // Their provenance is informative only; the Polar acquisition gate applies
+  // exclusively to recordings captured and timed by this application.
+  if (recording.source !== "bluetooth_rr") {
+    return { status: "standard", compatible: true, reference: "danfund", reasons: [] };
+  }
+
   const reasons: string[] = [];
   let status: ReferenceCompatibility["status"] = "standard";
 
   if (recording.durationSeconds !== undefined) {
     const duration = recording.durationSeconds;
     if (Math.abs(duration - DANFUND_ANALYSIS_SECONDS) > DANFUND_DURATION_TOLERANCE_SECONDS) {
-      status = "nonstandard_but_interpretable";
-      reasons.push(`The recording duration (${formatDuration(duration)}) differs from the five-minute DanFunD reference window; percentile placement is approximate.`);
+      status = "incompatible";
+      reasons.push(`The Polar H10 recording duration (${formatDuration(duration)}) does not match the required five-minute capture window.`);
     }
   }
 

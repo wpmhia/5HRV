@@ -290,7 +290,7 @@ describe("reference availability", () => {
     const rmssd = result.metrics.find((m) => m.key === "rmssd");
     expect(rmssd!.category).toBe("p25_to_p75");
   });
-  it("keeps approximate percentiles for an imported five-minute report", () => {
+  it("keeps percentiles for an imported report regardless of duration metadata", () => {
     const result = interpretHrv({
       ...baseInput,
       recording: { durationSeconds: 353 },
@@ -298,7 +298,7 @@ describe("reference availability", () => {
     const rmssd = result.metrics.find((m) => m.key === "rmssd");
     expect(rmssd!.category).toBeDefined();
     expect(result.referenceAvailable).toBe(true);
-    expect(result.referenceNote).toContain("five-minute");
+    expect(result.referenceNote).toBeUndefined();
   });
   it("no percentile when the bluetooth rest period was skipped", () => {
     const result = interpretHrv({
@@ -345,15 +345,15 @@ describe("assessReferenceCompatibility", () => {
       reasons: [],
     });
   });
-  it("keeps a non-exact five-minute recording interpretable", () => {
+  it("does not apply the acquisition gate to imported report metadata", () => {
     const result = assessReferenceCompatibility({ durationSeconds: 353 });
-    expect(result.compatible).toBe(false);
+    expect(result.compatible).toBe(true);
     expect(result.reference).toBe("danfund");
-    expect(result.status).toBe("nonstandard_but_interpretable");
-    expect(result.reasons.join(" ")).toMatch(/five-minute/i);
+    expect(result.status).toBe("standard");
+    expect(result.reasons).toEqual([]);
   });
-  it("rejects a two-minute recording", () => {
-    expect(assessReferenceCompatibility({ durationSeconds: 120 }).compatible).toBe(false);
+  it("does not apply the acquisition gate to manual duration metadata", () => {
+    expect(assessReferenceCompatibility({ durationSeconds: 120 }).compatible).toBe(true);
   });
   it("accepts a full-protocol bluetooth recording", () => {
     expect(
@@ -364,6 +364,14 @@ describe("assessReferenceCompatibility", () => {
         posture: "supine",
       }).compatible,
     ).toBe(true);
+  });
+  it("rejects a Polar H10 recording outside the five-minute window", () => {
+    expect(assessReferenceCompatibility({
+      source: "bluetooth_rr",
+      durationSeconds: 353,
+      preparationSeconds: 300,
+      posture: "supine",
+    }).compatible).toBe(false);
   });
   it("rejects a bluetooth recording with a shortened rest period", () => {
     const result = assessReferenceCompatibility({
