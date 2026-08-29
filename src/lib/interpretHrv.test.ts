@@ -320,6 +320,7 @@ describe("reference availability", () => {
 describe("assessReferenceCompatibility", () => {
   it("uses age/sex reference for manual calculator input without recording metadata", () => {
     expect(assessReferenceCompatibility()).toEqual({
+      status: "standard",
       compatible: true,
       reference: "danfund",
       reasons: [],
@@ -339,6 +340,7 @@ describe("assessReferenceCompatibility", () => {
   });
   it("accepts a five-minute recording", () => {
     expect(assessReferenceCompatibility({ durationSeconds: 300 })).toEqual({
+      status: "standard",
       compatible: true,
       reference: "danfund",
       reasons: [],

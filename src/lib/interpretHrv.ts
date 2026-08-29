@@ -35,6 +35,11 @@ export function normalizeNumber(value: string): number | null {
 
 const DANFUND_ANALYSIS_SECONDS = 300;
 const DANFUND_DURATION_TOLERANCE_SECONDS = 1;
+
+function formatDuration(seconds: number): string {
+  const rounded = Math.max(0, Math.round(seconds));
+  return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, "0")}`;
+}
 const DANFUND_REQUIRED_REST_SECONDS = 300;
 
 // The DanFunD reference distribution was derived from the final five minutes
@@ -50,20 +55,20 @@ export function assessReferenceCompatibility(
     // Manual calculator input carries no acquisition metadata. The reference
     // comparison applies; the clinical note states that the supplied values
     // are assumed to come from a technically valid five-minute HRV analysis.
-    return { compatible: true, reference: "danfund", reasons: [] };
+    return { status: "standard", compatible: true, reference: "danfund", reasons: [] };
   }
 
   const reasons: string[] = [];
+  let status: ReferenceCompatibility["status"] = "standard";
 
   if (recording.durationSeconds !== undefined) {
     const duration = recording.durationSeconds;
-    if (
-      duration < DANFUND_ANALYSIS_SECONDS - DANFUND_DURATION_TOLERANCE_SECONDS ||
-      duration > DANFUND_ANALYSIS_SECONDS + DANFUND_DURATION_TOLERANCE_SECONDS
-    ) {
-      reasons.push(
-        `The recording duration (${Math.round(duration / 60)} minutes) does not match the five-minute analysis window of the DanFunD reference protocol.`,
-      );
+    if (duration < 180 || duration > 900) {
+      status = "incompatible";
+      reasons.push(`The recording duration (${formatDuration(duration)}) is not suitable for comparison with the five-minute DanFunD reference window.`);
+    } else if (Math.abs(duration - DANFUND_ANALYSIS_SECONDS) > DANFUND_DURATION_TOLERANCE_SECONDS) {
+      status = "nonstandard_but_interpretable";
+      reasons.push(`The recording duration (${formatDuration(duration)}) differs from the five-minute DanFunD reference window; percentile placement is approximate.`);
     }
   }
 
@@ -75,17 +80,20 @@ export function assessReferenceCompatibility(
       reasons.push(
         "The recording was not preceded by five minutes of quiet supine rest, which the DanFunD reference protocol requires.",
       );
+      status = "incompatible";
     }
     if (recording.posture !== "supine") {
       reasons.push(
         "The recording was not obtained in the supine position required by the DanFunD reference protocol.",
       );
+      status = "incompatible";
     }
   }
 
   return {
-    compatible: reasons.length === 0,
-    reference: reasons.length === 0 ? "danfund" : null,
+    status,
+    compatible: status === "standard",
+    reference: status === "incompatible" ? null : "danfund",
     reasons,
   };
 }
@@ -315,7 +323,7 @@ export function deriveHrvFindings(input: MeasurementInput): HrvFindings {
   const referenceAvailable =
     input.referenceSex !== "none" &&
     ageBand !== null &&
-    referenceCompatibility.compatible;
+    referenceCompatibility.status !== "incompatible";
 
   let referenceNote: string | undefined;
   if (input.age > 72) {

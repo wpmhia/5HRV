@@ -32,6 +32,7 @@ export type FrequencyDomainPattern =
 export type RecordingQuality = "good" | "acceptable" | "poor";
 
 export type ReferenceCompatibility = {
+  status: "standard" | "nonstandard_but_interpretable" | "incompatible";
   compatible: boolean;
   reference: "danfund" | null;
   reasons: string[];
